@@ -239,9 +239,9 @@ if __name__ == "__main__":
             speak(f"You said: {word}")
             # Normalize and fuzzy match the wake word to be more forgiving
             cleaned = "".join(ch for ch in word.lower() if ch.isalpha())
-            similarity = difflib.SequenceMatcher(None, cleaned, "aria").ratio()
-            print(f"Wake word normalized: {cleaned} | similarity to 'aria': {similarity:.2f}")
-            if cleaned == "aria" or similarity >= 0.44:
+            similarity = difflib.SequenceMatcher(None, cleaned, "Neo").ratio()
+            print(f"Wake word normalized: {cleaned} | similarity to 'Neo': {similarity:.2f}")
+            if cleaned == "Neo" or similarity >= 0.44:
                 speak("Yes Boss")                       # Speak Yes boss , if true
                 
                 while True:
