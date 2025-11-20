@@ -14,7 +14,7 @@ class AriaBrain:
             try:
                 genai.configure(api_key=self.api_key)
                 # Use a model that supports function calling if needed, or just standard chat for now
-                self.model = genai.GenerativeModel('gemini-pro')
+                self.model = genai.GenerativeModel('gemini-1.5-flash')
                 self.chat_session = self.model.start_chat(history=[])
             except Exception as e:
                 print(f"Error initializing Gemini: {e}")

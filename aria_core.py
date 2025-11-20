@@ -211,13 +211,30 @@ class AriaCore:
             self.speak("You can say: open instagram, open youtube, play music, google something, or just chat with me.")
             return
 
-        # 2. Shortcuts
+        # 2. Check for "open" commands - prioritize desktop apps over websites
+        if text.startswith("open "):
+            target = text.replace("open ", "").strip()
+            
+            # First, check if it's a known desktop app
+            if target in self.app_paths or any(target in app_name for app_name in self.app_paths):
+                self.open_desktop_app(target)
+                return
+        
+        # 3. Website Shortcuts (only if not a desktop app)
         mappings = [
             (("open instagram", "instagram khol"), "https://instagram.com", "Opening Instagram"),
             (("open youtube", "youtube khol"), "https://youtube.com", "Opening YouTube"),
             (("open github", "coders ka adda"), "https://github.com", "Opening GitHub"),
             (("open linkedin", "demotivate kar"), "https://linkedin.com", "Opening LinkedIn"),
-            (("play my playlist",), "https://youtu.be/AbkEmIgJMcU?si=V6ETJmVWDU2zOEtq", "Playing your playlist"),
+            (("open twitter", "open x"), "https://twitter.com", "Opening Twitter"),
+            (("open facebook",), "https://facebook.com", "Opening Facebook"),
+            (("open reddit",), "https://reddit.com", "Opening Reddit"),
+            (("open amazon",), "https://amazon.com", "Opening Amazon"),
+            (("open netflix",), "https://netflix.com", "Opening Netflix"),
+            (("open spotify",), "https://spotify.com", "Opening Spotify"),
+            (("open gmail", "open mail"), "https://gmail.com", "Opening Gmail"),
+            (("open whatsapp",), "https://web.whatsapp.com", "Opening WhatsApp"),
+            (("play my playlist",), "https://youtu.be/U52IJSyHa24?si=X5ICjA348_HahghB", "Playing your playlist"),
         ]
         for keywords, url, desc in mappings:
             for k in keywords:
@@ -226,11 +243,21 @@ class AriaCore:
                     self.safe_open_url(url, desc)
                     return
         
-        # Generic Open App (if not matched above)
+        # 4. Smart website detection for any other site
         if text.startswith("open "):
-            app_name = text.replace("open ", "").strip()
-            if app_name:
-                self.open_desktop_app(app_name)
+            target = text.replace("open ", "").strip()
+            
+            # At this point, we know it's not a desktop app, so try as website
+            # Handle common patterns like "open google.com" or just "open google"
+            if target:
+                # If user said "open google.com", use it directly
+                if "." in target and len(target.split(".")[-1]) <= 4:
+                    url = f"https://{target}" if not target.startswith("http") else target
+                    self.safe_open_url(url, f"Opening {target}")
+                else:
+                    # Assume .com domain
+                    url = f"https://{target}.com"
+                    self.safe_open_url(url, f"Opening {target}")
                 return
 
         # 3. Google Search
