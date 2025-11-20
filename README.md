@@ -94,6 +94,14 @@ If a command isn’t recognized and Gemini is configured, AriaBrain will attempt
 - **Desktop apps not opening**: Allow indexing some time after startup; Aria scans `%ProgramData%` and `%AppData%` Start Menu folders.
 - **Gemini errors**: Confirm `.env` contains a valid `GEMINI_API_KEY` and that the account has access to `gemini-1.5-flash`.
 
+## Future Updates
+- **MongoDB workspace memory**: Persist notes, tasks, meeting transcripts, and contextual preferences so Aria can resume conversations across sessions.
+- **ElevenLabs neural voice**: Replace the basic gTTS output with ultra-realistic voices and emotion controls using the ElevenLabs API.
+- **Model Context Protocol (MCP)**: Add formal MCP hooks so other agents/tools can stream context into AriaCore, enabling richer multi-agent workflows.
+- **Agentic behaviors**: Expand the brain to schedule meetings, take structured notes, manage task lists, and follow up on reminders automatically.
+- **Better automations**: Integrate with calendar/email APIs, expose plugin hooks for custom commands, and ship a settings panel for mapping additional desktop apps/services.
+- **Cross-platform polish**: Package the GUI into a standalone executable, add auto-update checks, and tighten microphone/audio setup flows for macOS/Linux users.
+
 ## Contributing
 Pull requests and feature ideas are welcome! Feel free to open issues for bugs, new voice intents, or GUI improvements.
 
