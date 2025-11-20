@@ -1,0 +1,8 @@
+SpeechRecognition
+gTTS
+pygame
+wikipedia
+customtkinter
+google-generativeai
+python-dotenv
+pyaudio
