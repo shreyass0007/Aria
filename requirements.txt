@@ -6,3 +6,4 @@ customtkinter
 google-generativeai
 python-dotenv
 pyaudio
+Pillow

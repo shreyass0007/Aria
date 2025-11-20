@@ -8,20 +8,20 @@ def main():
 
     while True:
         try:
-            # Wake word logic could be here or inside aria.listen()
-            # For simplicity in this refactor, we'll just listen for commands directly 
-            # or implement the wake word loop if desired.
-            # The original main.py had a specific wake word loop.
+            # We're just listening for the wake word "Aria" here.
+            # Once we hear it, we'll ask the user what they want.
             
-            print("\nListening for Wake Word 'Aria'...")
-            # We use aria.listen() but we need to check for wake word first.
-            # Since aria.listen() records a phrase, we can check if that phrase is the wake word.
+            print("\nListening for 'Aria'...")
+            
+            # Listen for any sound/speech
             
             text = aria.listen()
             if not text:
                 continue
                 
-            # Simple wake word check
+
+                
+            # Check if the user said the magic word
             if "aria" in text or "neo" in text:
                 aria.speak("Yes?")
                 cmd = aria.listen()

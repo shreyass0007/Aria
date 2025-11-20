@@ -5,33 +5,33 @@ from aria_core import AriaCore
 import sys
 from PIL import Image  # For custom PNG icons
 
-# --- Modern Clean UI Configuration ---
+# --- UI Setup ---
 ctk.set_appearance_mode("Light")
 ctk.set_default_color_theme("blue")
 
-# Adaptive Colors (Light, Dark)
-COLOR_BG = ("#f5f5f7", "#1e1e1e")           # Background
-COLOR_CARD = ("#ffffff", "#2b2b2b")         # Cards/containers  
-COLOR_INPUT_BG = ("#ffffff", "#1a1a1a")     # Input box background
-COLOR_TEXT_PRIMARY = ("#1d1d1f", "#e4e4e7") # Primary text
-COLOR_TEXT_SECONDARY = ("#6e6e73", "#a1a1aa") # Secondary text
-COLOR_ACCENT = ("#007aff", "#3b82f6")       # Blue accent
-COLOR_ACCENT_HOVER = ("#0051d5", "#2563eb") # Darker blue
-COLOR_BORDER = ("#e5e5e7", "#404040")       # Borders
+# Define our color palette for both light and dark modes
+COLOR_BG = ("#f5f5f7", "#1e1e1e")           # Main background
+COLOR_CARD = ("#ffffff", "#2b2b2b")         # Card backgrounds
+COLOR_INPUT_BG = ("#ffffff", "#1a1a1a")     # Input field background
+COLOR_TEXT_PRIMARY = ("#1d1d1f", "#e4e4e7") # Main text color
+COLOR_TEXT_SECONDARY = ("#6e6e73", "#a1a1aa") # Subtitle/secondary text
+COLOR_ACCENT = ("#007aff", "#3b82f6")       # Primary accent (Blue)
+COLOR_ACCENT_HOVER = ("#0051d5", "#2563eb") # Darker blue for hover states
+COLOR_BORDER = ("#e5e5e7", "#404040")       # Subtle borders
 
 class ChatMessageCard(ctk.CTkFrame):
-    """Message bubble - user RIGHT, AI LEFT."""
+    """A custom frame for chat messages. Handles alignment for user vs AI."""
     def __init__(self, master, text, sender="Aria", **kwargs):
         super().__init__(master, fg_color="transparent", **kwargs)
         
         is_user = sender == "You"
         
-        # Container with reduced padding for narrow width
+        # Main container for the message row
         container = ctk.CTkFrame(self, fg_color="transparent")
         container.pack(fill="x", padx=10, pady=3)
         
         if is_user:
-            # USER MESSAGE - RIGHT SIDE, BLUE BUBBLE
+            # User messages go to the right with a blue bubble
             container.grid_columnconfigure(0, weight=1)
             container.grid_columnconfigure(1, weight=0)
             
@@ -54,8 +54,10 @@ class ChatMessageCard(ctk.CTkFrame):
             )
             msg_label.pack(padx=12, pady=8)
             
+            msg_label.pack(padx=12, pady=8)
+            
         else:
-            # AI MESSAGE - LEFT SIDE, WHITE CARD WITH AVATAR
+            # AI messages stay on the left with an avatar
             container.grid_columnconfigure(0, weight=0)
             container.grid_columnconfigure(1, weight=1)
             
@@ -94,7 +96,9 @@ class AriaApp(ctk.CTk):
         
         self.title("Aria")
         
-        # Position on LEFT side
+        self.title("Aria")
+        
+        # Let's position the window on the left side of the screen
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
         
@@ -107,11 +111,15 @@ class AriaApp(ctk.CTk):
         self.minsize(300, 600)
         self.configure(fg_color=COLOR_BG)
         
-        # Initialize Core
+        self.configure(fg_color=COLOR_BG)
+        
+        # Spin up the core logic
         self.aria = AriaCore(on_speak=self.display_aria_message)
         self.voice_mode_var = ctk.BooleanVar(value=False)
         
-        # Layout
+        self.voice_mode_var = ctk.BooleanVar(value=False)
+        
+        # Grid layout setup
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=0)
         self.grid_rowconfigure(1, weight=1)
@@ -121,7 +129,7 @@ class AriaApp(ctk.CTk):
         self.after(500, lambda: self.display_welcome())
     
     def create_ui(self):
-        # Header
+        # Top header bar
         self.header = ctk.CTkFrame(self, fg_color=COLOR_CARD, height=58, corner_radius=0)
         self.header.grid(row=0, column=0, sticky="ew")
         self.header.grid_columnconfigure(1, weight=1)
@@ -132,7 +140,9 @@ class AriaApp(ctk.CTk):
         title = ctk.CTkLabel(self.header, text="Chat", font=("Segoe UI Semibold", 17), text_color=COLOR_TEXT_PRIMARY)
         title.grid(row=0, column=1, sticky="w")
         
-        # Right controls frame
+        title.grid(row=0, column=1, sticky="w")
+        
+        # Controls on the right side
         controls = ctk.CTkFrame(self.header, fg_color="transparent")
         controls.grid(row=0, column=2, padx=10)
         
@@ -152,7 +162,9 @@ class AriaApp(ctk.CTk):
         )
         self.theme_btn.pack(side="left", padx=3)
         
-        # Settings menu (hidden by default)
+        self.theme_btn.pack(side="left", padx=3)
+        
+        # Keep track of the settings menu window
         self.settings_menu = None
         
         # Chat area
@@ -164,7 +176,9 @@ class AriaApp(ctk.CTk):
         self.chat_scroll.grid(row=1, column=0, sticky="nsew")
         self.chat_scroll.grid_columnconfigure(0, weight=1)
         
-        # Input area
+        self.chat_scroll.grid_columnconfigure(0, weight=1)
+        
+        # Bottom input section
         self.input_frame = ctk.CTkFrame(
             self, fg_color=COLOR_CARD, height=80, corner_radius=0,
             border_width=1, border_color=COLOR_BORDER
@@ -184,7 +198,9 @@ class AriaApp(ctk.CTk):
         self.input_row.grid_columnconfigure(1, weight=1)
         self.input_row.grid_propagate(False)
         
-        # Voice button in input area
+        self.input_row.grid_propagate(False)
+        
+        # The microphone button
         self.voice_btn = ctk.CTkButton(
             self.input_row, text="🎙️", width=36, height=36, corner_radius=18,
             fg_color="transparent", hover_color=COLOR_BG, border_width=1,
@@ -201,8 +217,9 @@ class AriaApp(ctk.CTk):
         self.input_box.grid(row=0, column=1, sticky="ew", padx=6)
         self.input_box.bind("<Return>", self.on_enter_pressed)
         
-        # Send button - you can use PNG icons by uncommenting the image parameter
-        # Example: image=ctk.CTkImage(Image.open("send_icon.png"), size=(20, 20))
+        self.input_box.bind("<Return>", self.on_enter_pressed)
+        
+        # Send button - currently using text, but could swap for an icon later
         self.send_btn = ctk.CTkButton(
             self.input_row, 
             text="↑",  # Use "" if using image
@@ -253,7 +270,7 @@ class AriaApp(ctk.CTk):
         t.start()
     
     def toggle_voice_mode(self):
-        """Toggle voice mode with pulsing animation."""
+        """Turn voice mode on/off and handle the UI updates."""
         new_val = not self.voice_mode_var.get()
         self.voice_mode_var.set(new_val)
         
@@ -270,7 +287,7 @@ class AriaApp(ctk.CTk):
             self.display_system_message("Voice Mode deactivated.")
     
     def pulse_voice_button(self):
-        """Animate button with pulsing effect."""
+        """Creates a gentle pulsing effect when listening."""
         if not self.voice_mode_var.get():
             return
         
@@ -293,7 +310,7 @@ class AriaApp(ctk.CTk):
             self.theme_btn.configure(text="🌙")
     
     def show_settings_menu(self):
-        """Show settings menu."""
+        """Opens the settings popup."""
         if self.settings_menu is not None:
             self.settings_menu.destroy()
             self.settings_menu = None
@@ -307,7 +324,9 @@ class AriaApp(ctk.CTk):
         self.settings_menu.attributes("-topmost", True)
         self.settings_menu.resizable(False, False)
         
-        # Settings options
+        self.settings_menu.resizable(False, False)
+        
+        # Menu title
         ctk.CTkLabel(
             self.settings_menu,
             text="Settings",
@@ -374,7 +393,7 @@ class AriaApp(ctk.CTk):
         ).pack(pady=(10, 15))
     
     def clear_chat(self):
-        """Clear all chat messages."""
+        """Wipes the current chat history."""
         for widget in self.chat_scroll.winfo_children():
             widget.destroy()
         self.display_system_message("Chat cleared.")
