@@ -1,144 +1,198 @@
-# Aria – Voice & GUI AI Assistant
+# Aria – Desktop AI Assistant
 
-Aria is a Windows-friendly personal assistant that combines a modern CustomTkinter GUI, wake-word voice controls, and OpenAI-powered intelligent responses. It can open desktop apps, launch websites, search Google, manage your Google Calendar, and play custom music links — all while keeping a lightweight footprint that anyone can run locally.
+Premium local-first AI copilot that pairs a Python brain with a polished Electron interface. Aria listens for a wake word, understands natural language, controls desktop apps, searches the web, schedules calendar events through Google Calendar, and replies with neural TTS.
+
+---
 
 ## Highlights
-- **Two ways to interact**: Wake-word driven CLI loop (`main.py`) or a floating chat-style GUI (`gui.py`) with voice toggle.
-- **Desktop automation**: Indexes your Start Menu shortcuts so `open spotify` can launch the installed desktop app before falling back to web links.
-- **Smart browsing shortcuts**: Built-in phrases for Instagram, YouTube, GitHub, LinkedIn, WhatsApp, and more, plus generic URL handling.
-- **Calendar management**: Create and view calendar events using natural language commands with Google Calendar integration.
-- **Music launcher**: Point `music_library.py` to your own playlist URLs and ask Aria to play them (fuzzy matching included).
-- **AI-powered responses**: Connect an `OPEN_AI_API_KEY` to let AriaBrain answer arbitrary questions via OpenAI's GPT-4o model using LangChain.
-- **Intelligent scheduling**: Natural language calendar event creation with automatic time parsing (e.g., "schedule a meeting tomorrow at 3pm").
-- **Voice + TTS pipeline**: Uses SpeechRecognition + PyAudio for microphone input and gTTS + pygame for spoken feedback.
+- 🎯 **Unified assistant** – same core powers a sidebar Electron app, CustomTkinter window, and CLI listener
+- 🎨 **Premium UX** – Arc-style glassmorphism, light/dark themes, subtle animations, onboarding messages
+- 🧠 **LangChain + OpenAI** – `brain.py` orchestrates GPT‑4o for free-form questions and calendar parsing
+- 🗓️ **Calendar automation** – authenticate once, then say “schedule standup tomorrow 9am” to create events
+- 🎙️ **Hands-free voice mode** – microphone loop with wake word, speech recognition, and gTTS playback
+- 🧭 **Desktop control** – fuzzy .lnk indexing lets you open installed apps (“open figma”, “open chrome”)
+- 🌐 **Smart browsing** – curated shortcuts plus generic “open site.com” and “google <query>” flows
 
-## Project Structure
-| Path | Description |
-|------|-------------|
-| `main.py` | Wake-word CLI loop (voice-only) |
-| `gui.py` | CustomTkinter chat UI with text + voice controls |
-| `aria_core.py` | Core assistant logic (speech, intents, app/indexing, web helpers) |
-| `brain.py` | OpenAI integration via LangChain (`langchain-openai`) |
-| `calendar_manager.py` | Google Calendar API integration for event management |
-| `music_library.py` | User-editable dict of song name → URL mappings |
-| `requirements.txt` | Python dependencies |
+---
 
-## Requirements
-- Python 3.10+ (tested on Windows 10/11)
-- Working microphone & speakers
-- Internet connection (speech recognition, gTTS, OpenAI API, Google Calendar API)
-- Recommended: virtual environment
+## Architecture Overview
 
-Python packages (install via `pip install -r requirements.txt`):
-- SpeechRecognition, PyAudio, gTTS, pygame
-- wikipedia, customtkinter, Pillow
-- langchain, langchain-openai (for AI responses)
-- google-api-python-client, google-auth-httplib2, google-auth-oauthlib (for Calendar)
-- python-dotenv
+```
+┌───────────────┐        HTTP /voice + /message        ┌────────────────────┐
+│ Electron UI   │ <──────────────────────────────────> │ Flask API backend  │
+│ (renderer/)   │                                       │ backend_api.py     │
+└──────┬────────┘                                       └─────────┬──────────┘
+       │ preload IPC                                               │
+       │                                                           ▼
+ ┌─────▼────────┐      speech, commands, calendar      ┌────────────────────┐
+ │ main.js      │──────────────┬──────────────────────▶│ AriaCore / Brain   │
+ │ launches .venv│             │                       │ aria_core.py       │
+ └──────────────┘             │                       │ brain.py           │
+                              │                       └────────────────────┘
+                              │ gTTS / SpeechRecognition / Google Calendar
+                              ▼
+                        Optional GUIs (`gui.py`, `main.py`)
+```
 
-> **Windows tip:** If `pip install pyaudio` fails, install [`pipwin`](https://pypi.org/project/pipwin/) and run `pipwin install pyaudio`.
+Key components:
+- `backend_api.py` – Flask API that exposes `/health`, `/message`, and `/voice/*` routes for the Electron app.
+- `aria_core.py` – orchestrates speech, intent routing, desktop control, and fallback to `AriaBrain`.
+- `brain.py` – LangChain bridge to GPT‑4o plus calendar-intent parsing; needs `OPEN_AI_API_KEY`.
+- `calendar_manager.py` – Google Calendar OAuth storing `token.pickle`; requires `credentials.json`.
+- `electron/` – sidebar UI that spawns the Python backend, renders chat/voice controls, and handles theme + settings.
+- `gui.py` / `main.py` – legacy CustomTkinter UI and CLI listener that run the same core logic.
+
+---
+
+## Prerequisites
+
+| Requirement | Version / Notes |
+|-------------|-----------------|
+| Python | 3.10+ recommended (project tested on Windows 11) |
+| Node.js & npm | Node 18+ (Electron 28 requires ≥18.0.0) |
+| FFmpeg (optional) | Improves gTTS MP3 playback reliability |
+| Microphone & speakers | Needed for voice mode and audio responses |
+| OpenAI API key | Set `OPEN_AI_API_KEY` in `.env` for LangChain |
+| Google Cloud project | Download `credentials.json` for Calendar API access |
+
+SpeechRecognition on Windows also requires PyAudio; install the correct wheel if pip fails with build errors.
+
+---
 
 ## Setup
 
-### 1. Clone and Install Dependencies
-```bash
-git clone https://github.com/shreyass0007/Aria
-cd ARIA
+### 1. Python environment
+
+```powershell
+cd D:\CODEING\PROJECTS\ARIA
 python -m venv .venv
-.venv\Scripts\activate          # PowerShell
+.venv\Scripts\activate
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment Variables
-Create a `.env` file (same directory as `brain.py`) if you want AI-powered responses:
+Create a `.env` in the project root:
+
 ```
-OPEN_AI_API_KEY=your_openai_api_key_here
+OPEN_AI_API_KEY=sk-...
 ```
 
-### 3. Setup Google Calendar (Optional)
-To enable calendar features:
+### 2. Node / Electron
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the Google Calendar API
-4. Create credentials (OAuth 2.0 Client ID for Desktop application)
-5. Download the credentials file and save it as `credentials.json` in the project root
-6. On first run, Aria will open a browser for authentication and save a `token.pickle` file
+```powershell
+cd electron
+npm install
+```
 
-> **Note:** Calendar features will gracefully disable if `credentials.json` is not found, allowing Aria to function normally for other tasks.
+### 3. Google Calendar credentials (optional but recommended)
+1. Enable the Google Calendar API in Google Cloud Console.
+2. Create an **OAuth client ID (Desktop App)** and download `credentials.json`.
+3. Place the file at the project root next to `calendar_manager.py`.
+4. First run will open a browser window; consent and a `token.pickle` file will be cached for later use.
+
+### 4. Optional tuning
+- Edit `music_library.py` to map song names to URLs (`music = {"lofi": "https://..."}`).
+- Update `aria_core.py` mappings for additional quick-launch sites or custom wake words.
+- Replace assets in `aria_logo.png`, `send_icon.png`, or update colors inside `electron/renderer/styles.css`.
+
+---
 
 ## Running Aria
-### Chat-style GUI
-```bash
+
+### Electron desktop experience (recommended)
+```powershell
+cd D:\CODEING\PROJECTS\ARIA\electron
+npm start
+```
+- Spawns the Python backend from `.venv`, opens a sidebar window, and connects via HTTP.
+- Use `npm run dev` to open Chrome DevTools alongside the window.
+- Build installers with `npm run build` (Electron Builder, NSIS target).
+
+### CustomTkinter window
+```powershell
+.venv\Scripts\activate
 python gui.py
 ```
-- Type messages at the bottom input field or toggle the mic button to go hands-free.
-- Use the gear icon for quick actions (clear chat, toggle theme, about dialog).
-- Voice mode listens for the wake word ("aria" by default) even while the UI stays responsive.
+- Offers the same premium styling in a native CustomTkinter app with voice toggle and settings.
 
-### Voice-first CLI
-```bash
+### Wake-word CLI loop
+```powershell
+.venv\Scripts\activate
 python main.py
 ```
-- You'll hear "Welcome back. I am ready."
-- Say "Aria" (or similar-sounding variants) to wake it, then issue your command.
-- Say "exit" or press `Ctrl+C` to quit.
+- Minimal interface that keeps listening for “aria” (or “neo”), then processes the next utterance.
 
-## What You Can Ask
-- **Open desktop apps**: "open spotify", "open chrome" (uses Start Menu index + fuzzy matching)
-- **Launch websites**: "open instagram", "open whatsapp", "open google.com", "open netflix"
-- **Google search**: "google python decorators", "search nearest cafes"
-- **Calendar management**: 
-  - "schedule a meeting tomorrow at 3pm"
-  - "remind me to call John next Friday at 2pm"
-  - "what do i have coming up?" / "my schedule" / "upcoming events"
-- **Time and date**: "what time is it?", "what's the date?"
-- **Music**: "play my playlist", "play believer" (looks up `music_library.music`)
-- **Small talk & exits**: "tum best ho", "exit", "quit"
+### Backend-only mode (for API testing)
+```powershell
+.venv\Scripts\activate
+python backend_api.py
+```
+Endpoints will be available at `http://localhost:5000` for REST clients or the Electron renderer.
 
-If a command isn't recognized and OpenAI is configured, AriaBrain will attempt an intelligent response; otherwise you'll get a friendly fallback message.
+---
 
-## Customization
-- **Music library**: Update `music_library.py` with your own mapping:
-  ```python
-  music = {
-      "lofi beats": "https://youtu.be/your_playlist",
-      "believer": "https://youtu.be/7wtfhZwyrcc",
-  }
-  ```
-- **Wake word**: Change `self.wake_word` in `AriaCore` or say "change wake word to <phrase>".
-- **GUI look & feel**: Adjust colors/fonts in `gui.py` or swap the send button icon (`send_icon.png` placeholder).
-- **Command mapping**: Extend the keyword → URL list in `aria_core.py` to add new quick links.
+## API Surface
 
-## Troubleshooting
-- **Microphone not detected**: Ensure PyAudio installed correctly, check Windows privacy settings, and verify default recording device.
-- **Speech not recognized**: Reduce background noise; Aria auto-adjusts ambient noise but works best in quiet environments.
-- **No voice output**: gTTS requires internet; pygame mixer needs an available audio device.
-- **Desktop apps not opening**: Allow indexing some time after startup; Aria scans `%ProgramData%` and `%AppData%` Start Menu folders.
-- **OpenAI errors**: Confirm `.env` contains a valid `OPEN_AI_API_KEY` and that your account has access to the OpenAI API.
-- **Calendar not working**: 
-  - Ensure `credentials.json` is in the project root
-  - Check that Google Calendar API is enabled in your Google Cloud project
-  - Delete `token.pickle` and re-authenticate if you encounter authorization errors
-  - Calendar features will be disabled gracefully if credentials are missing
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Simple status check used by the renderer watchdogs |
+| POST | `/message` | Body `{ "message": "text" }`; returns `{ response: "..." }` from Aria |
+| POST | `/voice/start` | Flags the backend to begin microphone polling |
+| GET | `/voice/listen` | Long-poll endpoint returning transcribed text once wake word detected |
+| POST | `/voice/stop` | Stops the background listening loop |
 
-## Technology Stack
-- **AI Engine**: OpenAI GPT-4o via LangChain for intelligent responses and calendar intent parsing
-- **Speech Recognition**: Google Speech Recognition API via `SpeechRecognition`
-- **Text-to-Speech**: Google Text-to-Speech (gTTS)
-- **Calendar Integration**: Google Calendar API v3
-- **GUI Framework**: CustomTkinter for modern, native-looking interface
+All responses are JSON; errors return `{ status: "error", error: "<message>" }`.
 
-## Future Updates
-- **MongoDB workspace memory**: Persist notes, tasks, meeting transcripts, and contextual preferences so Aria can resume conversations across sessions.
-- **ElevenLabs neural voice**: Replace the basic gTTS output with ultra-realistic voices and emotion controls using the ElevenLabs API.
-- **Model Context Protocol (MCP)**: Add formal MCP hooks so other agents/tools can stream context into AriaCore, enabling richer multi-agent workflows.
-- **Enhanced agentic behaviors**: Expand the brain to take structured notes, manage task lists, and follow up on reminders automatically.
-- **Better automations**: Integrate with email APIs, expose plugin hooks for custom commands, and ship a settings panel for mapping additional desktop apps/services.
-- **Cross-platform polish**: Package the GUI into a standalone executable, add auto-update checks, and tighten microphone/audio setup flows for macOS/Linux users.
+---
 
-## Contributing
-Pull requests and feature ideas are welcome! Feel free to open issues for bugs, new voice intents, or GUI improvements.
+## Feature Details
+
+- **Voice pipeline** – `SpeechRecognition` with a thread-safe lock avoids microphone contention. Wake-word “aria” (configurable) triggers command parsing; replies are synthesized with `gTTS` + `pygame` playback.
+- **Desktop launching** – `aria_core.py` indexes shortcuts under `ProgramData` and `%APPDATA%` Start Menu folders. It supports exact, substring, and fuzzy matches, then falls back to `os.startfile`.
+- **Web automation** – curated commands like “open instagram” or “play my playlist” map to known URLs; otherwise any “open <site>” request tries `.com` or provided domain.
+- **LangChain brain** – if a voice/text request is not matched by heuristics, Aria forwards it to GPT‑4o via `langchain-openai`. The same LLM extracts structured `summary`, `start_time`, and `end_time` for calendar events.
+- **Calendar manager** – creates events in the primary calendar (defaults to Asia/Kolkata). `get_upcoming_events()` summarizes the next five meetings for prompts like “what do I have today?”.
+- **Electron renderer** – `app.js` handles chat rendering, voice state, local theme persistence, settings modal, and communicates with Flask via `fetch`. CSS replicates Arc browser-inspired visuals.
+- **CustomTkinter UI** – replicates the Electron UX natively, complete with animated buttons, scrollable chat cards, and theme toggles.
+
+---
+
+## Project Structure
+
+```
+ARIA/
+├── aria_core.py             # Command router, speech IO, desktop control
+├── backend_api.py           # Flask server exposing REST + voice polling endpoints
+├── brain.py                 # LangChain/OpenAI brain + calendar intent parsing
+├── calendar_manager.py      # Google Calendar OAuth and event utilities
+├── gui.py                   # CustomTkinter experience
+├── main.py                  # Wake-word CLI loop
+├── music_library.py         # User-editable song → URL mapping
+├── requirements.txt         # Python dependencies
+├── electron/
+│   ├── main.js              # Electron main process, spawns backend
+│   ├── preload.js           # Secure IPC bridge
+│   └── renderer/            # HTML/CSS/JS frontend assets
+└── verify_*.py              # Helper scripts to validate LangChain/OpenAI wiring
+```
+
+---
+
+## Troubleshooting & Tips
+
+- **Backend fails to start from Electron** – ensure the `.venv` path matches `electron/main.js`. If you renamed the venv, adjust `pythonExecutable`.
+- **SpeechRecognition errors** – install PyAudio wheels that match your Python version, e.g. `pip install pipwin && pipwin install pyaudio`.
+- **Calendar auth dialog not opening** – delete `token.pickle` and relaunch to re-run the OAuth flow; confirm `credentials.json` exists.
+- **Voice mode stuck on “waiting”** – background noise may trip the energy threshold; tweak `self.recognizer.energy_threshold` or increase `phrase_time_limit`.
+- **No AI responses** – confirm `.env` contains `OPEN_AI_API_KEY` and restart so `load_dotenv()` picks it up. Use `verify_openai.py` or `verify_langchain.py` to smoke-test the key.
+- **Packaged build** – `npm run build` outputs NSIS artifacts in `electron/dist`. Bundle your `.venv` or ship a backend installer depending on your distribution plan.
+
+---
 
 ## License
-Provided "as is" for personal use — adapt it, learn from it, and have fun building your own assistant.
+
+MIT License. See `LICENSE` (coming soon) or embed your preferred terms before distribution.
+
+---
+
+Developed with ❤️ by Shreyas – now with a comprehensive README.
