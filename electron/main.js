@@ -31,8 +31,10 @@ function createWindow() {
             contextIsolation: true,
             nodeIntegration: false
         },
-        icon: path.join(__dirname, '..', 'icon.png')
+        icon: path.join(__dirname, 'aria_logo.png')
     });
+    mainWindow.setMenuBarVisibility(false);
+
 
     // Load the app
     mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
