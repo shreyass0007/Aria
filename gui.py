@@ -237,7 +237,15 @@ class AriaApp(ctk.CTk):
         self.send_btn.grid(row=0, column=2, padx=(2, 7),  pady=(5, 0),sticky="")
     
     def display_welcome(self):
-        self.display_system_message("Hello! I'm Aria, your AI assistant. How can I help you today?")
+        welcome_text = "Hello! I'm Aria, your AI assistant. How can I help you today?"
+        # Display text immediately
+       # self.display_system_message(welcome_text)
+        
+        # Speak in a separate thread to avoid freezing UI
+        def speak_welcome():
+            self.aria.speak(welcome_text)
+            
+        threading.Thread(target=speak_welcome, daemon=True).start()
     
     def add_message(self, text, sender):
         card = ChatMessageCard(self.chat_scroll, text=text, sender=sender)
@@ -403,7 +411,7 @@ class AriaApp(ctk.CTk):
     
     def show_about(self):
         """Show about dialog."""
-        self.display_system_message("Aria v1.0 - Your AI Assistant\nDeveloped with ❤️")
+        self.display_system_message("Aria v1.0 - Your AI Assistant\nDeveloped by Shreyas")
         if self.settings_menu:
             self.settings_menu.destroy()
             self.settings_menu = None

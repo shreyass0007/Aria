@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aria - AI Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body data-theme="light">
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo-badge">
+                    <img src="aria_logo.png" alt="Aria Logo" class="logo-img">
+                </div>
+                <div class="title-section">
+                    <h1 class="title">Aria</h1>
+                    <p class="subtitle">AI Assistant</p>
+                </div>
+            </div>
+            <div class="header-controls">
+                <button class="icon-btn" id="settingsBtn" aria-label="Settings">⚙️</button>
+                <button class="icon-btn" id="themeBtn" aria-label="Toggle theme">🌙</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Chat Area -->
+    <main class="chat-container" id="chatContainer">
+        <!-- Messages will be dynamically added here -->
+    </main>
+
+    <!-- Input Section -->
+    <footer class="input-section">
+        <div class="input-container">
+            <div class="input-row">
+                <button class="voice-btn" id="voiceBtn" aria-label="Toggle voice mode">🎙️</button>
+                <textarea id="messageInput" class="message-input" placeholder="Type a message..." rows="1"></textarea>
+                <button class="send-btn" id="sendBtn" aria-label="Send message">↑</button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>⚙️ Settings</h2>
+            </div>
+            <div class="modal-content">
+                <button class="modal-btn" id="clearChatBtn">
+                    <span>🗑️</span>
+                    <span>Clear Chat</span>
+                </button>
+                <button class="modal-btn" id="toggleThemeBtn">
+                    <span>🌓</span>
+                    <span>Toggle Theme</span>
+                </button>
+                <button class="modal-btn" id="aboutBtn">
+                    <span>ℹ️</span>
+                    <span>About Aria</span>
+                </button>
+                <button class="modal-btn modal-btn-primary" id="closeModalBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

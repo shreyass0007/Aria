@@ -2,6 +2,7 @@ import speech_recognition as sr
 from gtts import gTTS
 import os
 import webbrowser
+import datetime
 import wikipedia
 import music_library
 import sys
@@ -11,6 +12,7 @@ import time
 import urllib.parse
 from wikipedia.exceptions import DisambiguationError, PageError
 from brain import AriaBrain
+from calendar_manager import CalendarManager
 import subprocess
 import glob
 import threading
@@ -23,6 +25,7 @@ class AriaCore:
         self.recognizer = sr.Recognizer()
         self.on_speak = on_speak
         self.brain = AriaBrain()
+        self.calendar = CalendarManager()
         self.input_mode = "voice"
         self.wake_word = "aria"
         self.app_paths = {}
@@ -188,8 +191,9 @@ class AriaCore:
 
         # 0. Wake Word Handling
         # If user says just the wake word
+        # If user says just the wake word
         if text == self.wake_word:
-            self.speak("Yes?")
+            self.speak("Welcome back Shreyas. How can I help you today?")
             return
         
         # If user says "WakeWord command...", strip it
@@ -229,7 +233,7 @@ class AriaCore:
             (("open twitter", "open x"), "https://twitter.com", "Opening Twitter"),
             (("open facebook",), "https://facebook.com", "Opening Facebook"),
             (("open reddit",), "https://reddit.com", "Opening Reddit"),
-            (("open amazon",), "https://amazon.com", "Opening Amazon"),
+            (("open amazon",), "https://amazon.in", "Opening Amazon"),
             (("open netflix",), "https://netflix.com", "Opening Netflix"),
             (("open spotify",), "https://spotify.com", "Opening Spotify"),
             (("open gmail", "open mail"), "https://gmail.com", "Opening Gmail"),
@@ -291,20 +295,54 @@ class AriaCore:
                 self.speak("Song not found in library.")
             return
 
-        # 5. Wikipedia
-        if any(x in text for x in ["information", "tell me about", "who is"]):
-            topic = text.replace("information", "").replace("tell me about", "").replace("who is", "").strip()
-            if not topic:
-                self.speak("What topic?")
-                return
-            try:
-                info = wikipedia.summary(topic, sentences=2)
-                self.speak(info)
-            except Exception:
-                self.speak("I couldn't find information on that.")
+        # 5. Wikipedia (Removed to let Brain handle it)
+        # if any(x in text for x in ["information", "tell me about", "who is"]):
+        #     topic = text.replace("information", "").replace("tell me about", "").replace("who is", "").strip()
+        #     if not topic:
+        #         self.speak("What topic?")
+        #         return
+        #     try:
+        #         info = wikipedia.summary(topic, sentences=2)
+        #         self.speak(info)
+        #     except Exception:
+        #         self.speak("I couldn't find information on that.")
+        #     return
+
+        # 5. Date and Time
+        if "time" in text:
+            current_time = datetime.datetime.now().strftime("%I:%M %p")
+            self.speak(f"The current time is {current_time}")
+            return
+        if "date" in text:
+            current_date = datetime.datetime.now().strftime("%B %d, %Y")
+            self.speak(f"Today's date is {current_date}")
             return
 
-        # 6. Smalltalk / Exit
+        # 6. Calendar / Scheduling
+        if any(x in text for x in ["schedule", "remind me", "calendar", "meeting", "appointment"]):
+            # Check if it's a list request
+            if any(x in text for x in ["what do i have", "my schedule", "upcoming events"]):
+                events_text = self.calendar.get_upcoming_events()
+                self.speak(events_text)
+                return
+            
+            # Otherwise, assume it's a creation request
+            self.speak("Checking my calendar...")
+            details = self.brain.parse_calendar_intent(text)
+            if details and details.get("start_time"):
+                summary = details.get("summary", "Untitled Event")
+                start_time = details.get("start_time")
+                end_time = details.get("end_time")
+                
+                # Confirm with user (optional, but good practice)
+                # For now, we'll just do it and confirm success
+                result = self.calendar.create_event(summary, start_time, end_time)
+                self.speak(result)
+            else:
+                self.speak("I couldn't understand the time or details for that event.")
+            return
+
+        # 7. Smalltalk / Exit
         if "tum best ho" in text:
             self.speak("Thank you!")
             return
