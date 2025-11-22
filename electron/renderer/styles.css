@@ -124,6 +124,7 @@ body::before {
     font-size: 20px;
     font-weight: 700;
     background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -146,23 +147,142 @@ body::before {
     border: 1px solid var(--glass-border);
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
-    font-size: 16px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--text-secondary);
+}
+
+.icon-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+    transition: all 0.3s ease;
 }
 
 .icon-btn:hover {
     background: rgba(99, 102, 241, 0.2);
     transform: scale(1.15) rotate(5deg);
     box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    color: var(--accent);
 }
 
 .icon-btn:active {
     transform: scale(0.95);
     transition: transform 0.1s;
+}
+
+/* Modern SVG Icon Button Styling */
+.icon-btn.modern svg,
+.voice-btn.modern svg,
+.send-btn.modern svg {
+    width: 20px;
+    height: 20px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.icon-btn.modern {
+    font-size: 0;
+    /* Remove emoji fallback */
+    position: relative;
+}
+
+.icon-btn.modern svg {
+    stroke: var(--text-primary);
+    opacity: 0.7;
+}
+
+.icon-btn.modern:hover {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: var(--accent-secondary);
+}
+
+.icon-btn.modern:hover svg {
+    opacity: 1;
+    stroke: var(--accent);
+    transform: scale(1.05);
+}
+
+.icon-btn.modern:active {
+    transform: scale(0.95);
+}
+
+.icon-btn.modern:active svg {
+    transform: scale(0.9);
+}
+
+.voice-btn.modern {
+    width: 36px;
+    height: 36px;
+}
+
+.voice-btn.modern svg {
+    stroke: var(--text-primary);
+    opacity: 0.6;
+    width: 20px;
+    height: 20px;
+}
+
+.voice-btn.modern:hover svg {
+    stroke: var(--accent);
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.voice-btn.modern.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+}
+
+.voice-btn.modern.active svg {
+    stroke: white;
+    opacity: 1;
+    animation: micPulse 2s ease-in-out infinite;
+}
+
+@keyframes micPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.send-btn.modern {
+    width: 36px;
+    height: 36px;
+}
+
+.send-btn.modern svg {
+    stroke: white;
+    fill: none;
+    width: 18px;
+    height: 18px;
+}
+
+.send-btn.modern:hover svg {
+    transform: scale(1.1) rotate(-10deg);
+}
+
+.send-btn.modern:active svg {
+    transform: scale(0.9) rotate(-5deg);
+}
+
+.theme-toggle .theme-icon {
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="dark"] .theme-toggle .theme-icon {
+    transform: rotate(180deg);
+}
+
+[data-theme="dark"] .theme-toggle:hover .theme-icon {
+    transform: rotate(180deg) scale(1.05);
 }
 
 .chat-container {
@@ -333,12 +453,19 @@ body::before {
 
 .voice-btn {
     background: rgba(255, 255, 255, 0.1);
-    font-size: 16px;
+    color: var(--text-secondary);
+}
+
+.voice-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
 }
 
 .voice-btn:hover {
     background: rgba(99, 102, 241, 0.3);
     transform: scale(1.15);
+    color: var(--accent);
 }
 
 .voice-btn:active {
@@ -396,8 +523,24 @@ body::before {
 .send-btn {
     background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
     color: white;
-    font-size: 18px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
     box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.send-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+    margin-left: -1px;
+    /* Optical alignment */
 }
 
 .send-btn:hover {
@@ -503,4 +646,286 @@ body::before {
 
 .hidden {
     display: none !important;
+}
+
+/* ==================== CONVERSATION HISTORY SIDEBAR ==================== */
+.history-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 320px;
+    background: var(--bg-card);
+    backdrop-filter: blur(30px) saturate(180%);
+    border-right: 1px solid var(--glass-border);
+    box-shadow: 4px 0 24px rgba(99, 102, 241, 0.1);
+    transform: translateX(-100%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+}
+
+.history-sidebar.active {
+    transform: translateX(0);
+}
+
+.history-header {
+    padding: 24px 20px;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+    flex-shrink: 0;
+}
+
+.history-header h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: -0.02em;
+}
+
+.icon-btn-small {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    line-height: 1;
+}
+
+.icon-btn-small:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.1) rotate(90deg);
+}
+
+.icon-btn-small:active {
+    transform: scale(0.95);
+}
+
+.history-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.history-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.history-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.3);
+    border-radius: 3px;
+}
+
+.history-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(99, 102, 241, 0.5);
+}
+
+.history-item {
+    padding: 16px;
+    margin-bottom: 10px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.history-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.history-actions {
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.history-item:hover .history-actions {
+    opacity: 1;
+}
+
+.history-action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+}
+
+.history-action-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--text-primary);
+    opacity: 0.7;
+}
+
+.history-action-btn:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: var(--accent);
+    transform: scale(1.1);
+}
+
+.history-action-btn:hover svg {
+    stroke: var(--accent);
+    opacity: 1;
+}
+
+.history-action-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+}
+
+.history-action-btn.delete:hover svg {
+    stroke: #ef4444;
+}
+
+.history-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+    transform: scaleY(0);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.history-item:hover {
+    background: rgba(99, 102, 241, 0.12);
+    transform: translateX(8px);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.history-item:hover::before {
+    transform: scaleY(1);
+}
+
+.history-item.active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.25));
+    border-color: var(--accent);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
+}
+
+.history-item.active::before {
+    transform: scaleY(1);
+}
+
+.history-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+}
+
+.history-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    opacity: 0.75;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.history-meta::before {
+    content: '💬';
+    font-size: 14px;
+}
+
+.empty-history {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+    padding: 60px 24px;
+    opacity: 0.6;
+    line-height: 1.6;
+}
+
+.empty-history::before {
+    content: '📝';
+    display: block;
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+/* Backdrop when sidebar is open */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 998;
+}
+
+body.sidebar-open::after {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* Rename Modal Input */
+.rename-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    font-size: 15px;
+    font-family: 'Inter', sans-serif;
+    margin-bottom: 20px;
+    transition: all 0.3s;
+}
+
+.rename-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
 }
