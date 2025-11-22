@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: transparent;
+            padding: 10px;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dialog {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            text-align: center;
+        }
+
+        h3 {
+            margin-bottom: 8px;
+            color: #1e293b;
+            font-size: 16px;
+        }
+
+        p {
+            margin-bottom: 20px;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .cancel {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .delete {
+            background: #ef4444;
+            color: white;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            filter: brightness(0.95);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dialog">
+        <h3>Delete Conversation?</h3>
+        <p>This action cannot be undone.</p>
+        <div class="buttons">
+            <button class="cancel" id="cancelBtn">Cancel</button>
+            <button class="delete" id="deleteBtn">Delete</button>
+        </div>
+    </div>
+    <script>
+        const cancelBtn = document.getElementById('cancelBtn');
+        const deleteBtn = document.getElementById('deleteBtn');
+
+        function close(confirmed) {
+            if (window.electronAPI) {
+                window.electronAPI.closeDeleteDialog(confirmed);
+            } else {
+                console.error('electronAPI not found');
+            }
+        }
+
+        cancelBtn.addEventListener('click', () => close(false));
+        deleteBtn.addEventListener('click', () => close(true));
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') close(false);
+        });
+    </script>
+</body>
+
+</html>

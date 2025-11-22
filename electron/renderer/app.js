@@ -4,6 +4,7 @@ const API_URL = 'http://localhost:5000';
 // State
 let voiceModeActive = false;
 let currentTheme = 'light';
+let currentConversationId = null;
 
 // DOM Elements
 const chatContainer = document.getElementById('chatContainer');
@@ -15,7 +16,9 @@ const settingsBtn = document.getElementById('settingsBtn');
 const settingsModal = document.getElementById('settingsModal');
 const closeModalBtn = document.getElementById('closeModalBtn');
 const clearChatBtn = document.getElementById('clearChatBtn');
-// const toggleThemeBtn = document.getElementById('toggleThemeBtn'); // Removed
+const toggleThemeBtn = document.getElementById('toggleThemeBtn');
+const themeIcon = document.getElementById('themeIcon');
+const themeText = document.getElementById('themeText');
 const aboutBtn = document.getElementById('aboutBtn');
 const newChatBtn = document.getElementById('newChatBtn');
 const historyBtn = document.getElementById('historyBtn');
@@ -49,21 +52,21 @@ function setupEventListeners() {
     voiceBtn.addEventListener('click', handleToggleVoice);
     // themeBtn.addEventListener('click', handleToggleTheme); // Removed
     settingsBtn.addEventListener('click', () => openModal());
-    closeModalBtn.addEventListener('click', () => closeModal());
-    clearChatBtn.addEventListener('click', handleClearChat);
-    /* toggleThemeBtn.addEventListener('click', () => {
-        handleToggleTheme();
-        closeModal();
-    }); */ // Removed
-    aboutBtn.addEventListener('click', handleAbout);
-    newChatBtn.addEventListener('click', handleNewChat);
-    historyBtn.addEventListener('click', toggleHistory);
-    closeHistoryBtn.addEventListener('click', toggleHistory);
+
+    if (closeModalBtn) closeModalBtn.addEventListener('click', () => closeModal());
+    if (clearChatBtn) clearChatBtn.addEventListener('click', handleClearChat);
+    if (toggleThemeBtn) toggleThemeBtn.addEventListener('click', handleToggleTheme);
+    if (aboutBtn) aboutBtn.addEventListener('click', handleAbout);
+    if (newChatBtn) newChatBtn.addEventListener('click', handleNewChat);
+    if (historyBtn) historyBtn.addEventListener('click', toggleHistory);
+    if (closeHistoryBtn) closeHistoryBtn.addEventListener('click', toggleHistory);
 
     // Close modal on overlay click
-    settingsModal.addEventListener('click', (e) => {
-        if (e.target === settingsModal) closeModal();
-    });
+    if (settingsModal) {
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) closeModal();
+        });
+    }
 }
 
 // Auto-resize textarea
@@ -103,18 +106,28 @@ function handleSendMessage() {
 
 async function sendMessageToBackend(message) {
     try {
+        const payload = { message };
+        if (currentConversationId) {
+            payload.conversation_id = currentConversationId;
+        }
+
         const response = await fetch(`${API_URL}/message`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ message }),
+            body: JSON.stringify(payload),
         });
 
         const data = await response.json();
 
-        if (data.response) {
-            addMessage(data.response, 'aria');
+        if (data.status === 'success') {
+            if (data.conversation_id) {
+                currentConversationId = data.conversation_id;
+            }
+            if (data.response) {
+                addMessage(data.response, 'aria');
+            }
         }
     } catch (error) {
         console.error('Error sending message:', error);
@@ -130,20 +143,60 @@ function addMessage(text, sender) {
     message.className = `message ${sender}`;
 
     if (sender === 'aria') {
+        // Remove active class from previous avatars
+        const previousActive = document.querySelectorAll('.message.aria .avatar.active');
+        previousActive.forEach(el => el.classList.remove('active'));
+
         // Add avatar for Aria with logo
         const avatar = document.createElement('div');
-        avatar.className = 'avatar';
+        avatar.className = 'avatar'; // Start inactive
         const avatarImg = document.createElement('img');
         avatarImg.src = 'aria_logo.png';
         avatarImg.alt = 'Aria';
         avatar.appendChild(avatarImg);
         message.appendChild(avatar);
+
+        // Calculate duration based on text length (approx 400ms per word, min 2s)
+        const wordCount = text.split(/\s+/).length;
+        const duration = Math.max(2000, wordCount * 400);
+
+        // Start animation after slight delay to sync with TTS generation (approx 500ms)
+        setTimeout(() => {
+            avatar.classList.add('active');
+
+            // Remove active class after duration
+            setTimeout(() => {
+                avatar.classList.remove('active');
+            }, duration);
+        }, 500);
     }
 
     // Add message bubble
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
-    bubble.textContent = text;
+
+    if (sender === 'aria') {
+        // Parse Markdown for Aria's messages
+        try {
+            if (window.api && window.api.parseMarkdown) {
+                console.log('🔍 Markdown parser available');
+                console.log('📝 Original text:', text.substring(0, 100) + '...');
+                const parsed = window.api.parseMarkdown(text);
+                console.log('✅ Parsed HTML:', parsed.substring(0, 100) + '...');
+                bubble.innerHTML = parsed;
+            } else {
+                console.warn('⚠️ Markdown parser not available');
+                bubble.textContent = text;
+            }
+        } catch (e) {
+            console.error('❌ Error parsing markdown:', e);
+            bubble.textContent = text;
+        }
+    } else {
+        // Plain text for user messages (security)
+        bubble.textContent = text;
+    }
+
     message.appendChild(bubble);
 
     messageWrapper.appendChild(message);
@@ -242,7 +295,10 @@ function handleToggleTheme() {
 
 function applyTheme(theme) {
     document.body.setAttribute('data-theme', theme);
-    // themeBtn.textContent = theme === 'light' ? '🌙' : '☀️'; // Removed
+    if (themeIcon && themeText) {
+        themeIcon.textContent = theme === 'light' ? '🌙' : '☀️';
+        themeText.textContent = theme === 'light' ? 'Dark Mode' : 'Light Mode';
+    }
 }
 
 function loadTheme() {
@@ -276,16 +332,172 @@ function handleAbout() {
     closeModal();
 }
 
-function handleNewChat() {
+async function handleNewChat() {
     console.log('New Chat clicked');
-    chatContainer.innerHTML = '';
-    addMessage('✨ New chat started! How can I help you?', 'aria');
+    try {
+        const response = await fetch(`${API_URL}/conversation/new`, { method: 'POST' });
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            currentConversationId = data.conversation_id;
+            chatContainer.innerHTML = '';
+            addMessage('✨ New chat started! How can I help you?', 'aria');
+
+            // Refresh history if open
+            if (historySidebar.classList.contains('active')) {
+                loadHistory();
+            }
+        }
+    } catch (error) {
+        console.error('Error creating new chat:', error);
+        addMessage('Error starting new chat.', 'aria');
+    }
 }
 
 function toggleHistory() {
     console.log('History toggled');
     historySidebar.classList.toggle('active');
-    console.log('Sidebar active:', historySidebar.classList.contains('active'));
+
+    if (historySidebar.classList.contains('active')) {
+        loadHistory();
+    }
+}
+
+async function loadHistory() {
+    const historyList = document.getElementById('historyList');
+    historyList.innerHTML = '<div class="loading">Loading...</div>';
+
+    try {
+        const response = await fetch(`${API_URL}/conversations?limit=20`);
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            renderHistory(data.conversations);
+        } else {
+            historyList.innerHTML = '<div class="error">Failed to load history</div>';
+        }
+    } catch (error) {
+        console.error('Error loading history:', error);
+        historyList.innerHTML = '<div class="error">Error loading history</div>';
+    }
+}
+
+function renderHistory(conversations) {
+    const historyList = document.getElementById('historyList');
+    historyList.innerHTML = '';
+
+    if (conversations.length === 0) {
+        historyList.innerHTML = '<div class="empty-history">No conversations yet</div>';
+        return;
+    }
+
+    conversations.forEach(conv => {
+        const item = document.createElement('div');
+        item.className = `history-item ${conv._id === currentConversationId ? 'active' : ''}`;
+        item.onclick = () => loadConversation(conv._id);
+
+        // Title
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'history-title';
+        titleSpan.textContent = conv.title || 'New Conversation';
+
+        // Actions container
+        const actions = document.createElement('div');
+        actions.className = 'history-actions';
+
+        // Rename button
+        const renameBtn = document.createElement('button');
+        renameBtn.className = 'action-btn';
+        renameBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
+        renameBtn.onclick = (e) => {
+            e.stopPropagation();
+            handleRenameConversation(conv._id, conv.title);
+        };
+
+        // Delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'action-btn delete';
+        deleteBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            handleDeleteConversation(conv._id);
+        };
+
+        actions.appendChild(renameBtn);
+        actions.appendChild(deleteBtn);
+
+        item.appendChild(titleSpan);
+        item.appendChild(actions);
+        historyList.appendChild(item);
+    });
+}
+
+async function loadConversation(conversationId) {
+    try {
+        const response = await fetch(`${API_URL}/conversation/${conversationId}`);
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            currentConversationId = conversationId;
+            chatContainer.innerHTML = '';
+
+            // Update active state in sidebar
+            document.querySelectorAll('.history-item').forEach(el => el.classList.remove('active'));
+            // Re-render history to update active class properly or just reload
+            loadHistory();
+
+            // Render messages
+            data.conversation.messages.forEach(msg => {
+                addMessage(msg.content, msg.role === 'assistant' ? 'aria' : 'user');
+            });
+
+            // Close sidebar on mobile/narrow screens if needed
+            // historySidebar.classList.remove('active');
+        }
+    } catch (error) {
+        console.error('Error loading conversation:', error);
+    }
+}
+
+async function handleRenameConversation(id, currentTitle) {
+    try {
+        const newTitle = await window.electronAPI.showRenameDialog(currentTitle || '');
+        if (newTitle && newTitle !== currentTitle) {
+            const response = await fetch(`${API_URL}/conversation/${id}/rename`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: newTitle })
+            });
+
+            if (response.ok) {
+                loadHistory(); // Refresh list
+            }
+        }
+    } catch (error) {
+        console.error('Error renaming:', error);
+    }
+}
+
+async function handleDeleteConversation(id) {
+    const confirmed = await window.electronAPI.showDeleteDialog();
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(`${API_URL}/conversation/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            if (currentConversationId === id) {
+                currentConversationId = null;
+                chatContainer.innerHTML = '';
+                addMessage('Conversation deleted.', 'aria');
+            }
+            loadHistory();
+        }
+    } catch (error) {
+        console.error('Error deleting:', error);
+    }
 }
 
 // Get time-based greeting like JARVIS
@@ -412,24 +624,16 @@ function getTimeBasedGreeting() {
 
 // Welcome Message
 async function displayWelcomeMessage() {
+    // Display local greeting immediately
+    const greeting = getTimeBasedGreeting();
+    addMessage(greeting, 'aria');
+
+    // Optionally try to sync with backend for TTS (non-blocking)
     setTimeout(async () => {
         try {
-            // Fetch greeting from backend (which will also speak it)
-            const response = await fetch(`${API_URL}/greeting`);
-            const data = await response.json();
-
-            if (data.status === 'success' && data.greeting) {
-                addMessage(data.greeting, 'aria');
-            } else {
-                // Fallback to local greeting if backend fails
-                const greeting = getTimeBasedGreeting();
-                addMessage(greeting, 'aria');
-            }
+            await fetch(`${API_URL}/greeting`);
         } catch (error) {
-            console.error('Error fetching greeting:', error);
-            // Fallback to local greeting
-            const greeting = getTimeBasedGreeting();
-            addMessage(greeting, 'aria');
+            console.log('Backend greeting skipped:', error.message);
         }
     }, 500);
 }

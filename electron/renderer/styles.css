@@ -352,8 +352,10 @@ body::before {
     flex-shrink: 0;
     box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
     border: 2px solid rgba(255, 255, 255, 0.3);
-    overflow: hidden;
+    /* overflow: hidden; Removed to allow ripple */
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    /* For pseudo-elements */
 }
 
 .avatar:hover {
@@ -365,25 +367,105 @@ body::before {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border-radius: 50%;
+    /* Ensure image stays round */
+}
+
+/* Active Avatar Animation */
+.message.aria .avatar.active {
+    animation: softGlow 2s ease-in-out infinite;
+    border-color: var(--accent);
+}
+
+@keyframes softGlow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+        transform: scale(1);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+        transform: scale(1.02);
+    }
 }
 
 .bubble {
-    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 12px 18px;
     border-radius: 18px;
-    width: fit-content;
-    min-width: 80px;
-    max-width: 280px;
-    word-wrap: break-word;
-    font-size: 14px;
-    line-height: 1.6;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-top-left-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Markdown Styles */
+.bubble p {
+    margin: 0 0 8px 0;
+}
+
+.bubble p:last-child {
+    margin-bottom: 0;
+}
+
+.bubble strong {
+    font-weight: 600;
+    color: var(--accent-dark);
+}
+
+.bubble em {
+    font-style: italic;
+}
+
+.bubble ul,
+.bubble ol {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+.bubble li {
+    margin-bottom: 4px;
+}
+
+.bubble code {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.9em;
+}
+
+.bubble pre {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 10px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 8px 0;
+}
+
+.bubble pre code {
+    background: transparent;
+    padding: 0;
 }
 
 .message.user .bubble {
-    background: var(--user-bubble-bg);
+    background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
     color: white;
-    border-bottom-right-radius: 6px;
-    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+    border-top-left-radius: 18px;
+    border-top-right-radius: 4px;
+    border: none;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.message.user .bubble code {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
 }
 
 .message.user .bubble:hover {
@@ -475,18 +557,38 @@ body::before {
 .voice-btn.active {
     background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
     color: white;
-    animation: pulse 1.5s ease infinite;
+    box-shadow: 0 0 0 rgba(99, 102, 241, 0.4);
+    animation: none;
+    /* Remove old pulse */
 }
 
-@keyframes pulse {
+.voice-btn.active::before,
+.voice-btn.active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.6);
+    z-index: -1;
+    animation: ripple 2s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
 
-    0%,
-    100% {
-        box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+.voice-btn.active::after {
+    animation-delay: 1s;
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(1);
+        opacity: 0.6;
     }
 
-    50% {
-        box-shadow: 0 0 35px rgba(99, 102, 241, 0.8);
+    100% {
+        transform: scale(2.5);
+        opacity: 0;
     }
 }
 
@@ -756,6 +858,16 @@ body::before {
     min-width: 0;
 }
 
+.history-title {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
 .history-actions {
     display: flex;
     gap: 6px;
@@ -767,36 +879,43 @@ body::before {
     opacity: 1;
 }
 
-.history-action-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+.action-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
     border: 1px solid var(--glass-border);
     background: rgba(255, 255, 255, 0.1);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
+    color: var(--text-primary);
 }
 
-.history-action-btn svg {
-    width: 16px;
-    height: 16px;
-    stroke: var(--text-primary);
+.action-btn svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
     opacity: 0.7;
 }
 
-.history-action-btn:hover {
+.action-btn:hover {
     background: rgba(99, 102, 241, 0.2);
     border-color: var(--accent);
     transform: scale(1.1);
+    color: var(--accent);
 }
 
-.history-action-btn:hover svg {
-    stroke: var(--accent);
+.action-btn:hover svg {
     opacity: 1;
+}
+
+.action-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    color: #ef4444;
 }
 
 .history-action-btn.delete:hover {
