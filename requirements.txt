@@ -1,21 +1,39 @@
+# Speech Recognition & Text-to-Speech
 SpeechRecognition
 gTTS
-pygame
-wikipedia
-customtkinter
-google-generativeai
-python-dotenv
 pyaudio
-Pillow
+pygame
+
+# Web Framework & API
+flask
+flask-cors
+requests
+
+# AI & Machine Learning
+langchain
+langchain-openai
+langchain-core
+langchain-google-genai
+google-generativeai
+
+# Google APIs
 google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
-langchain
-langchain-google-genai
-langchain-openai
-notion-client
+
+# Database & Knowledge Management
 pymongo
+notion-client
+
+# GUI & UI
+customtkinter
+Pillow
+
+# System Control (Windows)
 pycaw
 comtypes
 winshell
-requests
+
+# Utilities
+wikipedia
+python-dotenv
