@@ -31,6 +31,12 @@ class CommandIntentClassifier:
         # System Maintenance
         "recycle_bin_empty": "Empty the recycle bin",
         "recycle_bin_check": "Check recycle bin status",
+        # Clipboard Operations
+        "clipboard_copy": "Copy text to clipboard",
+        "clipboard_read": "Read clipboard contents",
+        "clipboard_clear": "Clear clipboard",
+        # Screenshot Operations
+        "screenshot_take": "Take a screenshot",
         # File Automation
         "organize_downloads": "Organize downloads folder",
         "organize_desktop": "Organize desktop folder",

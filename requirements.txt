@@ -37,3 +37,4 @@ winshell
 # Utilities
 wikipedia
 python-dotenv
+pyperclip

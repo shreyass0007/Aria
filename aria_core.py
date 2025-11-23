@@ -19,6 +19,7 @@ from system_control import SystemControl
 from command_intent_classifier import CommandIntentClassifier
 from file_manager import FileManager
 from weather_manager import WeatherManager
+from clipboard_screenshot import ClipboardScreenshot
 import subprocess
 import glob
 import threading
@@ -40,6 +41,7 @@ class AriaCore:
         self.command_classifier = CommandIntentClassifier(self.brain)
         self.file_manager = FileManager()
         self.weather_manager = WeatherManager()
+        self.clipboard_screenshot = ClipboardScreenshot()
         self.input_mode = "voice"
         self.wake_word = "aria"
         self.app_paths = {}
@@ -838,6 +840,28 @@ class AriaCore:
             return
         elif intent == "recycle_bin_check":
             self.speak(self.system_control.get_recycle_bin_size())
+            return
+
+        # --- CLIPBOARD & SCREENSHOT ---
+        elif intent == "clipboard_copy":
+            text_to_copy = parameters.get("text")
+            if text_to_copy:
+                self.speak(self.clipboard_screenshot.copy_to_clipboard(text_to_copy))
+            else:
+                self.speak("What should I copy?")
+            return
+
+        elif intent == "clipboard_read":
+            self.speak(self.clipboard_screenshot.read_clipboard())
+            return
+
+        elif intent == "clipboard_clear":
+            self.speak(self.clipboard_screenshot.clear_clipboard())
+            return
+
+        elif intent == "screenshot_take":
+            filename = parameters.get("filename", None)
+            self.speak(self.clipboard_screenshot.take_screenshot(filename))
             return
 
         # --- FILE AUTOMATION ---

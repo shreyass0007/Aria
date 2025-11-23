@@ -15,15 +15,16 @@
 6. [Web Browsing](#-web-browsing--search)
 7. [File Management](#-file-management)
 8. [System Control](#-system-control)
-9. [Weather Information](#%EF%B8%8F-weather-information)
-10. [Calendar Management](#-calendar-management)
-11. [Notion Integration](#-notion-integration)
-12. [File Automation](#-file-automation)
-13. [Conversation Features](#-conversation-features)
-14. [Settings & Customization](#%EF%B8%8F-settings--customization)
-15. [Troubleshooting](#-troubleshooting)
-16. [Tips & Tricks](#-tips--tricks)
-17. [FAQ](#-faq)
+9. [Clipboard & Screenshots](#-clipboard--screenshots)
+10. [Weather Information](#%EF%B8%8F-weather-information)
+11. [Calendar Management](#-calendar-management)
+12. [Notion Integration](#-notion-integration)
+13. [File Automation](#-file-automation)
+14. [Conversation Features](#-conversation-features)
+15. [Settings & Customization](#%EF%B8%8F-settings--customization)
+16. [Troubleshooting](#-troubleshooting)
+17. [Tips & Tricks](#-tips--tricks)
+18. [FAQ](#-faq)
 
 ---
 
@@ -512,6 +513,82 @@ Modified: 2025-11-22 14:30:15
 → "Recycle bin contains 23 items (145.67 MB). Emptying it now..."
 → "Recycle bin emptied successfully"
 ```
+
+### Clipboard & Screenshot Management
+
+#### Tutorial 13: Clipboard Operations
+
+**Copy Text to Clipboard:**
+```
+"Aria, copy hello world to clipboard"
+→ "Copied to clipboard: hello world"
+
+"Aria, copy my email address is aria@example.com"
+→ Copies the specified text
+
+"Aria, copy meeting at 3 PM tomorrow"
+→ Quick text capture
+```
+
+**Read Clipboard:**
+```
+"Aria, read clipboard"
+"Aria, what's in the clipboard?"
+→ "Clipboard contains: [your copied text]"
+```
+
+**Clear Clipboard:**
+```
+"Aria, clear clipboard"
+→ "Clipboard cleared successfully"
+```
+
+**Use Cases:**
+- Quick note capture without opening apps
+- Voice-to-text for other applications (copy then paste)
+- Temporary storage for information
+
+#### Tutorial 14: Take Screenshots
+
+**Basic Screenshot:**
+```
+"Aria, take a screenshot"
+→ "Screenshot saved to C:\Users\YourName\Desktop\Screenshots\screenshot_20251123_193500.png"
+```
+
+**Custom Filename:**
+```
+"Aria, take screenshot called project_demo"
+→ "Screenshot saved to C:\Users\YourName\Desktop\Screenshots\project_demo.png"
+
+"Aria, take screenshot called bug_report"
+→ Custom naming for organization
+```
+
+**Screenshot Features:**
+- Captures entire screen
+- Auto-saves to Desktop/Screenshots folder
+- Automatic timestamp naming (YYYYMMDD_HHMMSS)
+- Or use custom names for easy identification
+- PNG format for best quality
+
+**Best Practices:**
+```
+✅ "take screenshot called meeting_notes"  
+✅ "screenshot project_dashboard"
+✅ "capture screen as error_message"
+
+❌ Don't include file extensions (.png)
+   Aria adds it automatically
+```
+
+**Screenshot Location:**
+All screenshots are saved to:
+```
+C:\Users\[YourName]\Desktop\Screenshots\
+```
+
+The folder is created automatically if it doesn't exist.
 
 ---
 
