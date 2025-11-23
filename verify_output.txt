@@ -1,0 +1,10 @@
+Testing Notion Integration...
+API Key present: True
+DB ID: 447235a4-d881-45b2-9563-851637ea2a10
+Client type: <class 'notion_client.client.Client'>
+Pages dir: ['__class__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', 'create', 'parent', 'properties', 'retrieve', 'update']
+Fetching pages...
+DB Retrieve Success: database
+Result: Here are your recent Notion pages:
+- slice of life
+

@@ -1,13 +1,13 @@
 const { contextBridge, ipcRenderer } = require('electron');
-
 let marked = null;
 let markedError = null;
 
 // Try to load marked library
 try {
-    const markedModule = require('marked');
+    // Load from local file to avoid path resolution issues
+    const markedModule = require('./marked.min.js');
     marked = markedModule.marked || markedModule;
-    console.log('✅ Preload: marked library loaded successfully, type:', typeof marked);
+    console.log('✅ Preload: marked library loaded successfully from local file');
 } catch (e) {
     markedError = e;
     console.error('❌ Preload: Failed to load marked library:', e.message);

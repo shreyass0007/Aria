@@ -23,12 +23,13 @@ const aboutBtn = document.getElementById('aboutBtn');
 const newChatBtn = document.getElementById('newChatBtn');
 const historyBtn = document.getElementById('historyBtn');
 const historySidebar = document.getElementById('historySidebar');
-const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+const ttsToggle = document.getElementById('ttsToggle');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     loadTheme();
+    loadTTSStatus(); // Load TTS status
     displayWelcomeMessage();
 });
 
@@ -61,11 +62,54 @@ function setupEventListeners() {
     if (historyBtn) historyBtn.addEventListener('click', toggleHistory);
     if (closeHistoryBtn) closeHistoryBtn.addEventListener('click', toggleHistory);
 
+    // TTS Toggle Listener
+    if (ttsToggle) {
+        ttsToggle.addEventListener('change', handleToggleTTS);
+    }
+
     // Close modal on overlay click
     if (settingsModal) {
         settingsModal.addEventListener('click', (e) => {
             if (e.target === settingsModal) closeModal();
         });
+    }
+}
+
+// TTS Management
+async function loadTTSStatus() {
+    try {
+        const response = await fetch(`${API_URL}/settings/tts`);
+        const data = await response.json();
+        if (data.status === 'success' && ttsToggle) {
+            ttsToggle.checked = data.enabled;
+        }
+    } catch (error) {
+        console.error('Error loading TTS status:', error);
+    }
+}
+
+async function handleToggleTTS() {
+    if (!ttsToggle) return;
+
+    const enabled = ttsToggle.checked;
+    try {
+        const response = await fetch(`${API_URL}/settings/tts`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ enabled }),
+        });
+
+        const data = await response.json();
+        if (data.status !== 'success') {
+            // Revert if failed
+            ttsToggle.checked = !enabled;
+            console.error('Failed to update TTS status:', data.error);
+        }
+    } catch (error) {
+        console.error('Error updating TTS status:', error);
+        ttsToggle.checked = !enabled; // Revert
     }
 }
 

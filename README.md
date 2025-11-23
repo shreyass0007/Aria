@@ -18,19 +18,19 @@ Premium local-first AI copilot that pairs a Python brain with a polished Electro
 ## Architecture Overview
 
 ```
-┌───────────────┐        HTTP /voice + /message        ┌────────────────────┐
-│ Electron UI   │ <──────────────────────────────────> │ Flask API backend  │
+┌───────────────┐        HTTP /voice + /message         ┌────────────────────┐
+│ Electron UI   │ <──────────────────────────────────->  │ Flask API backend  │
 │ (renderer/)   │                                       │ backend_api.py     │
 └──────┬────────┘                                       └─────────┬──────────┘
        │ preload IPC                                               │
        │                                                           ▼
  ┌─────▼────────┐      speech, commands, calendar      ┌────────────────────┐
- │ main.js      │──────────────┬──────────────────────▶│ AriaCore / Brain   │
- │ launches .venv│             │                       │ aria_core.py       │
- └──────────────┘             │                       │ brain.py           │
-                              │                       └────────────────────┘
-                              │ gTTS / SpeechRecognition / Google Calendar
-                              ▼
+ │ main.js      │──────────────┬─────────────────────▶ │AriaCore / Brain    │
+ │ launches.venv│              │                       │ aria_core.py       │
+ └──────────────┘              │                       │ brain.py           │
+                               │                       └────────────────────┘
+                               │ gTTS / SpeechRecognition / Google Calendar
+                               ▼
                         Optional GUIs (`gui.py`, `main.py`)
 ```
 

@@ -599,7 +599,7 @@ class AriaApp(ctk.CTk):
     
     def show_about(self):
         """Show about information"""
-        self.display_system_message("✨ Aria v2.0\nYour Premium AI Assistant\n\nDeveloped with ❤️ by Shreyas")
+        self.display_system_message("✨ Aria v2.0\\nYour Premium AI Assistant\\n\\nDeveloped with  by Shreyas")
         if self.settings_menu:
             self.settings_menu.destroy()
             self.settings_menu = None

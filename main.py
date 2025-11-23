@@ -23,7 +23,8 @@ def main():
                 
             # Check if the user said the magic word
             if "aria" in text or "neo" in text:
-                aria.speak("Welcome back Shreyas. How can I help you today?")
+                user_name = os.getenv("USER_NAME", "User")
+                aria.speak(f"Welcome back {user_name}. How can I help you today?")
                 cmd = aria.listen()
                 if cmd:
                     aria.process_command(cmd)

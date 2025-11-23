@@ -13,3 +13,9 @@ google-auth-oauthlib
 langchain
 langchain-google-genai
 langchain-openai
+notion-client
+pymongo
+pycaw
+comtypes
+winshell
+requests
