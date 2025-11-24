@@ -3,6 +3,7 @@ import json
 import datetime
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 
 load_dotenv()
@@ -10,48 +11,96 @@ load_dotenv()
 class AriaBrain:
     def __init__(self):
         self.api_key = os.getenv("OPEN_AI_API_KEY")
-        print(f"DEBUG: API Key found: {bool(self.api_key)}, Length: {len(self.api_key) if self.api_key else 0}")
-        self.llm = None
+        self.google_api_key = os.getenv("GOOGLE_API_KEY")
         
+        # print(f"DEBUG: OpenAI Key found: {bool(self.api_key)}")
+        # print(f"DEBUG: Google Key found: {bool(self.google_api_key)}")
+        
+        self.llm_openai = None
+        self.llm_gemini = None
+        
+        # Initialize OpenAI
         if self.api_key:
             try:
-                # Ensure clean key
-                self.api_key = self.api_key.strip()
-                
-                # Initialize LangChain's ChatOpenAI
-                self.llm = ChatOpenAI(
+                self.llm_openai = ChatOpenAI(
                     model="gpt-4o",
                     api_key=self.api_key,
                     temperature=0.7
                 )
             except Exception as e:
-                print(f"Error initializing OpenAI via LangChain: {e}")
+                print(f"Error initializing OpenAI: {e}")
         else:
-            print("Warning: OPEN_AI_API_KEY not found in environment variables. Agentic features will be limited.")
+            print("Warning: OPEN_AI_API_KEY not found.")
 
-    def ask(self, user_input: str) -> str:
+        # Initialize Gemini
+        if self.google_api_key:
+            try:
+                self.llm_gemini = ChatGoogleGenerativeAI(
+                    model="gemini-pro",
+                    google_api_key=self.google_api_key,
+                    temperature=0.7,
+                    convert_system_message_to_human=True
+                )
+            except Exception as e:
+                print(f"Error initializing Gemini: {e}")
+        else:
+            print("Warning: GOOGLE_API_KEY not found.")
+
+    def get_llm(self, model_name: str = "openai"):
+        """Returns the requested LLM instance."""
+        if model_name == "gemini":
+            if self.llm_gemini:
+                return self.llm_gemini
+            return self.llm_openai # Fallback
+            
+        else: # Default to OpenAI
+            return self.llm_openai
+
+    def ask(self, user_input: str, model_name: str = "openai") -> str:
         """
-        Passes the user's message to OpenAI via LangChain and returns the response.
+        Passes the user's message to the selected model via LangChain.
         """
-        if not self.llm:
-            return "I'm sorry, but my agentic brain is not connected. Please check your API key."
+        llm = self.get_llm(model_name)
+        
+        if not llm:
+            return "I'm sorry, but the selected AI model is not available. Please check your API keys or configuration."
 
         try:
             # Invoke the model directly
-            response = self.llm.invoke(user_input)
+            response = llm.invoke(user_input)
             return response.content
         except Exception as e:
-            return f"I encountered an error thinking about that: {e}"
+            return f"I encountered an error thinking about that with {model_name}: {e}"
+
+    def stream_ask(self, user_input: str, model_name: str = "openai"):
+        """
+        Streams the response from the selected model.
+        Yields chunks of text as they are generated.
+        """
+        llm = self.get_llm(model_name)
+        
+        if not llm:
+            yield "I'm sorry, but the selected AI model is not available."
+            return
+
+        try:
+            # Stream the response
+            for chunk in llm.stream(user_input):
+                yield chunk.content
+        except Exception as e:
+            yield f"I encountered an error thinking about that with {model_name}: {e}"
 
     def is_available(self) -> bool:
-        return self.llm is not None
+        return self.llm_openai is not None or self.llm_gemini is not None or self.llm_ollama is not None
 
     def parse_calendar_intent(self, text: str) -> dict:
         """
-        Uses OpenAI via LangChain to extract event details from natural language.
-        Returns a dict with keys: summary, start_time, end_time (optional).
+        Uses OpenAI (default) to extract event details. 
+        For structured tasks, we prefer OpenAI for reliability, but could switch if needed.
         """
-        if not self.llm:
+        llm = self.llm_openai if self.llm_openai else self.llm_gemini
+        
+        if not llm:
             return {}
 
         # Get current time for context (Explicitly mention IST)
@@ -86,13 +135,13 @@ class AriaBrain:
         try:
             # Create the prompt and invoke the model
             formatted_prompt = prompt.format(now=now, day_of_week=day_of_week, text=text)
-            response = self.llm.invoke(formatted_prompt)
-            print(f"DEBUG: Raw OpenAI response: {response.content}")
+            response = llm.invoke(formatted_prompt)
+            # print(f"DEBUG: Raw response: {response.content}")
             
             # Clean up code blocks if present
             cleaned_text = response.content.replace("```json", "").replace("```", "").strip()
             parsed = json.loads(cleaned_text)
-            print(f"DEBUG: Parsed JSON: {parsed}")
+            # print(f"DEBUG: Parsed JSON: {parsed}")
             return parsed
         except Exception as e:
             print(f"Error parsing calendar intent: {e}")
@@ -100,10 +149,10 @@ class AriaBrain:
 
     def parse_notion_intent(self, text: str) -> dict:
         """
-        Uses OpenAI via LangChain to extract Notion page details.
-        Returns a dict with keys: title, content (optional), target (optional).
+        Uses OpenAI (or fallback) to extract Notion page details.
         """
-        if not self.llm:
+        llm = self.llm_openai if self.llm_openai else self.llm_gemini
+        if not llm:
             return {}
 
         template = """
@@ -131,7 +180,7 @@ class AriaBrain:
         
         try:
             formatted_prompt = prompt.format(text=text)
-            response = self.llm.invoke(formatted_prompt)
+            response = llm.invoke(formatted_prompt)
             
             cleaned_text = response.content.replace("```json", "").replace("```", "").strip()
             parsed = json.loads(cleaned_text)
@@ -143,9 +192,9 @@ class AriaBrain:
     def summarize_text(self, text: str, max_sentences: int = 5) -> str:
         """
         Summarizes long text into a concise summary.
-        Returns a summary with approximately max_sentences sentences.
         """
-        if not self.llm:
+        llm = self.llm_openai if self.llm_openai else self.llm_gemini
+        if not llm:
             return "I'm sorry, but my summarization capability is not available right now."
 
         # Handle edge cases
@@ -172,7 +221,7 @@ class AriaBrain:
         
         try:
             formatted_prompt = prompt.format(text=text, max_sentences=max_sentences)
-            response = self.llm.invoke(formatted_prompt)
+            response = llm.invoke(formatted_prompt)
             return response.content.strip()
         except Exception as e:
             print(f"Error summarizing text: {e}")
@@ -180,10 +229,10 @@ class AriaBrain:
 
     def extract_notion_page_id(self, text: str) -> dict:
         """
-        Extracts Notion page ID or page search query from user's command.
-        Returns a dict with either 'page_id' or 'search_query'.
+        Extracts Notion page ID or page search query.
         """
-        if not self.llm:
+        llm = self.llm_openai if self.llm_openai else self.llm_gemini
+        if not llm:
             return {}
 
         template = """
@@ -217,7 +266,7 @@ class AriaBrain:
         
         try:
             formatted_prompt = prompt.format(text=text)
-            response = self.llm.invoke(formatted_prompt)
+            response = llm.invoke(formatted_prompt)
             
             cleaned_text = response.content.replace("```json", "").replace("```", "").strip()
             parsed = json.loads(cleaned_text)
@@ -228,10 +277,10 @@ class AriaBrain:
 
     def parse_email_intent(self, text: str) -> dict:
         """
-        Uses OpenAI via LangChain to extract email details.
-        Returns a dict with keys: to, subject, body.
+        Extracts email details.
         """
-        if not self.llm:
+        llm = self.llm_openai if self.llm_openai else self.llm_gemini
+        if not llm:
             return {}
 
         template = """
@@ -259,7 +308,7 @@ class AriaBrain:
         
         try:
             formatted_prompt = prompt.format(text=text)
-            response = self.llm.invoke(formatted_prompt)
+            response = llm.invoke(formatted_prompt)
             
             cleaned_text = response.content.replace("```json", "").replace("```", "").strip()
             parsed = json.loads(cleaned_text)
@@ -270,9 +319,10 @@ class AriaBrain:
 
     def generate_email_draft(self, to: str, subject: str, context: str, sender_name: str = "User") -> str:
         """
-        Generates a polite email draft based on context.
+        Generates a polite email draft.
         """
-        if not self.llm:
+        llm = self.llm_openai if self.llm_openai else self.llm_gemini
+        if not llm:
             return context
 
         template = """
@@ -298,7 +348,7 @@ class AriaBrain:
         
         try:
             formatted_prompt = prompt.format(to=to, subject=subject, context=context, sender_name=sender_name)
-            response = self.llm.invoke(formatted_prompt)
+            response = llm.invoke(formatted_prompt)
             return response.content.strip()
         except Exception as e:
             print(f"Error generating draft: {e}")

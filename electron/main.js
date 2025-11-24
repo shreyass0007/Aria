@@ -17,7 +17,7 @@ function createWindow() {
         height: screenHeight,
         x: 0,
         y: 0,
-        frame: true,
+        frame: false, // Remove default title bar
         transparent: false,
         resizable: true,
         minWidth: 340,
@@ -26,6 +26,7 @@ function createWindow() {
         backgroundColor: '#e0e7ff',
         alwaysOnTop: false,
         skipTaskbar: false,
+        titleBarStyle: 'hidden',
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
@@ -134,7 +135,7 @@ function startPythonBackend() {
         ? path.join(__dirname, '..', '.venv', 'Scripts', 'python.exe')
         : path.join(__dirname, '..', '.venv', 'bin', 'python');
 
-    const backendScript = path.join(__dirname, '..', 'backend_api.py');
+    const backendScript = path.join(__dirname, '..', 'backend_fastapi.py');
 
     pythonProcess = spawn(pythonExecutable, [backendScript], {
         cwd: path.join(__dirname, '..')
@@ -194,4 +195,23 @@ ipcMain.handle('get-theme', async () => {
 ipcMain.handle('set-theme', async (event, theme) => {
     console.log('Theme changed to:', theme);
     return { status: 'success', theme };
+});
+
+// Window control handlers
+ipcMain.on('window-minimize', () => {
+    if (mainWindow) mainWindow.minimize();
+});
+
+ipcMain.on('window-maximize', () => {
+    if (mainWindow) {
+        if (mainWindow.isMaximized()) {
+            mainWindow.unmaximize();
+        } else {
+            mainWindow.maximize();
+        }
+    }
+});
+
+ipcMain.on('window-close', () => {
+    if (mainWindow) mainWindow.close();
 });

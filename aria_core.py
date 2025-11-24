@@ -27,6 +27,9 @@ import glob
 import threading
 import queue
 import re
+import asyncio
+import edge_tts
+from speech_engine import SpeechEngine
 
 class AriaCore:
     def __init__(self, on_speak=None):
@@ -44,6 +47,9 @@ class AriaCore:
         self.file_manager = FileManager()
         self.weather_manager = WeatherManager()
         self.clipboard_screenshot = ClipboardScreenshot()
+        
+        # Initialize Local Speech Engine
+        self.speech_engine = SpeechEngine(model_size="base")
         self.system_monitor = SystemMonitor()
         self.email_manager = EmailManager()
         self.input_mode = "voice"
@@ -186,31 +192,37 @@ class AriaCore:
             print(f"Error listing microphones: {e}")
 
     def _tts_worker(self):
-        """Worker thread to handle TTS playback sequentially."""
+        """Worker thread to handle TTS playback sequentially using Edge-TTS."""
+        # Create a new event loop for this thread since edge-tts is async
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
         while True:
             text = self.tts_queue.get()
             if text is None:
                 break
             
             try:
-                # Audio output
-                tts = gTTS(text=text, lang="en", slow=False)
-                filename = f"her_voice_{int(time.time())}.mp3" # Unique filename to avoid conflicts
+                # Audio output using Edge TTS
+                filename = f"her_voice_{int(time.time())}_{id(text)}.mp3"
+                
+                # Run async edge-tts in sync wrapper
+                communicate = edge_tts.Communicate(text, "en-US-AriaNeural")
+                loop.run_until_complete(communicate.save(filename))
                 
                 if os.path.exists(filename):
-                    os.remove(filename)
-                
-                tts.save(filename)
-                
-                pygame.mixer.init()
-                pygame.mixer.music.load(filename)
-                pygame.mixer.music.play()
-                while pygame.mixer.music.get_busy():
-                    time.sleep(0.1)
-                pygame.mixer.quit()
-                
-                if os.path.exists(filename):
-                    os.remove(filename)
+                    pygame.mixer.init()
+                    pygame.mixer.music.load(filename)
+                    pygame.mixer.music.play()
+                    while pygame.mixer.music.get_busy():
+                        time.sleep(0.1)
+                    pygame.mixer.quit()
+                    
+                    # Cleanup
+                    try:
+                        os.remove(filename)
+                    except:
+                        pass
             except Exception as e:
                 print(f"TTS Worker error: {e}")
             finally:
@@ -355,7 +367,7 @@ class AriaCore:
     def is_similar(self, a, b, threshold=0.8):
         return difflib.SequenceMatcher(None, a, b).ratio() >= threshold
 
-    def process_command(self, text: str):
+    def process_command(self, text: str, model_name: str = "openai"):
         text = text.lower().strip()
         if not text:
             return
@@ -386,64 +398,9 @@ class AriaCore:
         # 10. Smalltalk / Exit
         if "tum best ho" in text:
             self.speak("Thank you!")
-            return
-        if "exit" in text or "quit" in text:
-            self.speak("Goodbye!")
-            sys.exit(0)
-
-        # 11. Agentic Brain (Fallback)
-        if self.brain.is_available():
-            response = self.brain.ask(text)
-            self.speak(response)
-        else:
-            self.speak("I didn't understand that command.")
-
-    def set_tts_enabled(self, enabled: bool):
-        """Enable or disable TTS output."""
-        self.tts_enabled = enabled
-        print(f"TTS Enabled: {self.tts_enabled}")
 
 
 
-    def check_microphones(self):
-        try:
-            mics = sr.Microphone.list_microphone_names()
-            print(f"Available Microphones: {mics}")
-            if not mics:
-                print("WARNING: No microphones found!")
-        except Exception as e:
-            print(f"Error listing microphones: {e}")
-
-    def _tts_worker(self):
-        """Worker thread to handle TTS playback sequentially."""
-        while True:
-            text = self.tts_queue.get()
-            if text is None:
-                break
-            
-            try:
-                # Audio output
-                tts = gTTS(text=text, lang="en", slow=False)
-                filename = f"her_voice_{int(time.time())}.mp3" # Unique filename to avoid conflicts
-                
-                if os.path.exists(filename):
-                    os.remove(filename)
-                
-                tts.save(filename)
-                
-                pygame.mixer.init()
-                pygame.mixer.music.load(filename)
-                pygame.mixer.music.play()
-                while pygame.mixer.music.get_busy():
-                    time.sleep(0.1)
-                pygame.mixer.quit()
-                
-                if os.path.exists(filename):
-                    os.remove(filename)
-            except Exception as e:
-                print(f"TTS Worker error: {e}")
-            finally:
-                self.tts_queue.task_done()
 
     def _clean_text_for_audio(self, text):
         """Removes Markdown formatting and emojis for smoother TTS playback."""
@@ -601,7 +558,7 @@ class AriaCore:
     def is_similar(self, a, b, threshold=0.8):
         return difflib.SequenceMatcher(None, a, b).ratio() >= threshold
 
-    def process_command(self, text: str):
+    def process_command(self, text: str, model_name: str = "openai"):
         text = text.lower().strip()
         if not text:
             return
@@ -1075,7 +1032,7 @@ class AriaCore:
         # --- GENERAL / FALLBACK ---
         # If intent is "general_chat" or "none", or if we fell through
         if self.brain.is_available():
-            response = self.brain.ask(text)
+            response = self.brain.ask(text, model_name=model_name)
             self.speak(response)
         else:
             self.speak("I'm not sure how to help with that.")

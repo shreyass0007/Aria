@@ -28,11 +28,102 @@ const ttsToggle = document.getElementById('ttsToggle');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    // Add custom title bar for frameless window
+    createTitleBar();
+    // Add model selector to input bar dynamically
+    addModelSelector();
     setupEventListeners();
     loadTheme();
     loadTTSStatus(); // Load TTS status
     displayWelcomeMessage();
 });
+
+// Create Custom Title Bar
+function createTitleBar() {
+    const titleBar = document.createElement('div');
+    titleBar.className = 'custom-title-bar';
+    titleBar.innerHTML = `
+        <div class="title-bar-draggable">
+            <img src="aria_logo.png" alt="Aria" class="title-bar-icon">
+            <span class="title-bar-title">Aria</span>
+        </div>
+        <div class="title-bar-controls">
+            <button class="title-bar-btn" id="winMinimizeBtn" title="Minimize">
+                <svg width="10" height="10" viewBox="0 0 10 10">
+                    <line x1="0" y1="5" x2="10" y2="5" stroke="currentColor" stroke-width="1"/>
+                </svg>
+            </button>
+            <button class="title-bar-btn" id="winMaximizeBtn" title="Maximize">
+                <svg width="10" height="10" viewBox="0 0 10 10">
+                    <rect x="1" y="1" width="8" height="8" stroke="currentColor" stroke-width="1" fill="none"/>
+                </svg>
+            </button>
+            <button class="title-bar-btn title-bar-close" id="winCloseBtn" title="Close">
+                <svg width="10" height="10" viewBox="0 0 10 10">
+                    <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" stroke-width="1"/>
+                    <line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" stroke-width="1"/>
+                </svg>
+            </button>
+        </div>
+    `;
+
+    // Insert at beginning of body
+    document.body.insertBefore(titleBar, document.body.firstChild);
+
+    // Add window control event listeners
+    document.getElementById('winMinimizeBtn').addEventListener('click', () => {
+        window.api.windowMinimize();
+    });
+
+    document.getElementById('winMaximizeBtn').addEventListener('click', () => {
+        window.api.windowMaximize();
+    });
+
+    document.getElementById('winCloseBtn').addEventListener('click', () => {
+        window.api.windowClose();
+    });
+}
+
+//  Add Model Selector Dynamically
+function addModelSelector() {
+    const inputRow = document.querySelector('.input-row');
+    const sendBtn = document.getElementById('sendBtn');
+
+    if (inputRow && sendBtn) {
+        // Create select element
+        const modelSelect = document.createElement('select');
+        modelSelect.id = 'modelSelect';
+        modelSelect.className = 'model-select-inline';
+        modelSelect.title = 'Select AI Model';
+
+        // Add options
+        const options = [
+            { value: 'openai', text: 'GPT-4o' },
+            { value: 'gemini', text: 'Gemini' }
+        ];
+
+        options.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt.value;
+            option.textContent = opt.text;
+            modelSelect.appendChild(option);
+        });
+
+        // Load saved model preference
+        const savedModel = localStorage.getItem('selectedModel') || 'openai';
+        modelSelect.value = savedModel;
+
+        // Add change event listener
+        modelSelect.addEventListener('change', (e) => {
+            const model = e.target.value;
+            localStorage.setItem('selectedModel', model);
+            // No notification needed - selection is instant
+        });
+
+        // Insert before send button
+        inputRow.insertBefore(modelSelect, sendBtn);
+    }
+}
 
 // Event Listeners
 function setupEventListeners() {
@@ -163,7 +254,8 @@ function handleSendMessage() {
 
 async function sendMessageToBackend(message) {
     try {
-        const payload = { message };
+        const model = localStorage.getItem('selectedModel') || 'openai';
+        const payload = { message, model };
         if (currentConversationId) {
             payload.conversation_id = currentConversationId;
         }

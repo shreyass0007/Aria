@@ -5,8 +5,8 @@ pyaudio
 pygame
 
 # Web Framework & API
-flask
-flask-cors
+fastapi
+uvicorn
 requests
 
 # AI & Machine Learning
@@ -39,3 +39,8 @@ psutil
 wikipedia
 python-dotenv
 pyperclip
+
+# Local Speech & Streaming
+faster-whisper
+edge-tts
+asyncio

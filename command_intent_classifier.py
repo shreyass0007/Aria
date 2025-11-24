@@ -90,11 +90,26 @@ class CommandIntentClassifier:
 
         prompt = self._build_classification_prompt(user_text)
         try:
-            response = self.brain.llm.invoke(prompt)
-            cleaned = response.content.replace("```json", "").replace("```", "").strip()
-            result = json.loads(cleaned)
+            llm = self.brain.get_llm()
+            if not llm:
+                print("Error: No LLM available")
+                return {"intent": "general_chat", "confidence": 0.0, "parameters": {}}
+                
+            response = llm.invoke(prompt)
+            content = response.content.strip()
+            print(f"CLASSIFIER DEBUG - Raw response: {content[:200]}...")
+            
+            # Use regex to find JSON object
+            json_match = re.search(r"\{.*\}", content, re.DOTALL)
+            if json_match:
+                cleaned = json_match.group(0)
+                result = json.loads(cleaned)
+            else:
+                print("No JSON found in response")
+                result = {}
         except Exception as e:
             print(f"Error classifying intent: {e}")
+            print(f"Raw response was: {content if 'content' in locals() else 'No response'}")
             return {"intent": "general_chat", "confidence": 0.0, "parameters": {}}
 
         intent = result.get("intent", "general_chat")
@@ -112,40 +127,43 @@ class CommandIntentClassifier:
 
     def _build_classification_prompt(self, user_text: str) -> str:
         """Construct the prompt for the LLM to classify the command."""
-        intent_list = [f"  - \"{intent}\": {desc}" for intent, desc in self.COMMAND_INTENTS.items()]
+        intent_list = [f'  - "{intent}": {desc}' for intent, desc in self.COMMAND_INTENTS.items()]
         intent_descriptions = "\n".join(intent_list)
         prompt = f"""You are a command intent classifier for a voice assistant.
 
 Your task is to analyze the user's command and determine their intent.
 
-USER COMMAND: \"{user_text}\"
+USER COMMAND: "{user_text}"
 
 AVAILABLE INTENTS:
 {intent_descriptions}
 
 CLASSIFICATION RULES:
 1. Choose the MOST SPECIFIC intent that matches the user's command.
-2. If the command is a general question or conversation (e.g., \"tell me a joke\", \"who are you\"), use \"general_chat\".
+2. If the command is a general question or conversation (e.g., "tell me a joke", "who are you"), use "general_chat".
 3. Extract relevant parameters.
-4. Distinguish between \"file_search\" (local files) and \"web_search\" (Google).
-   - \"find resume on desktop\" -> file_search
-   - \"search for python tutorials\" -> web_search
+4. Distinguish between "file_search" (local files) and "web_search" (Google).
+   - "find resume on desktop" -> file_search
+   - "search for python tutorials" -> web_search
 
 EXAMPLES:
-- \"shutdown the computer\" -> intent: \"shutdown\"
-- \"open youtube\" -> intent: \"web_open\", parameters: {{"url": "https://youtube.com", "name": "YouTube"}}
-- \"open calculator\" -> intent: \"app_open\", parameters: {{"app_name": "calculator"}}
-- \"play some taylor swift\" -> intent: \"music_play\", parameters: {{"song": "taylor swift"}}
-- \"schedule meeting tomorrow at 5pm\" -> intent: \"calendar_create\"
-- \"what's on my schedule?\" -> intent: \"calendar_query\"
-- \"summarize my notion page about goals\" -> intent: \"notion_query\"
-- \"add milk to grocery list in notion\" -> intent: \"notion_create\"
-- \"what time is it?\" -> intent: \"time_check\"
-- \"search for pasta recipes\" -> intent: \"web_search\", parameters: {{"query": "pasta recipes"}}
-- \"find all pdfs in downloads\" -> intent: \"file_search\", parameters: {{"pattern": "*.pdf", "location": "downloads"}}
-- \"what's the weather in London\" -> intent: \"weather_check\", parameters: {{"city": "London"}}
-- \"send an email to john@example.com about meeting\" -> intent: \"email_send\"
-- \"tell me a joke\" -> intent: \"general_chat\"
+- "shutdown the computer" -> intent: "shutdown"
+- "open youtube" -> intent: "web_open", parameters: {{"url": "https://youtube.com", "name": "YouTube"}}
+- "open calculator" -> intent: "app_open", parameters: {{"app_name": "calculator"}}
+- "play some taylor swift" -> intent: "music_play", parameters: {{"song": "taylor swift"}}
+- "schedule meeting tomorrow at 5pm" -> intent: "calendar_create"
+- "what's on my schedule?" -> intent: "calendar_query"
+- "summarize my notion page about goals" -> intent: "notion_query"
+- "add milk to grocery list in notion" -> intent: "notion_create"
+- "what time is it?" -> intent: "time_check"
+- "search for pasta recipes" -> intent: "web_search", parameters: {{"query": "pasta recipes"}}
+- "find all pdfs in downloads" -> intent: "file_search", parameters: {{"pattern": "*.pdf", "location": "downloads"}}
+- "what's the weather in London" -> intent: "weather_check", parameters: {{"city": "London"}}
+- "send an email to john@example.com about meeting" -> intent: "email_send"
+- "take screenshot" -> intent: "screenshot_take"
+- "take a screenshot" -> intent: "screenshot_take"
+- "capture screen" -> intent: "screenshot_take"
+- "tell me a joke" -> intent: "general_chat"
 
 Return ONLY a JSON object with this exact structure:
 {{
@@ -175,7 +193,9 @@ if __name__ == "__main__":
         "set volume to 50",
         "empty the trash",
         "what's the weather in London",
-        "what's the weather?"
+        "what's the weather?",
+        "take screenshot",
+        "capture screen"
     ]
     print("Testing Command Intent Classifier:")
     print("=" * 60)

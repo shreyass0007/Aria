@@ -97,7 +97,11 @@ contextBridge.exposeInMainWorld('api', {
             console.log('📝 Preload: Falling back to simple parser');
             return simpleMarkdownParser(text);
         }
-    }
+    },
+    // Window controls
+    windowMinimize: () => ipcRenderer.send('window-minimize'),
+    windowMaximize: () => ipcRenderer.send('window-maximize'),
+    windowClose: () => ipcRenderer.send('window-close')
 });
 
 console.log('✅ Preload: window.api exposed with parseMarkdown');
