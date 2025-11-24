@@ -192,39 +192,62 @@ class AriaCore:
             print(f"Error listing microphones: {e}")
 
     def _tts_worker(self):
-        """Worker thread to handle TTS playback sequentially using Edge-TTS."""
+        """Worker thread to handle TTS playback sequentially with Edge-TTS and gTTS fallback."""
         # Create a new event loop for this thread since edge-tts is async
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        
+        print("TTS Worker started")
         
         while True:
             text = self.tts_queue.get()
             if text is None:
                 break
             
+            print(f"TTS Worker: Processing text: '{text[:50]}...'")
+            filename = f"her_voice_{int(time.time())}_{id(text)}.mp3"
+            
             try:
-                # Audio output using Edge TTS
-                filename = f"her_voice_{int(time.time())}_{id(text)}.mp3"
-                
-                # Run async edge-tts in sync wrapper
+                print("TTS Worker: Trying Edge-TTS...")
+                # Try Edge TTS first
                 communicate = edge_tts.Communicate(text, "en-US-AriaNeural")
                 loop.run_until_complete(communicate.save(filename))
+                print(f"TTS Worker: Edge-TTS saved to {filename}")
                 
+            except Exception as e:
+                print(f"Edge-TTS error, falling back to gTTS: {e}")
+                try:
+                    # Fallback to gTTS
+                    print("TTS Worker: Using gTTS fallback...")
+                    tts = gTTS(text=text, lang="en", slow=False)
+                    tts.save(filename)
+                    print(f"TTS Worker: gTTS saved to {filename}")
+                except Exception as e2:
+                    print(f"gTTS error: {e2}")
+                    self.tts_queue.task_done()
+                    continue
+            
+            try:
+                # Play the audio file
                 if os.path.exists(filename):
+                    print(f"TTS Worker: Playing audio file {filename} (size: {os.path.getsize(filename)} bytes)")
                     pygame.mixer.init()
                     pygame.mixer.music.load(filename)
                     pygame.mixer.music.play()
                     while pygame.mixer.music.get_busy():
                         time.sleep(0.1)
                     pygame.mixer.quit()
+                    print("TTS Worker: Audio playback complete")
                     
                     # Cleanup
                     try:
                         os.remove(filename)
                     except:
                         pass
+                else:
+                    print(f"TTS Worker ERROR: Audio file {filename} does not exist!")
             except Exception as e:
-                print(f"TTS Worker error: {e}")
+                print(f"Audio playback error: {e}")
             finally:
                 self.tts_queue.task_done()
 
@@ -247,21 +270,21 @@ class AriaCore:
         
         return text.strip()
 
-    def speak(self, text):
-        if self.on_speak:
-            self.on_speak(text)
-        
-        try:
-            print(f"Aria said: {text}")
-        except UnicodeEncodeError:
-            # Fallback for consoles that can't handle emojis (like Windows cp1252)
-            print(f"Aria said: {text.encode('ascii', 'replace').decode()}")
+    def speak(self, text, print_text=True):
+        if print_text:
+            if self.on_speak:
+                self.on_speak(text)
+            
+            try:
+                print(f"Aria said: {text}")
+            except UnicodeEncodeError:
+                print(f"Aria said: {text.encode('ascii', 'replace').decode()}")
         
         # Clean text for audio
         clean_text = self._clean_text_for_audio(text)
         
         # Add to queue for background playback only if TTS is enabled
-        if self.tts_enabled:
+        if self.tts_enabled and clean_text:
             self.tts_queue.put(clean_text)
 
     def listen(self):
@@ -273,8 +296,22 @@ class AriaCore:
                     self.recognizer.adjust_for_ambient_noise(source, duration=0.5)
                     self.recognizer.energy_threshold = 300
                     
-                    audio = self.recognizer.listen(source, timeout=5, phrase_time_limit=5)
-                    command = self.recognizer.recognize_google(audio, language="en-in")
+                    # Listen for audio
+                    audio = self.recognizer.listen(source, timeout=5, phrase_time_limit=10)
+                    
+                    # Save temporary file for Whisper
+                    temp_wav = f"temp_voice_{int(time.time())}.wav"
+                    with open(temp_wav, "wb") as f:
+                        f.write(audio.get_wav_data())
+                    
+                    # Transcribe using Local Faster-Whisper
+                    print("Transcribing locally...")
+                    command = self.speech_engine.transcribe(temp_wav)
+                    
+                    # Cleanup
+                    if os.path.exists(temp_wav):
+                        os.remove(temp_wav)
+                        
                     print(f"User said: {command}")
                     return command.lower()
             except sr.WaitTimeoutError:
@@ -367,196 +404,6 @@ class AriaCore:
     def is_similar(self, a, b, threshold=0.8):
         return difflib.SequenceMatcher(None, a, b).ratio() >= threshold
 
-    def process_command(self, text: str, model_name: str = "openai"):
-        text = text.lower().strip()
-        if not text:
-            return
-
-        # ... (existing command processing) ...
-
-        # 9. File Automation
-        if "organize" in text or "clean up" in text:
-            target_folder = None
-            folder_name = ""
-            
-            if "downloads" in text:
-                target_folder = self.automator.get_downloads_folder()
-                folder_name = "Downloads"
-            elif "desktop" in text:
-                target_folder = self.automator.get_desktop_folder()
-                folder_name = "Desktop"
-            
-            if target_folder:
-                self.speak(f"Organizing your {folder_name} folder...")
-                result = self.automator.organize_folder(target_folder)
-                self.speak(result)
-                return
-            else:
-                self.speak("Which folder should I organize? I can organize your Downloads or Desktop.")
-                return
-
-        # 10. Smalltalk / Exit
-        if "tum best ho" in text:
-            self.speak("Thank you!")
-
-
-
-
-    def _clean_text_for_audio(self, text):
-        """Removes Markdown formatting and emojis for smoother TTS playback."""
-        # Remove bold/italic markers (* or _)
-        text = re.sub(r'[\*_]{1,3}', '', text)
-        
-        # Remove headers (#)
-        text = re.sub(r'^#+\s*', '', text, flags=re.MULTILINE)
-        
-        # Remove code backticks
-        text = re.sub(r'`', '', text)
-        
-        # Remove links [text](url) -> text
-        text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
-        
-        # Remove list bullets (optional, but helps flow)
-        text = re.sub(r'^\s*[-*+]\s+', '', text, flags=re.MULTILINE)
-        
-        # Remove emojis (Unicode emoji ranges)
-        emoji_pattern = re.compile(
-            "["
-            u"\U0001F600-\U0001F64F"  # emoticons
-            u"\U0001F300-\U0001F5FF"  # symbols & pictographs
-            u"\U0001F680-\U0001F6FF"  # transport & map symbols
-            u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
-            u"\U00002702-\U000027B0"  # dingbats
-            u"\U000024C2-\U0001F251"  # enclosed characters
-            u"\U0001F900-\U0001F9FF"  # supplemental symbols
-            u"\U0001FA70-\U0001FAFF"  # symbols and pictographs extended-A
-            u"\u2600-\u26FF"          # miscellaneous symbols
-            u"\u2700-\u27BF"          # dingbats
-            "]+", flags=re.UNICODE
-        )
-        text = emoji_pattern.sub('', text)
-        
-        return text.strip()
-
-    def speak(self, text):
-        if self.on_speak:
-            self.on_speak(text)
-        
-        try:
-            print(f"Aria said: {text}")
-        except UnicodeEncodeError:
-            # Fallback for consoles that can't handle emojis (like Windows cp1252)
-            print(f"Aria said: {text.encode('ascii', 'replace').decode()}")
-        
-        # Clean text for audio
-        clean_text = self._clean_text_for_audio(text)
-        
-        # Add to queue for background playback only if TTS is enabled
-        if self.tts_enabled:
-            self.tts_queue.put(clean_text)
-
-    def listen(self):
-        # Acquire lock to ensure only one thread listens at a time
-        with self.lock:
-            try:
-                with sr.Microphone() as source:
-                    print("Listening...")
-                    self.recognizer.adjust_for_ambient_noise(source, duration=0.5)
-                    self.recognizer.energy_threshold = 300
-                    
-                    audio = self.recognizer.listen(source, timeout=5, phrase_time_limit=5)
-                    command = self.recognizer.recognize_google(audio, language="en-in")
-                    print(f"User said: {command}")
-                    return command.lower()
-            except sr.WaitTimeoutError:
-                return ""
-            except sr.UnknownValueError:
-                return ""
-            except (AssertionError, AttributeError) as e:
-                print(f"Microphone initialization error: {e}")
-                return ""
-            except Exception as e:
-                print(f"Listen error: {e}")
-                return ""
-
-    def safe_open_url(self, url: str, description: str = "") -> bool:
-        try:
-            ok = webbrowser.open(url)
-            if not ok:
-                self.speak("Sorry, I couldn't open that link.")
-                return False
-            if description:
-                self.speak(description)
-            return True
-        except Exception as e:
-            self.speak("Sorry, I couldn't open the link right now.")
-            return False
-
-    def index_apps(self):
-        """Scans Start Menu for .lnk files to build an app index."""
-        print("Indexing apps...")
-        paths = [
-            os.path.join(os.getenv('ProgramData'), r'Microsoft\Windows\Start Menu\Programs'),
-            os.path.join(os.getenv('APPDATA'), r'Microsoft\Windows\Start Menu\Programs')
-        ]
-        
-        for path in paths:
-            # Walk through all subdirectories
-            for root, dirs, files in os.walk(path):
-                for file in files:
-                    if file.endswith(".lnk"):
-                        # Clean name: "Google Chrome.lnk" -> "google chrome"
-                        name = file.lower().replace(".lnk", "")
-                        full_path = os.path.join(root, file)
-                        self.app_paths[name] = full_path
-        print(f"Indexed {len(self.app_paths)} apps.")
-
-    def open_desktop_app(self, app_name: str):
-        app_name = app_name.lower()
-        
-        # 1. Exact Match
-        if app_name in self.app_paths:
-            try:
-                self.speak(f"Opening {app_name}")
-                os.startfile(self.app_paths[app_name])
-                return
-            except Exception as e:
-                print(f"Error opening {app_name}: {e}")
-
-        # 2. Substring Match (e.g. "chrome" -> "google chrome")
-        # Find all apps that contain the query
-        substring_matches = [name for name in self.app_paths if app_name in name]
-        if substring_matches:
-            # Sort by length to find the most relevant (shortest) match
-            # e.g. "chrome" prefers "google chrome" over "google chrome remote desktop"
-            best_match = sorted(substring_matches, key=len)[0]
-            try:
-                self.speak(f"Opening {best_match}")
-                os.startfile(self.app_paths[best_match])
-                return
-            except Exception as e:
-                print(f"Error opening {best_match}: {e}")
-
-        # 3. Fuzzy Match (Stricter)
-        matches = difflib.get_close_matches(app_name, list(self.app_paths.keys()), n=1, cutoff=0.8)
-        if matches:
-            best_match = matches[0]
-            try:
-                self.speak(f"Opening {best_match}")
-                os.startfile(self.app_paths[best_match])
-                return
-            except Exception as e:
-                print(f"Error opening {best_match}: {e}")
-
-        # 4. Fallback to System Command (e.g. notepad, calc)
-        try:
-            self.speak(f"Attempting to open {app_name}")
-            os.startfile(app_name) # Works for things in PATH
-        except Exception:
-            self.speak(f"I couldn't find or open {app_name}.")
-
-    def is_similar(self, a, b, threshold=0.8):
-        return difflib.SequenceMatcher(None, a, b).ratio() >= threshold
 
     def process_command(self, text: str, model_name: str = "openai"):
         text = text.lower().strip()
@@ -1032,7 +879,38 @@ class AriaCore:
         # --- GENERAL / FALLBACK ---
         # If intent is "general_chat" or "none", or if we fell through
         if self.brain.is_available():
-            response = self.brain.ask(text, model_name=model_name)
-            self.speak(response)
+            # Streaming Response
+            full_response = ""
+            sentence_buffer = ""
+            
+            print("Thinking (Streaming)...")
+            
+            try:
+                for chunk in self.brain.stream_ask(text, model_name=model_name):
+                    full_response += chunk
+                    sentence_buffer += chunk
+                    
+                    # Check for sentence delimiters to stream TTS
+                    if any(punct in chunk for punct in [".", "?", "!", "\n"]):
+                        # Clean and speak the buffered sentence(s)
+                        to_speak = sentence_buffer.strip()
+                        if to_speak:
+                            # We don't want to print every chunk, just the final full response
+                            # But we send to TTS queue immediately
+                            self.speak(to_speak, print_text=False) 
+                        sentence_buffer = ""
+                
+                # Speak any remaining text
+                if sentence_buffer.strip():
+                    self.speak(sentence_buffer.strip(), print_text=False)
+                    
+                # Finally print the full response for UI/Logs
+                if self.on_speak:
+                    self.on_speak(full_response)
+                print(f"Aria said: {full_response}")
+                
+            except Exception as e:
+                print(f"Streaming error: {e}")
+                self.speak("I encountered an error while thinking.")
         else:
             self.speak("I'm not sure how to help with that.")
