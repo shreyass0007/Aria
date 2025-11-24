@@ -108,9 +108,11 @@ class NotionManager:
                 children=children
             )
             target_display = target_name if target_name else "Notion"
+            target_display = target_name if target_name else "Notion"
             return f"Successfully added '{title}' to {target_display}."
         except Exception as e:
-            return f"Failed to create page in Notion: {e}"
+            print(f"Notion Create Error: {e}")
+            return "I couldn't create the page in Notion due to an error."
 
     def get_pages(self, num_pages=5, query=None):
         """
@@ -161,7 +163,10 @@ class NotionManager:
             
             return pages_text
         except Exception as e:
-            return f"Error fetching pages: {e}"
+            return pages_text
+        except Exception as e:
+            print(f"Notion Fetch Error: {e}")
+            return "I couldn't fetch your Notion pages right now."
 
     def get_page_content(self, page_id: str) -> dict:
         """
@@ -239,7 +244,8 @@ class NotionManager:
                     "error": f"Page not found. Make sure the page ID is correct and the page is shared with your integration."
                 }
             else:
+                print(f"Notion Content Error: {error_msg}")
                 return {
                     "status": "error",
-                    "error": f"Error fetching page content: {error_msg}"
+                    "error": "I encountered an error while fetching the page content."
                 }

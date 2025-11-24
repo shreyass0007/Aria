@@ -37,6 +37,11 @@ class CommandIntentClassifier:
         "clipboard_clear": "Clear clipboard",
         # Screenshot Operations
         "screenshot_take": "Take a screenshot",
+        # System Monitoring
+        "battery_check": "Check battery status and percentage",
+        "cpu_check": "Check CPU usage",
+        "ram_check": "Check RAM/memory usage",
+        "system_stats": "Get all system statistics (battery, CPU, RAM)",
         # File Automation
         "organize_downloads": "Organize downloads folder",
         "organize_desktop": "Organize desktop folder",
@@ -66,6 +71,8 @@ class CommandIntentClassifier:
         "time_check": "Get current time",
         "date_check": "Get current date",
         "weather_check": "Check weather for a specific location",
+        # Email
+        "email_send": "Send an email",
         # General
         "general_chat": "General conversation/questions (fallback)"
     }
@@ -137,6 +144,7 @@ EXAMPLES:
 - \"search for pasta recipes\" -> intent: \"web_search\", parameters: {{"query": "pasta recipes"}}
 - \"find all pdfs in downloads\" -> intent: \"file_search\", parameters: {{"pattern": "*.pdf", "location": "downloads"}}
 - \"what's the weather in London\" -> intent: \"weather_check\", parameters: {{"city": "London"}}
+- \"send an email to john@example.com about meeting\" -> intent: \"email_send\"
 - \"tell me a joke\" -> intent: \"general_chat\"
 
 Return ONLY a JSON object with this exact structure:

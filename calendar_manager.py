@@ -61,6 +61,9 @@ class CalendarManager:
         end_time: ISO format string or datetime object (optional, defaults to start_time + 1h)
         """
         if not self.service:
+            self.authenticate()
+            
+        if not self.service:
             return "Calendar service not available. Please check credentials."
 
         try:
@@ -90,12 +93,28 @@ class CalendarManager:
             }
 
             event = self.service.events().insert(calendarId='primary', body=event).execute()
-            return f"Event created: {event.get('htmlLink')}"
+            
+            # Format time for friendly display using the ORIGINAL start_time (not from Google's response)
+            try:
+                # Use the original start_time parameter to avoid timezone conversion issues
+                if isinstance(start_time, str):
+                    dt = datetime.datetime.fromisoformat(start_time)
+                else:
+                    dt = start_time
+                formatted_time = dt.strftime("%A, %B %d at %I:%M %p")
+            except:
+                formatted_time = "the requested time"
+
+            return f"✅ I've scheduled '{summary}' for {formatted_time}."
         except Exception as e:
-            return f"Failed to create event: {e}"
+            print(f"Calendar Create Error: {e}")
+            return "I couldn't create the calendar event due to an error."
 
     def get_upcoming_events(self, max_results=5):
         """Gets the next few upcoming events."""
+        if not self.service:
+            self.authenticate()
+
         if not self.service:
             return "Calendar service not available."
 
@@ -115,4 +134,5 @@ class CalendarManager:
                 result_text += f"- {event['summary']} at {start}\n"
             return result_text
         except Exception as e:
-            return f"Error fetching events: {e}"
+            print(f"Calendar Fetch Error: {e}")
+            return "I couldn't check your calendar right now."

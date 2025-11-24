@@ -170,7 +170,7 @@ async function sendMessageToBackend(message) {
                 currentConversationId = data.conversation_id;
             }
             if (data.response) {
-                addMessage(data.response, 'aria');
+                addMessage(data.response, 'aria', data.ui_action);
             }
         }
     } catch (error) {
@@ -179,7 +179,7 @@ async function sendMessageToBackend(message) {
     }
 }
 
-function addMessage(text, sender) {
+function addMessage(text, sender, uiAction = null) {
     const messageWrapper = document.createElement('div');
     messageWrapper.className = 'message-wrapper';
 
@@ -223,18 +223,82 @@ function addMessage(text, sender) {
         // Parse Markdown for Aria's messages
         try {
             if (window.api && window.api.parseMarkdown) {
-                console.log('🔍 Markdown parser available');
-                console.log('📝 Original text:', text.substring(0, 100) + '...');
                 const parsed = window.api.parseMarkdown(text);
-                console.log('✅ Parsed HTML:', parsed.substring(0, 100) + '...');
                 bubble.innerHTML = parsed;
             } else {
-                console.warn('⚠️ Markdown parser not available');
-                bubble.textContent = text;
+                // Simple Regex Markdown Parser for Links
+                let html = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color: #4f46e5; text-decoration: underline;">$1</a>');
+                html = html.replace(/\n/g, '<br>');
+                bubble.innerHTML = html;
             }
         } catch (e) {
             console.error('❌ Error parsing markdown:', e);
-            bubble.textContent = text;
+            // Fallback to regex parser on error
+            let html = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color: #4f46e5; text-decoration: underline;">$1</a>');
+            html = html.replace(/\n/g, '<br>');
+            bubble.innerHTML = html;
+        }
+
+        // Handle UI Actions (email confirmation)
+        if (uiAction && uiAction.type === 'email_confirmation') {
+            const emailPreview = document.createElement('div');
+            emailPreview.className = 'email-preview';
+
+            // To field
+            const toField = document.createElement('div');
+            toField.className = 'email-field';
+            toField.innerHTML = `<span class="email-label">To:</span> <span class="email-value">${uiAction.data.to}</span>`;
+
+            // Subject field
+            const subjectField = document.createElement('div');
+            subjectField.className = 'email-field';
+            subjectField.innerHTML = `<span class="email-label">Subject:</span> <span class="email-value">${uiAction.data.subject}</span>`;
+
+            // Editable body
+            const bodyLabel = document.createElement('div');
+            bodyLabel.className = 'email-label';
+            bodyLabel.textContent = 'Body:';
+            bodyLabel.style.marginTop = '12px';
+            bodyLabel.style.marginBottom = '6px';
+
+            const bodyTextarea = document.createElement('textarea');
+            bodyTextarea.className = 'email-body-editor';
+            bodyTextarea.value = uiAction.data.body || '';
+            bodyTextarea.rows = 8;
+
+            // Action buttons
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'message-actions';
+
+            const confirmBtn = document.createElement('button');
+            confirmBtn.className = 'action-btn confirm';
+            confirmBtn.textContent = 'Send Email';
+            confirmBtn.onclick = () => {
+                const editedBody = bodyTextarea.value;
+                addMessage('Yes, send it.', 'user');
+                sendMessageToBackend('Yes');
+                emailPreview.remove();
+            };
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'action-btn cancel';
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.onclick = () => {
+                addMessage('No, cancel.', 'user');
+                sendMessageToBackend('No');
+                emailPreview.remove();
+            };
+
+            buttonContainer.appendChild(confirmBtn);
+            buttonContainer.appendChild(cancelBtn);
+
+            emailPreview.appendChild(toField);
+            emailPreview.appendChild(subjectField);
+            emailPreview.appendChild(bodyLabel);
+            emailPreview.appendChild(bodyTextarea);
+            emailPreview.appendChild(buttonContainer);
+
+            bubble.appendChild(emailPreview);
         }
     } else {
         // Plain text for user messages (security)

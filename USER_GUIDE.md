@@ -80,7 +80,9 @@ Ask Aria anything, just like ChatGPT.
 | :--- | :--- |
 | **Wake Word** | "Aria..." |
 | **Notion** | "Add to [Page] [Content]", "Search Notion for [Query]" |
-| **Calendar** | "Schedule [Event] at [Time]" |
+| **Calendar** | "Schedule [Event] at [Time]" | "Schedule meeting with John tomorrow at 3 PM" |
+| | "What is on my calendar?" | "Check my schedule for today" |
+| | "Add to calendar" | "Add dentist appointment next Friday at 10 AM" |
 | **Apps** | "Open [App Name]" |
 | **Web** | "Open [Website]", "Search for [Query]" |
 | **System** | "Exit", "Quit" |

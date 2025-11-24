@@ -136,7 +136,9 @@ function startPythonBackend() {
 
     const backendScript = path.join(__dirname, '..', 'backend_api.py');
 
-    pythonProcess = spawn(pythonExecutable, [backendScript]);
+    pythonProcess = spawn(pythonExecutable, [backendScript], {
+        cwd: path.join(__dirname, '..')
+    });
 
     pythonProcess.stdout.on('data', (data) => {
         console.log(`Python Backend: ${data}`);

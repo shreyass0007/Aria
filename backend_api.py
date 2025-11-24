@@ -83,6 +83,12 @@ def process_message():
         # Join all responses with newlines to ensure the user sees everything
         response_text = "\n\n".join(responses) if responses else "I'm processing your request."
         
+        # Check for UI action
+        ui_action = None
+        if aria.last_ui_action:
+            ui_action = aria.last_ui_action
+            aria.last_ui_action = None # Clear it
+        
         # Save assistant message
         if conversation_mgr.is_connected() and conversation_id:
             conversation_mgr.add_message(conversation_id, 'assistant', response_text)
@@ -90,7 +96,8 @@ def process_message():
         return jsonify({
             'status': 'success',
             'response': response_text,
-            'conversation_id': conversation_id
+            'conversation_id': conversation_id,
+            'ui_action': ui_action
         })
     
     except Exception as e:

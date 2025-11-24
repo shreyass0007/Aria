@@ -16,15 +16,16 @@
 7. [File Management](#-file-management)
 8. [System Control](#-system-control)
 9. [Clipboard & Screenshots](#-clipboard--screenshots)
-10. [Weather Information](#%EF%B8%8F-weather-information)
-11. [Calendar Management](#-calendar-management)
-12. [Notion Integration](#-notion-integration)
-13. [File Automation](#-file-automation)
-14. [Conversation Features](#-conversation-features)
-15. [Settings & Customization](#%EF%B8%8F-settings--customization)
-16. [Troubleshooting](#-troubleshooting)
-17. [Tips & Tricks](#-tips--tricks)
-18. [FAQ](#-faq)
+10. [System Monitoring](#-system-monitoring)
+11. [Weather Information](#%EF%B8%8F-weather-information)
+12. [Calendar Management](#-calendar-management)
+13. [Notion Integration](#-notion-integration)
+14. [File Automation](#-file-automation)
+15. [Conversation Features](#-conversation-features)
+16. [Settings & Customization](#%EF%B8%8F-settings--customization)
+17. [Troubleshooting](#-troubleshooting)
+18. [Tips & Tricks](#-tips--tricks)
+19. [FAQ](#-faq)
 
 ---
 
@@ -589,6 +590,91 @@ C:\Users\[YourName]\Desktop\Screenshots\
 ```
 
 The folder is created automatically if it doesn't exist.
+
+### System Monitoring
+
+#### Tutorial 15: Battery Status
+
+**Check Battery:**
+```
+"Aria, check battery"
+"Aria, what's my battery percentage?"
+"Aria, battery status"
+```
+
+**Example Response:**
+```
+🔋 Battery: 85%
+⚡ Charging
+⏱️ Time to full charge: 45 minutes
+```
+
+**On Desktop** (no battery):
+```
+→ "No battery detected. This appears to be a desktop computer."
+```
+
+#### Tutorial 16: CPU Monitoring
+
+**Check CPU Usage:**
+```
+"Aria, check CPU"
+"Aria, CPU usage"
+"Aria, how much CPU am I using?"
+```
+
+**Example Response:**
+```
+💻 CPU Usage: 23%
+📊 Status: Low usage
+⚡ Frequency: 3.40 GHz
+```
+
+**Status Levels:**
+- Low usage: < 30%
+- Moderate usage: 30-70%
+- High usage: > 70%
+
+#### Tutorial 17: RAM Monitoring
+
+**Check RAM Usage:**
+```
+"Aria, check RAM"
+"Aria, memory usage"
+"Aria, how much RAM am I using?"
+```
+
+**Example Response:**
+```
+🧠 RAM Usage: 8.5 GB / 16 GB (53%)
+📊 Status: Moderate
+✅ Available: 7.5 GB
+```
+
+#### Tutorial 18: All System Stats
+
+**Get Complete Overview:**
+```
+"Aria, system stats"
+"Aria, check system status"
+"Aria, system information"
+```
+
+**Example Response:**
+```
+📊 SYSTEM STATISTICS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔋 Battery: 85% (⚡ Charging)
+💻 CPU: 23%
+🧠 RAM: 8.5 GB / 16 GB (53%)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Use Cases:**
+- Monitor system health during intensive tasks
+- Check battery before unplugging laptop
+- Identify high CPU/RAM usage
+- Quick system overview
 
 ---
 

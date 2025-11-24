@@ -20,6 +20,8 @@ from command_intent_classifier import CommandIntentClassifier
 from file_manager import FileManager
 from weather_manager import WeatherManager
 from clipboard_screenshot import ClipboardScreenshot
+from system_monitor import SystemMonitor
+from email_manager import EmailManager
 import subprocess
 import glob
 import threading
@@ -42,11 +44,15 @@ class AriaCore:
         self.file_manager = FileManager()
         self.weather_manager = WeatherManager()
         self.clipboard_screenshot = ClipboardScreenshot()
+        self.system_monitor = SystemMonitor()
+        self.email_manager = EmailManager()
         self.input_mode = "voice"
         self.wake_word = "aria"
         self.app_paths = {}
         self.lock = threading.Lock() # Prevent concurrent mic access
         self.pending_notion_pages = None  # Store page options for selection
+        self.pending_email = None # Store email draft for confirmation
+        self.last_ui_action = None # Store UI action for backend to pick up
         
         self.tts_queue = queue.Queue()
         threading.Thread(target=self._tts_worker, daemon=True).start()
@@ -440,7 +446,7 @@ class AriaCore:
                 self.tts_queue.task_done()
 
     def _clean_text_for_audio(self, text):
-        """Removes Markdown formatting for smoother TTS playback."""
+        """Removes Markdown formatting and emojis for smoother TTS playback."""
         # Remove bold/italic markers (* or _)
         text = re.sub(r'[\*_]{1,3}', '', text)
         
@@ -455,6 +461,23 @@ class AriaCore:
         
         # Remove list bullets (optional, but helps flow)
         text = re.sub(r'^\s*[-*+]\s+', '', text, flags=re.MULTILINE)
+        
+        # Remove emojis (Unicode emoji ranges)
+        emoji_pattern = re.compile(
+            "["
+            u"\U0001F600-\U0001F64F"  # emoticons
+            u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+            u"\U0001F680-\U0001F6FF"  # transport & map symbols
+            u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
+            u"\U00002702-\U000027B0"  # dingbats
+            u"\U000024C2-\U0001F251"  # enclosed characters
+            u"\U0001F900-\U0001F9FF"  # supplemental symbols
+            u"\U0001FA70-\U0001FAFF"  # symbols and pictographs extended-A
+            u"\u2600-\u26FF"          # miscellaneous symbols
+            u"\u2700-\u27BF"          # dingbats
+            "]+", flags=re.UNICODE
+        )
+        text = emoji_pattern.sub('', text)
         
         return text.strip()
 
@@ -585,6 +608,26 @@ class AriaCore:
 
         # PRIORITY: Check if user is responding to a Notion page selection prompt
         # This needs to be FIRST, before any other logic
+        
+        # 0. Email Confirmation
+        if self.pending_email:
+            if any(x in text for x in ["yes", "send", "confirm", "okay", "sure"]):
+                self.speak("Sending email...")
+                to = self.pending_email["to"]
+                subject = self.pending_email["subject"]
+                body = self.pending_email["body"]
+                result = self.email_manager.send_email(to, subject, body)
+                self.speak(result)
+                self.pending_email = None
+                return
+            elif any(x in text for x in ["no", "cancel", "don't send", "stop"]):
+                self.speak("Email cancelled.")
+                self.pending_email = None
+                return
+            else:
+                self.speak("Please say 'yes' to send or 'no' to cancel.")
+                return
+
         if self.pending_notion_pages:
             # User is selecting a page number
             try:
@@ -779,19 +822,61 @@ class AriaCore:
             return
         elif intent == "volume_set":
             level = parameters.get("level")
-            if level is not None:
-                self.speak(self.system_control.set_volume(int(level)))
+            if level:
+                try:
+                    vol = int(level)
+                    self.speak(self.system_control.set_volume(vol))
+                except ValueError:
+                    self.speak("Please specify a valid volume level.")
             else:
-                self.speak("To what level?")
+                self.speak("Set volume to what level?")
             return
         elif intent == "volume_mute":
-            self.speak(self.system_control.mute())
+            self.speak(self.system_control.mute_volume())
             return
         elif intent == "volume_unmute":
-            self.speak(self.system_control.unmute())
+            self.speak(self.system_control.unmute_volume())
             return
         elif intent == "volume_check":
-            vol = self.system_control.get_volume()
+            # Not implemented in system_control yet, but good to have intent
+            self.speak("Volume check not yet implemented.")
+            return
+
+        # --- EMAIL ---
+        elif intent == "email_send":
+            # Extract details using brain if not already present
+            email_details = self.brain.parse_email_intent(text)
+            to = email_details.get("to")
+            subject = email_details.get("subject")
+            body_context = email_details.get("body")
+            
+            if to and subject and body_context:
+                self.speak("Drafting your email...")
+                user_name = os.getenv("USER_NAME", "User")
+                draft_body = self.brain.generate_email_draft(to, subject, body_context, sender_name=user_name)
+                
+                self.pending_email = {
+                    "to": to,
+                    "subject": subject,
+                    "body": draft_body
+                }
+                
+                self.speak(f"Here is the draft: {draft_body}")
+                self.speak("Do you want to send it?")
+                
+                # Set UI action for frontend buttons
+                self.last_ui_action = {
+                    "type": "email_confirmation",
+                    "data": {
+                        "to": to,
+                        "subject": subject,
+                        "body": draft_body
+                    }
+                }
+            else:
+                self.speak("I need more details. Who is it for, and what should I say?")
+            return
+
             muted = self.system_control.is_muted()
             status = "muted" if muted else f"at {vol}%"
             self.speak(f"System volume is {status}")
@@ -862,6 +947,23 @@ class AriaCore:
         elif intent == "screenshot_take":
             filename = parameters.get("filename", None)
             self.speak(self.clipboard_screenshot.take_screenshot(filename))
+            return
+
+        # --- SYSTEM MONITORING ---
+        elif intent == "battery_check":
+            self.speak(self.system_monitor.get_battery_status())
+            return
+
+        elif intent == "cpu_check":
+            self.speak(self.system_monitor.get_cpu_usage())
+            return
+
+        elif intent == "ram_check":
+            self.speak(self.system_monitor.get_ram_usage())
+            return
+
+        elif intent == "system_stats":
+            self.speak(self.system_monitor.get_all_stats())
             return
 
         # --- FILE AUTOMATION ---

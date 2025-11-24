@@ -174,12 +174,10 @@ USER_NAME=Your Name
 ```
 
 ### 4. Google Calendar Setup (Optional)
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing
-3. Enable **Google Calendar API**
-4. Create **OAuth 2.0 Client ID** (Desktop App)
-5. Download `credentials.json` and place it in the project root
+To enable calendar scheduling features:
+1. Follow the detailed [Google Calendar Setup Guide](GOOGLE_CALENDAR_SETUP.md).
+2. Place your `credentials.json` in the project root.
+3. Run Aria and authenticate in the browser.
 6. First run will open browser for authentication; `token.pickle` will be saved
 
 ### 5. Electron Frontend Setup

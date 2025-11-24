@@ -33,6 +33,7 @@ Pillow
 pycaw
 comtypes
 winshell
+psutil
 
 # Utilities
 wikipedia

@@ -54,19 +54,21 @@ class AriaBrain:
         if not self.llm:
             return {}
 
-        # Get current time for context
-        now = datetime.datetime.now().isoformat()
+        # Get current time for context (Explicitly mention IST)
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        day_of_week = datetime.datetime.now().strftime("%A")
         
         template = """
         You are a calendar assistant. Extract the event details from the user's request.
-        The current time is {now}.
+        The current time is {now} ({day_of_week}). Assume the user is in Indian Standard Time (IST).
+        If the user says "tomorrow", calculate the date based on the current time provided above.
         
         User Request: "{text}"
         
         Return ONLY a JSON object with the following fields:
         - summary: A short title for the event.
-        - start_time: The start time in ISO 8601 format (YYYY-MM-DDTHH:MM:SS). Calculate relative dates (e.g. "tomorrow", "next friday") based on the current time.
-        - end_time: The end time in ISO 8601 format. If not specified, leave it null or omit it.
+        - start_time: The start time in ISO 8601 format (YYYY-MM-DDTHH:MM:SS) in local IST. DO NOT convert to UTC.
+        - end_time: The end time in ISO 8601 format in local IST. If the user specifies a duration (e.g., "for 2 hours", "for 30 minutes"), calculate the end_time as start_time + duration. If not specified, leave it null.
         
         Example JSON:
         {{
@@ -77,13 +79,13 @@ class AriaBrain:
         """
         
         prompt = PromptTemplate(
-            input_variables=["now", "text"],
+            input_variables=["now", "day_of_week", "text"],
             template=template
         )
         
         try:
             # Create the prompt and invoke the model
-            formatted_prompt = prompt.format(now=now, text=text)
+            formatted_prompt = prompt.format(now=now, day_of_week=day_of_week, text=text)
             response = self.llm.invoke(formatted_prompt)
             print(f"DEBUG: Raw OpenAI response: {response.content}")
             
@@ -223,3 +225,81 @@ class AriaBrain:
         except Exception as e:
             print(f"Error extracting page ID: {e}")
             return {}
+
+    def parse_email_intent(self, text: str) -> dict:
+        """
+        Uses OpenAI via LangChain to extract email details.
+        Returns a dict with keys: to, subject, body.
+        """
+        if not self.llm:
+            return {}
+
+        template = """
+        You are a helpful assistant. Extract the email details from the user's request.
+        
+        User Request: "{text}"
+        
+        Return ONLY a JSON object with the following fields:
+        - to: The recipient's email address. If a name is given (e.g., "John"), try to infer or leave it as the name if no email is found.
+        - subject: A short subject line for the email.
+        - body: The main content of the email.
+        
+        Example JSON:
+        {{
+            "to": "john@example.com",
+            "subject": "Meeting Reminder",
+            "body": "Hi John, just a reminder about our meeting tomorrow."
+        }}
+        """
+        
+        prompt = PromptTemplate(
+            input_variables=["text"],
+            template=template
+        )
+        
+        try:
+            formatted_prompt = prompt.format(text=text)
+            response = self.llm.invoke(formatted_prompt)
+            
+            cleaned_text = response.content.replace("```json", "").replace("```", "").strip()
+            parsed = json.loads(cleaned_text)
+            return parsed
+        except Exception as e:
+            print(f"Error parsing email intent: {e}")
+            return {}
+
+    def generate_email_draft(self, to: str, subject: str, context: str, sender_name: str = "User") -> str:
+        """
+        Generates a polite email draft based on context.
+        """
+        if not self.llm:
+            return context
+
+        template = """
+        You are a professional email assistant. Write a polished, well-formatted email.
+        
+        Recipient: {to}
+        Subject: {subject}
+        Context/Message: "{context}"
+        Sender Name: {sender_name}
+        
+        Write ONLY the email body with the following structure:
+        1. Start with an appropriate greeting (e.g., "Hi [name]," or "Dear [name],")
+        2. Write the main message in clear paragraphs (use double line breaks between paragraphs)
+        3. End with a professional sign-off using the sender name
+        
+        Keep it concise, professional, and warm. Do NOT include the subject line.
+        """
+        
+        prompt = PromptTemplate(
+            input_variables=["to", "subject", "context", "sender_name"],
+            template=template
+        )
+        
+        try:
+            formatted_prompt = prompt.format(to=to, subject=subject, context=context, sender_name=sender_name)
+            response = self.llm.invoke(formatted_prompt)
+            return response.content.strip()
+        except Exception as e:
+            print(f"Error generating draft: {e}")
+            return context
