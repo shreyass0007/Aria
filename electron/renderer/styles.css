@@ -205,6 +205,45 @@ body::before {
     transform: rotate(5deg) scale(1.1);
 }
 
+/* Theme-aware logo badge colors */
+[data-color-theme="violet"] .logo-badge {
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+}
+
+[data-color-theme="ocean"] .logo-badge {
+    box-shadow: 0 4px 20px rgba(14, 165, 233, 0.4);
+}
+
+[data-color-theme="sunset"] .logo-badge {
+    box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
+}
+
+[data-color-theme="forest"] .logo-badge {
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+}
+
+/* Dark mode logo adjustments */
+[data-theme="dark"] .logo-badge {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+}
+
+[data-theme="dark"][data-color-theme="violet"] .logo-badge {
+    box-shadow: 0 4px 20px rgba(129, 140, 248, 0.3);
+}
+
+[data-theme="dark"][data-color-theme="ocean"] .logo-badge {
+    box-shadow: 0 4px 20px rgba(56, 189, 248, 0.3);
+}
+
+[data-theme="dark"][data-color-theme="sunset"] .logo-badge {
+    box-shadow: 0 4px 20px rgba(251, 146, 60, 0.3);
+}
+
+[data-theme="dark"][data-color-theme="forest"] .logo-badge {
+    box-shadow: 0 4px 20px rgba(52, 211, 153, 0.3);
+}
+
 .title-section {
     display: flex;
     flex-direction: column;
