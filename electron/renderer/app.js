@@ -6,6 +6,7 @@ let voiceModeActive = false;
 let currentTheme = 'light';
 let currentColorTheme = 'violet'; // violet, ocean, sunset, forest
 let currentConversationId = null;
+let currentModel = 'gpt-4o'; // Current AI model
 
 // DOM Elements
 const chatContainer = document.getElementById('chatContainer');
@@ -25,16 +26,17 @@ const newChatBtn = document.getElementById('newChatBtn');
 const historyBtn = document.getElementById('historyBtn');
 const historySidebar = document.getElementById('historySidebar');
 const ttsToggle = document.getElementById('ttsToggle');
+const modelSelector = document.getElementById('modelSelector');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     // Add custom title bar for frameless window
     createTitleBar();
-    // Add model selector to input bar dynamically
-    addModelSelector();
     setupEventListeners();
     loadTheme();
     loadTTSStatus(); // Load TTS status
+    fetchAvailableModels(); // Load available AI models
+    loadModelPreference(); // Load saved model
     displayWelcomeMessage();
 });
 
@@ -84,47 +86,6 @@ function createTitleBar() {
     });
 }
 
-//  Add Model Selector Dynamically
-function addModelSelector() {
-    const inputRow = document.querySelector('.input-row');
-    const sendBtn = document.getElementById('sendBtn');
-
-    if (inputRow && sendBtn) {
-        // Create select element
-        const modelSelect = document.createElement('select');
-        modelSelect.id = 'modelSelect';
-        modelSelect.className = 'model-select-inline';
-        modelSelect.title = 'Select AI Model';
-
-        // Add options
-        const options = [
-            { value: 'openai', text: 'GPT-4o' },
-            { value: 'gemini', text: 'Gemini' }
-        ];
-
-        options.forEach(opt => {
-            const option = document.createElement('option');
-            option.value = opt.value;
-            option.textContent = opt.text;
-            modelSelect.appendChild(option);
-        });
-
-        // Load saved model preference
-        const savedModel = localStorage.getItem('selectedModel') || 'openai';
-        modelSelect.value = savedModel;
-
-        // Add change event listener
-        modelSelect.addEventListener('change', (e) => {
-            const model = e.target.value;
-            localStorage.setItem('selectedModel', model);
-            // No notification needed - selection is instant
-        });
-
-        // Insert before send button
-        inputRow.insertBefore(modelSelect, sendBtn);
-    }
-}
-
 // Event Listeners
 function setupEventListeners() {
     console.log('Setting up event listeners...');
@@ -170,6 +131,11 @@ function setupEventListeners() {
     themeOptions.forEach(option => {
         option.addEventListener('click', () => handleColorThemeChange(option.dataset.theme));
     });
+
+    // Model Selector
+    if (modelSelector) {
+        modelSelector.addEventListener('change', handleModelChange);
+    }
 
     // Close modal on overlay click
     if (settingsModal) {
@@ -217,6 +183,49 @@ async function handleToggleTTS() {
     }
 }
 
+// Model Management
+async function fetchAvailableModels() {
+    try {
+        const response = await fetch(`${API_URL}/models/available`);
+        const data = await response.json();
+
+        if (data.status === 'success' && modelSelector) {
+            modelSelector.innerHTML = ''; // Clear loading message
+
+            data.models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.id;
+                option.textContent = model.name;
+                modelSelector.appendChild(option);
+            });
+
+            // Load saved preference
+            loadModelPreference();
+        }
+    } catch (error) {
+        console.error('Error fetching models:', error);
+        if (modelSelector) {
+            modelSelector.innerHTML = '<option value="gpt-4o">GPT-4o</option>';
+        }
+    }
+}
+
+function loadModelPreference() {
+    const savedModel = localStorage.getItem('selected_ai_model') || 'gpt-4o';
+    currentModel = savedModel;
+
+    if (modelSelector) {
+        modelSelector.value = savedModel;
+    }
+}
+
+function handleModelChange(event) {
+    const selectedModel = event.target.value;
+    currentModel = selectedModel;
+    localStorage.setItem('selected_ai_model', selectedModel);
+    console.log('Model changed to:', selectedModel);
+}
+
 // Auto-resize textarea
 function autoResizeTextarea() {
     messageInput.style.height = 'auto';
@@ -254,8 +263,7 @@ function handleSendMessage() {
 
 async function sendMessageToBackend(message) {
     try {
-        const model = localStorage.getItem('selectedModel') || 'openai';
-        const payload = { message, model };
+        const payload = { message, model: currentModel };
         if (currentConversationId) {
             payload.conversation_id = currentConversationId;
         }
