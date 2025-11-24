@@ -207,15 +207,24 @@ class AriaCore:
             print(f"TTS Worker: Processing text: '{text[:50]}...'")
             filename = f"her_voice_{int(time.time())}_{id(text)}.mp3"
             
+            edge_tts_success = False
             try:
                 print("TTS Worker: Trying Edge-TTS...")
-                # Try Edge TTS first
+                # Try Edge TTS first with timeout
                 communicate = edge_tts.Communicate(text, "en-US-AriaNeural")
-                loop.run_until_complete(communicate.save(filename))
+                # Use wait_for to add a 3-second timeout
+                loop.run_until_complete(
+                    asyncio.wait_for(communicate.save(filename), timeout=3.0)
+                )
                 print(f"TTS Worker: Edge-TTS saved to {filename}")
+                edge_tts_success = True
                 
+            except asyncio.TimeoutError:
+                print("Edge-TTS timeout (>3s), falling back to gTTS")
             except Exception as e:
                 print(f"Edge-TTS error, falling back to gTTS: {e}")
+            
+            if not edge_tts_success:
                 try:
                     # Fallback to gTTS
                     print("TTS Worker: Using gTTS fallback...")
@@ -907,7 +916,12 @@ class AriaCore:
                 # Finally print the full response for UI/Logs
                 if self.on_speak:
                     self.on_speak(full_response)
-                print(f"Aria said: {full_response}")
+                
+                # Safe print with Unicode handling
+                try:
+                    print(f"Aria said: {full_response}")
+                except UnicodeEncodeError:
+                    print(f"Aria said: {full_response.encode('ascii', 'replace').decode()}")
                 
             except Exception as e:
                 print(f"Streaming error: {e}")
