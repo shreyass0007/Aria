@@ -4,6 +4,7 @@ import datetime
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import PromptTemplate
 
 load_dotenv()
@@ -12,25 +13,83 @@ class AriaBrain:
     def __init__(self):
         self.api_key = os.getenv("OPEN_AI_API_KEY")
         self.google_api_key = os.getenv("GOOGLE_API_KEY")
+        self.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
         
         # print(f"DEBUG: OpenAI Key found: {bool(self.api_key)}")
         # print(f"DEBUG: Google Key found: {bool(self.google_api_key)}")
+        # print(f"DEBUG: Anthropic Key found: {bool(self.anthropic_api_key)}")
         
-        self.llm_openai = None
+        # Model instances - OpenAI variants
+        self.llm_gpt_5_1 = None
+        self.llm_gpt_4o = None
+        self.llm_gpt_4o_mini = None
+        self.llm_gpt_35_turbo = None
+        
+        # Claude models
+        self.llm_claude_sonnet = None
+        self.llm_claude_opus = None
+        
+        # Gemini
         self.llm_gemini = None
         
-        # Initialize OpenAI
+        # Initialize OpenAI models
         if self.api_key:
             try:
-                self.llm_openai = ChatOpenAI(
+                # GPT-5.1 (future-proof)
+                try:
+                    self.llm_gpt_5_1 = ChatOpenAI(
+                        model="gpt-5.1",
+                        api_key=self.api_key,
+                        temperature=0.7
+                    )
+                except Exception as e:
+                    print(f"GPT-5.1 not yet available: {e}")
+                
+                # GPT-4o (default)
+                self.llm_gpt_4o = ChatOpenAI(
                     model="gpt-4o",
                     api_key=self.api_key,
                     temperature=0.7
                 )
+                
+                # GPT-4o-mini
+                self.llm_gpt_4o_mini = ChatOpenAI(
+                    model="gpt-4o-mini",
+                    api_key=self.api_key,
+                    temperature=0.7
+                )
+                
+                # GPT-3.5-turbo
+                self.llm_gpt_35_turbo = ChatOpenAI(
+                    model="gpt-3.5-turbo",
+                    api_key=self.api_key,
+                    temperature=0.7
+                )
             except Exception as e:
-                print(f"Error initializing OpenAI: {e}")
+                print(f"Error initializing OpenAI models: {e}")
         else:
             print("Warning: OPEN_AI_API_KEY not found.")
+
+        # Initialize Claude models
+        if self.anthropic_api_key:
+            try:
+                # Claude 3.5 Sonnet (balanced)
+                self.llm_claude_sonnet = ChatAnthropic(
+                    model="claude-3-5-sonnet-20241022",
+                    anthropic_api_key=self.anthropic_api_key,
+                    temperature=0.7
+                )
+                
+                # Claude 3 Opus (most capable)
+                self.llm_claude_opus = ChatAnthropic(
+                    model="claude-3-opus-20240229",
+                    anthropic_api_key=self.anthropic_api_key,
+                    temperature=0.7
+                )
+            except Exception as e:
+                print(f"Error initializing Claude models: {e}")
+        else:
+            print("Info: ANTHROPIC_API_KEY not found. Claude models will not be available.")
 
         # Initialize Gemini
         if self.google_api_key:
@@ -44,26 +103,44 @@ class AriaBrain:
             except Exception as e:
                 print(f"Error initializing Gemini: {e}")
         else:
-            print("Warning: GOOGLE_API_KEY not found.")
+            print("Info: GOOGLE_API_KEY not found. Gemini will not be available.")
 
-    def get_llm(self, model_name: str = "openai"):
-        """Returns the requested LLM instance."""
-        if model_name == "gemini":
-            if self.llm_gemini:
-                return self.llm_gemini
-            return self.llm_openai # Fallback
-            
-        else: # Default to OpenAI
-            return self.llm_openai
+    def get_llm(self, model_name: str = "gpt-4o"):
+        """Returns the requested LLM instance with fallback support."""
+        # Model mapping
+        model_map = {
+            "gpt-5.1": self.llm_gpt_5_1,
+            "gpt-4o": self.llm_gpt_4o,
+            "gpt-4o-mini": self.llm_gpt_4o_mini,
+            "gpt-3.5-turbo": self.llm_gpt_35_turbo,
+            "claude-sonnet": self.llm_claude_sonnet,
+            "claude-opus": self.llm_claude_opus,
+            "gemini-pro": self.llm_gemini,
+            # Legacy aliases for backward compatibility
+            "openai": self.llm_gpt_4o,
+            "gemini": self.llm_gemini,
+        }
+        
+        # Get requested model
+        llm = model_map.get(model_name)
+        
+        # If requested model not available, fallback to first available
+        if not llm:
+            print(f"Model {model_name} not available, using fallback")
+            for fallback_llm in model_map.values():
+                if fallback_llm:
+                    return fallback_llm
+        
+        return llm
 
-    def ask(self, user_input: str, model_name: str = "openai") -> str:
+    def ask(self, user_input: str, model_name: str = "gpt-4o") -> str:
         """
         Passes the user's message to the selected model via LangChain.
         """
         llm = self.get_llm(model_name)
         
         if not llm:
-            return "I'm sorry, but the selected AI model is not available. Please check your API keys or configuration."
+            return "I'm sorry, but no AI models are available. Please check your API keys."
 
         try:
             # Invoke the model directly
@@ -72,7 +149,7 @@ class AriaBrain:
         except Exception as e:
             return f"I encountered an error thinking about that with {model_name}: {e}"
 
-    def stream_ask(self, user_input: str, model_name: str = "openai"):
+    def stream_ask(self, user_input: str, model_name: str = "gpt-4o"):
         """
         Streams the response from the selected model.
         Yields chunks of text as they are generated.
@@ -80,7 +157,7 @@ class AriaBrain:
         llm = self.get_llm(model_name)
         
         if not llm:
-            yield "I'm sorry, but the selected AI model is not available."
+            yield "I'm sorry, but no AI models are available."
             return
 
         try:
@@ -91,14 +168,44 @@ class AriaBrain:
             yield f"I encountered an error thinking about that with {model_name}: {e}"
 
     def is_available(self) -> bool:
-        return self.llm_openai is not None or self.llm_gemini is not None or self.llm_ollama is not None
+        """Check if at least one AI model is available."""
+        return any([
+            self.llm_gpt_5_1,
+            self.llm_gpt_4o,
+            self.llm_gpt_4o_mini,
+            self.llm_gpt_35_turbo,
+            self.llm_claude_sonnet,
+            self.llm_claude_opus,
+            self.llm_gemini
+        ])
+    
+    def get_available_models(self) -> list:
+        """Returns a list of available model names."""
+        available = []
+        
+        if self.llm_gpt_5_1:
+            available.append({"id": "gpt-5.1", "name": "GPT-5.1", "provider": "OpenAI"})
+        if self.llm_gpt_4o:
+            available.append({"id": "gpt-4o", "name": "GPT-4o", "provider": "OpenAI"})
+        if self.llm_gpt_4o_mini:
+            available.append({"id": "gpt-4o-mini", "name": "GPT-4o Mini", "provider": "OpenAI"})
+        if self.llm_gpt_35_turbo:
+            available.append({"id": "gpt-3.5-turbo", "name": "GPT-3.5 Turbo", "provider": "OpenAI"})
+        if self.llm_claude_sonnet:
+            available.append({"id": "claude-sonnet", "name": "Claude 3.5 Sonnet", "provider": "Anthropic"})
+        if self.llm_claude_opus:
+            available.append({"id": "claude-opus", "name": "Claude 3 Opus", "provider": "Anthropic"})
+        if self.llm_gemini:
+            available.append({"id": "gemini-pro", "name": "Gemini Pro", "provider": "Google"})
+        
+        return available
 
     def parse_calendar_intent(self, text: str) -> dict:
         """
         Uses OpenAI (default) to extract event details. 
         For structured tasks, we prefer OpenAI for reliability, but could switch if needed.
         """
-        llm = self.llm_openai if self.llm_openai else self.llm_gemini
+        llm = self.get_llm("gpt-4o")
         
         if not llm:
             return {}
@@ -151,7 +258,7 @@ class AriaBrain:
         """
         Uses OpenAI (or fallback) to extract Notion page details.
         """
-        llm = self.llm_openai if self.llm_openai else self.llm_gemini
+        llm = self.get_llm("gpt-4o")
         if not llm:
             return {}
 
@@ -193,7 +300,7 @@ class AriaBrain:
         """
         Summarizes long text into a concise summary.
         """
-        llm = self.llm_openai if self.llm_openai else self.llm_gemini
+        llm = self.get_llm("gpt-4o")
         if not llm:
             return "I'm sorry, but my summarization capability is not available right now."
 
@@ -231,7 +338,7 @@ class AriaBrain:
         """
         Extracts Notion page ID or page search query.
         """
-        llm = self.llm_openai if self.llm_openai else self.llm_gemini
+        llm = self.get_llm("gpt-4o")
         if not llm:
             return {}
 
@@ -279,7 +386,7 @@ class AriaBrain:
         """
         Extracts email details.
         """
-        llm = self.llm_openai if self.llm_openai else self.llm_gemini
+        llm = self.get_llm("gpt-4o")
         if not llm:
             return {}
 
@@ -321,7 +428,7 @@ class AriaBrain:
         """
         Generates a polite email draft.
         """
-        llm = self.llm_openai if self.llm_openai else self.llm_gemini
+        llm = self.get_llm("gpt-4o")
         if not llm:
             return context
 

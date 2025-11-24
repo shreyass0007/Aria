@@ -156,17 +156,52 @@ class NotionManager:
                             title = title_list[0].get("text", {}).get("content", "Untitled")
                         break
                 
-                # Strategy 2: Check for 'title' key directly (some objects)
-                # Note: Search results usually have properties.
-                
                 pages_text += f"- {icon}{title} ({page['object']})\n"
             
             return pages_text
         except Exception as e:
-            return pages_text
-        except Exception as e:
             print(f"Notion Fetch Error: {e}")
             return "I couldn't fetch your Notion pages right now."
+
+    def search_pages_raw(self, query=None, limit=5):
+        """
+        Returns raw list of page objects for processing by the caller.
+        """
+        if not self.client:
+            return []
+
+        try:
+            params = {"page_size": limit}
+            if query:
+                params["query"] = query
+            
+            results = self.client.search(**params).get("results", [])
+            
+            processed_results = []
+            for page in results:
+                # Extract title safely
+                title = "Untitled"
+                
+                # Try to get title
+                props = page.get("properties", {})
+                for prop_name, prop_val in props.items():
+                    if prop_val["type"] == "title":
+                        title_list = prop_val.get("title", [])
+                        if title_list:
+                            title = title_list[0].get("text", {}).get("content", "Untitled")
+                        break
+                
+                processed_results.append({
+                    "id": page["id"],
+                    "title": title,
+                    "url": page.get("url"),
+                    "object": page["object"]
+                })
+                
+            return processed_results
+        except Exception as e:
+            print(f"Notion Raw Search Error: {e}")
+            return []
 
     def get_page_content(self, page_id: str) -> dict:
         """

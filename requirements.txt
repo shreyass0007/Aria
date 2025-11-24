@@ -14,7 +14,9 @@ langchain
 langchain-openai
 langchain-core
 langchain-google-genai
+langchain-anthropic
 google-generativeai
+anthropic
 
 # Google APIs
 google-api-python-client

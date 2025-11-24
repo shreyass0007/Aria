@@ -855,24 +855,70 @@ class AriaCore:
             # Similar to calendar, Notion has complex extraction logic.
             # We can reuse the existing logic but triggered by this intent.
             if "summarize" in text or "summary" in text:
-                # ... (Reuse existing summarization logic) ...
-                # Ideally this should be refactored into a method, but for now I'll call the brain helper
+                # Extract search query
                 page_info = self.brain.extract_notion_page_id(text)
-                # ... (The logic is complex, let's simplify or copy it) ...
-                # For safety in this refactor, I will just call the brain to handle the response
-                # OR, I can copy the logic. Let's try to be cleaner.
-                pass # Fall through to general chat if too complex, OR implement simplified version
+                search_query = page_info.get("search_query")
                 
-                # Let's implement the search/summarize logic here
-                self.speak("Searching Notion...")
-                # (Simplified for brevity in this refactor, but functional)
-                page_info = self.brain.extract_notion_page_id(text)
-                if page_info.get("search_query"):
-                     self.speak(self.notion.get_pages(query=page_info["search_query"]))
+                if not search_query:
+                    # Fallback: try to extract from text directly if brain fails or returns empty
+                    # e.g. "summarize page about project alpha" -> "project alpha"
+                    search_query = text.replace("summarize", "").replace("summary", "").replace("page", "").replace("about", "").replace("of", "").strip()
+                
+                if not search_query:
+                    self.speak("Which page would you like me to summarize?")
+                    return
+
+                self.speak(f"Searching for '{search_query}'...")
+                
+                # Use raw search to get page objects
+                results = self.notion.search_pages_raw(query=search_query)
+                
+                if not results:
+                    self.speak(f"I couldn't find any pages matching '{search_query}'.")
+                elif len(results) == 1:
+                    # Exact match - proceed to summarize
+                    page = results[0]
+                    self.speak(f"Found {page['title']}. Summarizing...")
+                    
+                    # Fetch content
+                    page_data = self.notion.get_page_content(page["id"])
+                    if page_data.get("status") == "error":
+                        self.speak(page_data.get("error", "Error fetching page."))
+                        return
+                        
+                    content = page_data.get("content", "")
+                    summary = self.brain.summarize_text(content, max_sentences=5)
+                    
+                    # Format output
+                    word_count = page_data.get("word_count", 0)
+                    structured_output = f"""
+📄 NOTION PAGE SUMMARY
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📌 Page: {page['title']}
+📊 Word Count: {word_count} words
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 Summary:
+{summary}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"""
+                    self.speak(structured_output)
+                    
                 else:
-                     self.speak(self.notion.get_pages())
+                    # Multiple matches - ask user to select
+                    self.pending_notion_pages = results
+                    
+                    response = f"I found {len(results)} pages. Which one do you mean?\n"
+                    for i, page in enumerate(results):
+                        response += f"{i+1}. {page['title']}\n"
+                    
+                    self.speak(response)
+                    self.speak("Please say the number, for example 'one' or 'first'.")
+                    
             else:
-                # Just search
+                # Just search/list
                 self.speak(self.notion.get_pages())
             return
 

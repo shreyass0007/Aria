@@ -61,10 +61,72 @@ def greeting():
         return {"greeting": greeting_text}
     return {"greeting": "Hello, I am Aria."}
 
+# Model management endpoints
+current_model = "gpt-4o"  # Default model
+
+@app.get("/models/available")
+def get_available_models():
+    """Get list of available AI models"""
+    try:
+        if aria and aria.brain:
+            models = aria.brain.get_available_models()
+            return {
+                "status": "success",
+                "models": models,
+                "count": len(models)
+            }
+        return {"status": "error", "models": [], "count": 0}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/models/current")
+def get_current_model():
+    """Get the currently selected model"""
+    try:
+        return {
+            "status": "success",
+            "model": current_model
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class ModelSetRequest(BaseModel):
+    model: str
+
+@app.post("/models/set")
+def set_current_model(request: ModelSetRequest):
+    """Set the current model for conversations"""
+    global current_model
+    try:
+        # Validate that model is available
+        if aria and aria.brain:
+            available_models = aria.brain.get_available_models()
+            model_ids = [m["id"] for m in available_models]
+            
+            if request.model not in model_ids:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Model {request.model} is not available. Available models: {', '.join(model_ids)}"
+                )
+            
+            current_model = request.model
+            return {
+                "status": "success",
+                "model": current_model,
+                "message": f"Model set to {current_model}"
+            }
+        
+        raise HTTPException(status_code=500, detail="Brain not initialized")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 class MessageRequest(BaseModel):
     message: str
     conversation_id: Optional[str] = None
-    model: Optional[str] = "openai"
+    model: Optional[str] = "gpt-4o"
 
 @app.post("/message")
 def process_message(request: MessageRequest):
