@@ -4,6 +4,7 @@ const API_URL = 'http://localhost:5000';
 // State
 let voiceModeActive = false;
 let currentTheme = 'light';
+let currentColorTheme = 'violet'; // violet, ocean, sunset, forest
 let currentConversationId = null;
 
 // DOM Elements
@@ -66,6 +67,18 @@ function setupEventListeners() {
     if (ttsToggle) {
         ttsToggle.addEventListener('change', handleToggleTTS);
     }
+
+    // Dark Mode Toggle
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    if (darkModeToggle) {
+        darkModeToggle.addEventListener('change', handleDarkModeToggle);
+    }
+
+    // Color Theme Options
+    const themeOptions = document.querySelectorAll('.theme-option');
+    themeOptions.forEach(option => {
+        option.addEventListener('click', () => handleColorThemeChange(option.dataset.theme));
+    });
 
     // Close modal on overlay click
     if (settingsModal) {
@@ -401,18 +414,63 @@ function handleToggleTheme() {
     saveTheme(currentTheme);
 }
 
+function handleDarkModeToggle() {
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    currentTheme = darkModeToggle.checked ? 'dark' : 'light';
+    applyTheme(currentTheme);
+    saveTheme(currentTheme);
+}
+
+function handleColorThemeChange(theme) {
+    currentColorTheme = theme;
+    document.body.setAttribute('data-color-theme', theme);
+
+    // Update active state
+    document.querySelectorAll('.theme-option').forEach(opt => {
+        opt.classList.remove('active');
+    });
+    const selectedOption = document.querySelector(`.theme-option[data-theme="${theme}"]`);
+    if (selectedOption) {
+        selectedOption.classList.add('active');
+    }
+
+    // Save preference
+    localStorage.setItem('colorTheme', theme);
+}
+
 function applyTheme(theme) {
     document.body.setAttribute('data-theme', theme);
     if (themeIcon && themeText) {
         themeIcon.textContent = theme === 'light' ? '🌙' : '☀️';
         themeText.textContent = theme === 'light' ? 'Dark Mode' : 'Light Mode';
     }
+
+    // Update dark mode toggle
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    if (darkModeToggle) {
+        darkModeToggle.checked = theme === 'dark';
+    }
 }
 
 function loadTheme() {
+    // Load dark/light mode
     const savedTheme = localStorage.getItem('theme') || 'light';
     currentTheme = savedTheme;
     applyTheme(currentTheme);
+
+    // Load color theme
+    const savedColorTheme = localStorage.getItem('colorTheme') || 'violet';
+    currentColorTheme = savedColorTheme;
+    document.body.setAttribute('data-color-theme', savedColorTheme);
+
+    // Update UI
+    document.querySelectorAll('.theme-option').forEach(opt => {
+        opt.classList.remove('active');
+    });
+    const savedOption = document.querySelector(`.theme-option[data-theme="${savedColorTheme}"]`);
+    if (savedOption) {
+        savedOption.classList.add('active');
+    }
 }
 
 function saveTheme(theme) {
