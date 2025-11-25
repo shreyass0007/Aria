@@ -264,6 +264,37 @@ body::before {
     opacity: 0.8;
 }
 
+.title-section .model-selector {
+    margin-top: 4px;
+    width: auto;
+    min-width: 80px;
+    max-width: 140px;
+    padding: 2px 18px 2px 0;
+    font-size: 10px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    appearance: none;
+    opacity: 0.7;
+    font-weight: 400;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%236366f1' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 2px center;
+    background-size: 8px;
+}
+
+.title-section .model-selector:hover {
+    opacity: 1;
+    color: var(--accent);
+}
+
+.title-section .model-selector:focus {
+    outline: none;
+    opacity: 1;
+}
+
 .header-controls {
     display: flex;
     gap: 8px;

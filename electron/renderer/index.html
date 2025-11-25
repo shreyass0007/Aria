@@ -26,6 +26,10 @@
                 <div class="title-section">
                     <h1 class="title">Aria</h1>
                     <p class="subtitle">AI Assistant</p>
+                    <select id="modelSelector" class="model-selector" title="Select AI Model">
+                        <option value="gpt-4o">GPT-4o</option>
+                        <!-- Options will be populated by JS -->
+                    </select>
                 </div>
             </div>
             <div class="header-controls">
@@ -62,12 +66,6 @@
     <!-- Input Area -->
     <footer class="input-section">
         <div class="input-container">
-            <div class="input-header">
-                <select id="modelSelector" class="model-selector" title="Select AI Model">
-                    <option value="gpt-4o">GPT-4o</option>
-                    <!-- Options will be populated by JS -->
-                </select>
-            </div>
             <div class="input-row">
                 <button class="voice-btn modern" id="voiceBtn" title="Voice Mode">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
