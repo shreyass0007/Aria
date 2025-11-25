@@ -27,7 +27,9 @@ class AriaBrain:
         
         # Claude models
         self.llm_claude_sonnet = None
-        self.llm_claude_opus = None
+        self.llm_claude_haiku = None
+        self.llm_claude_opus_4_5 = None
+        self.llm_claude_opus_4_1 = None
         
         # Gemini
         self.llm_gemini = None
@@ -80,9 +82,23 @@ class AriaBrain:
                     temperature=0.7
                 )
                 
-                # Claude 3 Opus (most capable)
-                self.llm_claude_opus = ChatAnthropic(
-                    model="claude-3-opus-20240229",
+                # Claude Haiku 4.5 (fast)
+                self.llm_claude_haiku = ChatAnthropic(
+                    model="claude-haiku-4-5-20250929",
+                    anthropic_api_key=self.anthropic_api_key,
+                    temperature=0.7
+                )
+                
+                # Claude Opus 4.5 (most capable)
+                self.llm_claude_opus_4_5 = ChatAnthropic(
+                    model="claude-opus-4-5-20250929",
+                    anthropic_api_key=self.anthropic_api_key,
+                    temperature=0.7
+                )
+
+                # Claude Opus 4.1
+                self.llm_claude_opus_4_1 = ChatAnthropic(
+                    model="claude-opus-4-1-20250620",
                     anthropic_api_key=self.anthropic_api_key,
                     temperature=0.7
                 )
@@ -114,7 +130,9 @@ class AriaBrain:
             "gpt-4o-mini": self.llm_gpt_4o_mini,
             "gpt-3.5-turbo": self.llm_gpt_35_turbo,
             "claude-sonnet": self.llm_claude_sonnet,
-            "claude-opus": self.llm_claude_opus,
+            "claude-haiku": self.llm_claude_haiku,
+            "claude-opus-4-5": self.llm_claude_opus_4_5,
+            "claude-opus-4-1": self.llm_claude_opus_4_1,
             "gemini-pro": self.llm_gemini,
             # Legacy aliases for backward compatibility
             "openai": self.llm_gpt_4o,
@@ -175,7 +193,9 @@ class AriaBrain:
             self.llm_gpt_4o_mini,
             self.llm_gpt_35_turbo,
             self.llm_claude_sonnet,
-            self.llm_claude_opus,
+            self.llm_claude_haiku,
+            self.llm_claude_opus_4_5,
+            self.llm_claude_opus_4_1,
             self.llm_gemini
         ])
     
@@ -193,8 +213,12 @@ class AriaBrain:
             available.append({"id": "gpt-3.5-turbo", "name": "GPT-3.5 Turbo", "provider": "OpenAI"})
         if self.llm_claude_sonnet:
             available.append({"id": "claude-sonnet", "name": "Claude Sonnet 4.5", "provider": "Anthropic"})
-        if self.llm_claude_opus:
-            available.append({"id": "claude-opus", "name": "Claude 3 Opus", "provider": "Anthropic"})
+        if self.llm_claude_haiku:
+            available.append({"id": "claude-haiku", "name": "Claude Haiku 4.5", "provider": "Anthropic"})
+        if self.llm_claude_opus_4_5:
+            available.append({"id": "claude-opus-4-5", "name": "Claude Opus 4.5", "provider": "Anthropic"})
+        if self.llm_claude_opus_4_1:
+            available.append({"id": "claude-opus-4-1", "name": "Claude Opus 4.1", "provider": "Anthropic"})
         if self.llm_gemini:
             available.append({"id": "gemini-pro", "name": "Gemini Pro", "provider": "Google"})
         
