@@ -614,6 +614,171 @@ body::before {
     padding: 0;
 }
 
+/* ==================== CODE BLOCK STYLES ==================== */
+
+/* Inline code styling */
+.bubble .inline-code {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--accent);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.88em;
+    font-weight: 500;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+/* Code block container with glassmorphism */
+.code-block-container {
+    background: rgba(30, 27, 75, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    margin: 12px 0;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.code-block-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(99, 102, 241, 0.15);
+}
+
+/* Code block header */
+.code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08));
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.code-block-language {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--accent);
+    opacity: 0.8;
+}
+
+/* Copy button styling */
+.code-copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Inter', sans-serif;
+}
+
+.code-copy-btn:hover {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: scale(1.05);
+}
+
+.code-copy-btn:active {
+    transform: scale(0.95);
+}
+
+.code-copy-btn.copied {
+    background: linear-gradient(135deg, #10b981, #34d399);
+    border-color: #10b981;
+    color: white;
+}
+
+.code-copy-btn svg {
+    flex-shrink: 0;
+}
+
+.copy-text {
+    white-space: nowrap;
+}
+
+/* Code content area */
+.code-block-container pre {
+    margin: 0;
+    padding: 14px 16px;
+    background: rgba(15, 23, 42, 0.03);
+    overflow-x: auto;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.code-block-container code {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    background: transparent;
+    padding: 0;
+    border: none;
+}
+
+/* Custom scrollbar for code blocks */
+.code-block-container pre::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.code-block-container pre::-webkit-scrollbar-track {
+    background: rgba(99, 102, 241, 0.05);
+    border-radius: 4px;
+}
+
+.code-block-container pre::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+    border-radius: 4px;
+}
+
+.code-block-container pre::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, var(--accent-secondary), var(--accent));
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .code-block-container {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .code-block-header {
+    background: linear-gradient(135deg, rgba(129, 140, 248, 0.12), rgba(167, 139, 250, 0.12));
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .code-copy-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .code-copy-btn:hover {
+    background: rgba(99, 102, 241, 0.2);
+}
+
+[data-theme="dark"] .code-block-container pre {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* Override Highlight.js theme for better integration */
+.code-block-container .hljs {
+    background: transparent !important;
+    padding: 0 !important;
+}
+
+
 .message.user .bubble {
     background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
     color: white;

@@ -40,6 +40,124 @@ document.addEventListener('DOMContentLoaded', () => {
     displayWelcomeMessage();
 });
 
+// ==================== CODE BLOCK HELPERS ====================
+
+/**
+ * Parse message text and convert markdown code blocks to HTML
+ * Supports both fenced code blocks (```) and inline code (`)
+ */
+function parseMessageWithCode(text) {
+    // Parse fenced code blocks first (```language\ncode\n```)
+    // Updated regex to handle both \n and \r\n line endings
+    text = text.replace(/```(\w+)?\s*[\r\n]+([\s\S]*?)```/g, (match, language, code) => {
+        const lang = language || 'plaintext';
+        return `<code-block data-language="${lang}">${escapeHtml(code.trim())}</code-block>`;
+    });
+
+    // Parse inline code (`code`)
+    text = text.replace(/`([^`]+)`/g, (match, code) => {
+        return `<code class="inline-code">${escapeHtml(code)}</code>`;
+    });
+
+    // Parse markdown links
+    text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color: #4f46e5; text-decoration: underline;">$1</a>');
+
+    // Parse line breaks
+    text = text.replace(/\n/g, '<br>');
+
+    return text;
+}
+
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
+ * Create a formatted code block with syntax highlighting and copy button
+ */
+function createCodeBlock(code, language) {
+    const container = document.createElement('div');
+    container.className = 'code-block-container';
+
+    // Header with language and copy button
+    const header = document.createElement('div');
+    header.className = 'code-block-header';
+
+    const langLabel = document.createElement('span');
+    langLabel.className = 'code-block-language';
+    langLabel.textContent = language || 'plaintext';
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'code-copy-btn';
+    copyBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        <span class="copy-text">Copy</span>
+    `;
+    copyBtn.onclick = () => copyCodeToClipboard(code, copyBtn);
+
+    header.appendChild(langLabel);
+    header.appendChild(copyBtn);
+
+    // Code content with syntax highlighting
+    const pre = document.createElement('pre');
+    const codeElement = document.createElement('code');
+    codeElement.className = `language-${language || 'plaintext'}`;
+    codeElement.textContent = code;
+
+    // Apply syntax highlighting if hljs is available
+    if (window.hljs) {
+        try {
+            if (language && hljs.getLanguage(language)) {
+                codeElement.innerHTML = hljs.highlight(code, { language }).value;
+            } else {
+                codeElement.innerHTML = hljs.highlightAuto(code).value;
+            }
+        } catch (e) {
+            console.error('Highlight.js error:', e);
+        }
+    }
+
+    pre.appendChild(codeElement);
+
+    container.appendChild(header);
+    container.appendChild(pre);
+
+    return container;
+}
+
+/**
+ * Copy code to clipboard and show feedback
+ */
+function copyCodeToClipboard(code, button) {
+    navigator.clipboard.writeText(code).then(() => {
+        // Visual feedback
+        const originalHTML = button.innerHTML;
+        button.classList.add('copied');
+        button.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span class="copy-text">Copied!</span>
+        `;
+
+        setTimeout(() => {
+            button.classList.remove('copied');
+            button.innerHTML = originalHTML;
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy code:', err);
+    });
+}
+
+
 // Create Custom Title Bar
 function createTitleBar() {
     const titleBar = document.createElement('div');
@@ -394,23 +512,30 @@ function addMessage(text, sender, uiAction = null) {
     bubble.className = 'bubble';
 
     if (sender === 'aria') {
-        // Parse Markdown for Aria's messages
+        // Parse Markdown for Aria's messages with code block support
+        console.log('🔍 DEBUG: Parsing message, has window.api.parseMarkdown?', !!(window.api && window.api.parseMarkdown));
+        console.log('🔍 DEBUG: Message text:', text.substring(0, 100));
+
         try {
-            if (window.api && window.api.parseMarkdown) {
-                const parsed = window.api.parseMarkdown(text);
-                bubble.innerHTML = parsed;
-            } else {
-                // Simple Regex Markdown Parser for Links
-                let html = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color: #4f46e5; text-decoration: underline;">$1</a>');
-                html = html.replace(/\n/g, '<br>');
-                bubble.innerHTML = html;
-            }
+            // Always use our custom parser for code block support
+            const parsed = parseMessageWithCode(text);
+            console.log('🔍 DEBUG: Parsed HTML:', parsed.substring(0, 200));
+            bubble.innerHTML = parsed;
+
+            // Replace code-block placeholders with actual formatted code blocks
+            const codeBlockPlaceholders = bubble.querySelectorAll('code-block');
+            console.log('🔍 DEBUG: Found code blocks:', codeBlockPlaceholders.length);
+            codeBlockPlaceholders.forEach(placeholder => {
+                const code = placeholder.textContent;
+                const language = placeholder.getAttribute('data-language');
+                console.log('🔍 DEBUG: Creating code block for language:', language);
+                const codeBlock = createCodeBlock(code, language);
+                placeholder.replaceWith(codeBlock);
+            });
         } catch (e) {
             console.error('❌ Error parsing markdown:', e);
-            // Fallback to regex parser on error
-            let html = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color: #4f46e5; text-decoration: underline;">$1</a>');
-            html = html.replace(/\n/g, '<br>');
-            bubble.innerHTML = html;
+            // Fallback to plain text
+            bubble.textContent = text;
         }
 
         // Handle UI Actions (email confirmation)
