@@ -5,7 +5,7 @@ let markedError = null;
 // Try to load marked library
 try {
     // Load from local file to avoid path resolution issues
-    const markedModule = require('./marked.min.js');
+    const markedModule = require(__dirname + '/marked.min.js');
     marked = markedModule.marked || markedModule;
     console.log('✅ Preload: marked library loaded successfully from local file');
 } catch (e) {

@@ -1,4 +1,7 @@
 import speech_recognition as sr
+import warnings
+# Suppress pkg_resources deprecation warning from pygame and others
+warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated.*")
 from gtts import gTTS
 import os
 import webbrowser
@@ -29,7 +32,7 @@ import queue
 import re
 import asyncio
 import edge_tts
-from speech_engine import SpeechEngine
+# from speech_engine import SpeechEngine # Moved to lazy load
 
 class AriaCore:
     def __init__(self, on_speak=None):
@@ -49,7 +52,7 @@ class AriaCore:
         self.clipboard_screenshot = ClipboardScreenshot()
         
         # Initialize Local Speech Engine
-        self.speech_engine = SpeechEngine(model_size="base")
+        self.speech_engine = None # Lazy initialization
         self.system_monitor = SystemMonitor()
         self.email_manager = EmailManager()
         self.input_mode = "voice"
@@ -65,11 +68,11 @@ class AriaCore:
         
         self.tts_enabled = True  # Default to enabled
         
-        # Initialize Pygame Mixer once
-        try:
-            pygame.mixer.init()
-        except Exception as e:
-            print(f"Warning: Failed to initialize pygame mixer: {e}")
+        # Initialize Pygame Mixer lazily in _tts_worker
+        # try:
+        #     pygame.mixer.init()
+        # except Exception as e:
+        #     print(f"Warning: Failed to initialize pygame mixer: {e}")
 
         self.check_microphones()
         # Index apps in background
@@ -249,7 +252,16 @@ class AriaCore:
                 # Play the audio file
                 if os.path.exists(filename):
                     print(f"TTS Worker: Playing audio file {filename} (size: {os.path.getsize(filename)} bytes)")
-                    # pygame.mixer.init() # Already initialized
+                    
+                    # Lazy init pygame mixer
+                    if not pygame.mixer.get_init():
+                        try:
+                            pygame.mixer.init()
+                        except Exception as e:
+                            print(f"TTS Worker ERROR: Failed to initialize mixer: {e}")
+                            self.tts_queue.task_done()
+                            continue
+
                     pygame.mixer.music.load(filename)
                     pygame.mixer.music.play()
                     while pygame.mixer.music.get_busy():
@@ -259,9 +271,20 @@ class AriaCore:
                     
                     # Cleanup
                     try:
+                        # Unload the file to release the lock on Windows
+                        if pygame.mixer.get_init():
+                            try:
+                                pygame.mixer.music.unload()
+                            except Exception as e:
+                                print(f"TTS Worker WARNING: Failed to unload audio: {e}")
+                        
+                        # Small delay to ensure OS releases the handle
+                        time.sleep(0.1)
+                        
                         os.remove(filename)
-                    except:
-                        pass
+                        print(f"TTS Worker: Deleted {filename}")
+                    except Exception as e:
+                        print(f"TTS Worker WARNING: Failed to delete {filename}: {e}")
                 else:
                     print(f"TTS Worker ERROR: Audio file {filename} does not exist!")
             except Exception as e:
@@ -324,7 +347,22 @@ class AriaCore:
                     
                     # Transcribe using Local Faster-Whisper
                     print("Transcribing locally...")
-                    command = self.speech_engine.transcribe(temp_wav)
+                    
+                    # Lazy load SpeechEngine if not already loaded
+                    if self.speech_engine is None:
+                        try:
+                            print("Initializing SpeechEngine (Lazy Load)...")
+                            from speech_engine import SpeechEngine
+                            self.speech_engine = SpeechEngine(model_size="base")
+                        except Exception as e:
+                            print(f"Failed to initialize SpeechEngine: {e}")
+                            self.speak("Sorry, I can't hear you right now. Voice engine failed to start.")
+                            return ""
+
+                    if self.speech_engine:
+                        command = self.speech_engine.transcribe(temp_wav)
+                    else:
+                        command = ""
                     
                     # Cleanup
                     if os.path.exists(temp_wav):

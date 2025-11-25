@@ -29,19 +29,6 @@ const ttsToggle = document.getElementById('ttsToggle');
 const modelSelector = document.getElementById('modelSelector');
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    // Add custom title bar for frameless window
-    createTitleBar();
-    setupEventListeners();
-    loadTheme();
-    loadTTSStatus(); // Load TTS status
-    fetchAvailableModels(); // Load available AI models
-    loadModelPreference(); // Load saved model
-    displayWelcomeMessage();
-});
-
-// ==================== CODE BLOCK HELPERS ====================
-
 /**
  * Parse message text and convert markdown code blocks to HTML
  * Supports both fenced code blocks (```) and inline code (`)
@@ -263,15 +250,21 @@ function setupEventListeners() {
 }
 
 // TTS Management
-async function loadTTSStatus() {
+async function loadTTSStatus(retries = 3, delay = 1000) {
     try {
         const response = await fetch(`${API_URL}/settings/tts`);
+        if (!response.ok) throw new Error('Failed to fetch TTS status');
         const data = await response.json();
-        if (data.status === 'success' && ttsToggle) {
-            ttsToggle.checked = data.enabled;
+
+        if (data.status === 'success') {
+            const ttsToggle = document.getElementById('ttsToggle');
+            if (ttsToggle) ttsToggle.checked = data.enabled;
         }
     } catch (error) {
-        console.error('Error loading TTS status:', error);
+        console.warn(`Error loading TTS status (retries left: ${retries}):`, error);
+        if (retries > 0) {
+            setTimeout(() => loadTTSStatus(retries - 1, delay * 2), delay);
+        }
     }
 }
 
@@ -301,32 +294,41 @@ async function handleToggleTTS() {
 }
 
 // Model Management
-async function fetchAvailableModels() {
+async function fetchAvailableModels(retries = 3, delay = 1000) {
     try {
         const response = await fetch(`${API_URL}/models/available`);
+        if (!response.ok) throw new Error('Failed to fetch models');
+
         const data = await response.json();
+        if (data.status === 'success') {
+            const modelSelector = document.getElementById('modelSelector');
+            if (modelSelector) {
+                modelSelector.innerHTML = ''; // Clear existing options
 
-        if (data.status === 'success' && modelSelector) {
-            modelSelector.innerHTML = ''; // Clear loading message
+                data.models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.id;
+                    option.textContent = model.name;
+                    modelSelector.appendChild(option);
+                });
 
-            data.models.forEach(model => {
-                const option = document.createElement('option');
-                option.value = model.id;
-                option.textContent = model.name;
-                modelSelector.appendChild(option);
-            });
-
-            // Load saved preference
-            loadModelPreference();
+                // Restore selection if valid
+                loadModelPreference();
+            }
         }
     } catch (error) {
-        console.error('Error fetching models:', error);
-        if (modelSelector) {
-            modelSelector.innerHTML = '<option value="gpt-4o">GPT-4o</option>';
+        console.warn(`Error fetching models (retries left: ${retries}):`, error);
+        if (retries > 0) {
+            setTimeout(() => fetchAvailableModels(retries - 1, delay * 2), delay);
+        } else {
+            console.error('Failed to load models after retries');
+            const modelSelector = document.getElementById('modelSelector');
+            if (modelSelector) {
+                modelSelector.innerHTML = '<option value="gpt-4o">GPT-4o</option>';
+            }
         }
     }
 }
-
 function loadModelPreference() {
     const savedModel = localStorage.getItem('selected_ai_model') || 'gpt-4o';
     currentModel = savedModel;

@@ -129,7 +129,11 @@ ipcMain.handle('show-delete-dialog', async (event) => {
     });
 });
 
+let isQuitting = false;
+
 function startPythonBackend() {
+    if (isQuitting) return;
+
     // Start Python backend server
     const pythonExecutable = process.platform === 'win32'
         ? path.join(__dirname, '..', '.venv', 'Scripts', 'python.exe')
@@ -137,8 +141,13 @@ function startPythonBackend() {
 
     const backendScript = path.join(__dirname, '..', 'backend_fastapi.py');
 
+    console.log('Starting Python backend...');
     pythonProcess = spawn(pythonExecutable, [backendScript], {
         cwd: path.join(__dirname, '..')
+    });
+
+    pythonProcess.on('error', (err) => {
+        console.error('Failed to start Python backend:', err);
     });
 
     pythonProcess.stdout.on('data', (data) => {
@@ -149,8 +158,14 @@ function startPythonBackend() {
         console.error(`Python Backend Error: ${data}`);
     });
 
-    pythonProcess.on('close', (code) => {
-        console.log(`Python backend exited with code ${code}`);
+    pythonProcess.on('close', (code, signal) => {
+        console.log(`Python backend exited with code ${code} and signal ${signal}`);
+        pythonProcess = null;
+
+        if (!isQuitting) {
+            console.log('Restarting backend in 2 seconds...');
+            setTimeout(startPythonBackend, 2000);
+        }
     });
 }
 
@@ -165,6 +180,8 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', function () {
+    console.log('Window all closed, quitting app...');
+    isQuitting = true;
     if (pythonProcess) {
         pythonProcess.kill();
     }
@@ -172,6 +189,8 @@ app.on('window-all-closed', function () {
 });
 
 app.on('before-quit', () => {
+    console.log('Before quit event received...');
+    isQuitting = true;
     if (pythonProcess) {
         pythonProcess.kill();
     }
