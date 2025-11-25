@@ -29,6 +29,19 @@ const ttsToggle = document.getElementById('ttsToggle');
 const modelSelector = document.getElementById('modelSelector');
 
 // Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    // Add custom title bar for frameless window
+    createTitleBar();
+    setupEventListeners();
+    loadTheme();
+    loadTTSStatus(); // Load TTS status
+    fetchAvailableModels(); // Load available AI models
+    loadModelPreference(); // Load saved model
+    displayWelcomeMessage();
+});
+
+// ==================== CODE BLOCK HELPERS ====================
+
 /**
  * Parse message text and convert markdown code blocks to HTML
  * Supports both fenced code blocks (```) and inline code (`)
@@ -190,6 +203,9 @@ function createTitleBar() {
         window.api.windowClose();
     });
 }
+
+// Event Listeners
+
 
 // Event Listeners
 function setupEventListeners() {
