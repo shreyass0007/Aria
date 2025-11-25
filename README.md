@@ -265,7 +265,7 @@ Minimal interface that listens for wake word "aria" (or "neo") and processes voi
 python backend_fastapi.py
 ```
 
-Starts FastAPI server at `http://localhost:8000` for API testing or custom frontends.
+Starts FastAPI server at `http://localhost:5000` for API testing or custom frontends.
 
 ---
 
@@ -528,7 +528,7 @@ Modify `file_manager.py` to add/remove safe file operation locations.
 - Ensure `.venv` path matches `electron/main.js`
 - Check Python executable path in `main.js`
 - Verify virtual environment is activated
-- Check that FastAPI server starts on port 8000
+- Check that FastAPI server starts on port 5000
 
 ### SpeechRecognition Errors
 

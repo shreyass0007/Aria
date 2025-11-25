@@ -75,7 +75,7 @@ class AriaBrain:
             try:
                 # Claude 3.5 Sonnet (balanced)
                 self.llm_claude_sonnet = ChatAnthropic(
-                    model="claude-3-5-sonnet-20241022",
+                    model="claude-sonnet-4-5-20250929",
                     anthropic_api_key=self.anthropic_api_key,
                     temperature=0.7
                 )
@@ -192,7 +192,7 @@ class AriaBrain:
         if self.llm_gpt_35_turbo:
             available.append({"id": "gpt-3.5-turbo", "name": "GPT-3.5 Turbo", "provider": "OpenAI"})
         if self.llm_claude_sonnet:
-            available.append({"id": "claude-sonnet", "name": "Claude 3.5 Sonnet", "provider": "Anthropic"})
+            available.append({"id": "claude-sonnet", "name": "Claude Sonnet 4.5", "provider": "Anthropic"})
         if self.llm_claude_opus:
             available.append({"id": "claude-opus", "name": "Claude 3 Opus", "provider": "Anthropic"})
         if self.llm_gemini:

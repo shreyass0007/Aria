@@ -13,7 +13,6 @@ const chatContainer = document.getElementById('chatContainer');
 const messageInput = document.getElementById('messageInput');
 const sendBtn = document.getElementById('sendBtn');
 const voiceBtn = document.getElementById('voiceBtn');
-// const themeBtn = document.getElementById('themeBtn'); // Removed
 const settingsBtn = document.getElementById('settingsBtn');
 const settingsModal = document.getElementById('settingsModal');
 const closeModalBtn = document.getElementById('closeModalBtn');
@@ -25,6 +24,7 @@ const aboutBtn = document.getElementById('aboutBtn');
 const newChatBtn = document.getElementById('newChatBtn');
 const historyBtn = document.getElementById('historyBtn');
 const historySidebar = document.getElementById('historySidebar');
+const closeHistoryBtn = document.getElementById('closeHistoryBtn');
 const ttsToggle = document.getElementById('ttsToggle');
 const modelSelector = document.getElementById('modelSelector');
 
@@ -104,7 +104,6 @@ function setupEventListeners() {
     messageInput.addEventListener('input', autoResizeTextarea);
 
     voiceBtn.addEventListener('click', handleToggleVoice);
-    // themeBtn.addEventListener('click', handleToggleTheme); // Removed
     settingsBtn.addEventListener('click', () => openModal());
 
     if (closeModalBtn) closeModalBtn.addEventListener('click', () => closeModal());
@@ -226,12 +225,12 @@ function handleModelChange(event) {
     console.log('Model changed to:', selectedModel);
 }
 
-// Auto-resize textarea
+// Resize textarea
 function autoResizeTextarea() {
     messageInput.style.height = 'auto';
     messageInput.style.height = messageInput.scrollHeight + 'px';
 
-    // Add scrollable class if at max height
+    // Scrollable class if at max height
     if (messageInput.scrollHeight > 120) {
         messageInput.classList.add('scrollable');
     } else {
@@ -239,8 +238,61 @@ function autoResizeTextarea() {
     }
 }
 
+
+// Thinking Indicator
+function showThinkingIndicator() {
+    // Remove existing if any (cleanup)
+    removeThinkingIndicator();
+
+    const messageWrapper = document.createElement('div');
+    messageWrapper.className = 'message-wrapper';
+
+    const message = document.createElement('div');
+    message.className = 'message aria';
+    message.id = 'thinking-indicator-message';
+
+    // Avatar
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar active'; // Active to show glow
+    const avatarImg = document.createElement('img');
+    avatarImg.src = 'aria_logo.png';
+    avatarImg.alt = 'Aria';
+    avatar.appendChild(avatarImg);
+    message.appendChild(avatar);
+
+    // Bubble
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+
+    // Dots
+    const dots = document.createElement('div');
+    dots.className = 'thinking-dots';
+    dots.innerHTML = `
+        <div class="thinking-dot"></div>
+        <div class="thinking-dot"></div>
+        <div class="thinking-dot"></div>
+    `;
+
+    bubble.appendChild(dots);
+    messageWrapper.appendChild(bubble);
+    message.appendChild(messageWrapper);
+    chatContainer.appendChild(message);
+
+    // Scroll
+    setTimeout(() => {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }, 10);
+}
+
+function removeThinkingIndicator() {
+    const message = document.getElementById('thinking-indicator-message');
+    if (message) {
+        message.remove();
+    }
+}
+
 // Message Handling
-function handleSendMessage() {
+async function handleSendMessage() {
     const message = messageInput.value.trim();
     if (!message) return;
 
@@ -257,8 +309,11 @@ function handleSendMessage() {
     // Animate send button
     animateSendButton();
 
+    // Show thinking indicator
+    showThinkingIndicator();
+
     // Send to backend
-    sendMessageToBackend(message);
+    await sendMessageToBackend(message);
 }
 
 async function sendMessageToBackend(message) {
@@ -278,16 +333,22 @@ async function sendMessageToBackend(message) {
 
         const data = await response.json();
 
+        // Remove thinking indicator before showing response
+        removeThinkingIndicator();
+
         if (data.status === 'success') {
             if (data.conversation_id) {
                 currentConversationId = data.conversation_id;
             }
+
             if (data.response) {
+                console.log('DEBUG: Received response from backend. UI Action:', data.ui_action);
                 addMessage(data.response, 'aria', data.ui_action);
             }
         }
     } catch (error) {
         console.error('Error sending message:', error);
+        removeThinkingIndicator(); // Ensure it's removed on error
         addMessage('Sorry, I encountered an error. Please make sure the backend is running.', 'aria');
     }
 }
@@ -304,7 +365,7 @@ function addMessage(text, sender, uiAction = null) {
         const previousActive = document.querySelectorAll('.message.aria .avatar.active');
         previousActive.forEach(el => el.classList.remove('active'));
 
-        // Add avatar for Aria with logo
+        // Add Avatar for Aria with logo
         const avatar = document.createElement('div');
         avatar.className = 'avatar'; // Start inactive
         const avatarImg = document.createElement('img');
@@ -328,7 +389,7 @@ function addMessage(text, sender, uiAction = null) {
         }, 500);
     }
 
-    // Add message bubble
+    // Message bubble
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
 
@@ -353,7 +414,9 @@ function addMessage(text, sender, uiAction = null) {
         }
 
         // Handle UI Actions (email confirmation)
+        console.log('DEBUG: Checking for UI Action in addMessage:', uiAction);
         if (uiAction && uiAction.type === 'email_confirmation') {
+            console.log('DEBUG: Rendering email confirmation UI');
             const emailPreview = document.createElement('div');
             emailPreview.className = 'email-preview';
 
@@ -418,23 +481,23 @@ function addMessage(text, sender, uiAction = null) {
         bubble.textContent = text;
     }
 
-    message.appendChild(bubble);
-
-    messageWrapper.appendChild(message);
-    chatContainer.appendChild(messageWrapper);
+    messageWrapper.appendChild(bubble);
+    message.appendChild(messageWrapper);
+    chatContainer.appendChild(message);
 
     // Scroll to bottom
     setTimeout(() => {
         chatContainer.scrollTop = chatContainer.scrollHeight;
-    }, 50);
+    }, 10);
 }
 
 function animateSendButton() {
     sendBtn.style.transform = 'scale(0.9)';
     setTimeout(() => {
         sendBtn.style.transform = 'scale(1)';
-    }, 150);
+    }, 100);
 }
+
 
 // Voice Mode
 async function handleToggleVoice() {
@@ -444,8 +507,8 @@ async function handleToggleVoice() {
         voiceBtn.classList.add('active');
         addMessage('🎙️ Voice mode active - Say "Aria" to start', 'aria');
 
+        // Start voice listening
         try {
-            // Start voice listening
             await startVoiceMode();
         } catch (error) {
             console.error('Voice mode error:', error);
@@ -482,6 +545,7 @@ async function listenForVoiceInput() {
 
         if (data.text) {
             addMessage(data.text, 'user');
+            showThinkingIndicator();
             sendMessageToBackend(data.text);
         }
 
@@ -506,6 +570,7 @@ async function stopVoiceMode() {
         console.error('Error stopping voice mode:', error);
     }
 }
+
 
 // Theme Management
 function handleToggleTheme() {
@@ -552,6 +617,7 @@ function applyTheme(theme) {
     }
 }
 
+
 function loadTheme() {
     // Load dark/light mode
     const savedTheme = localStorage.getItem('theme') || 'light';
@@ -577,7 +643,8 @@ function saveTheme(theme) {
     localStorage.setItem('theme', theme);
 }
 
-// Modal Management
+
+// Settings Management
 function openModal() {
     settingsModal.classList.add('active');
 }
@@ -619,6 +686,7 @@ async function handleNewChat() {
         addMessage('Error starting new chat.', 'aria');
     }
 }
+
 
 function toggleHistory() {
     console.log('History toggled');
@@ -662,7 +730,6 @@ function renderHistory(conversations) {
         item.className = `history-item ${conv._id === currentConversationId ? 'active' : ''}`;
         item.onclick = () => loadConversation(conv._id);
 
-        // Title
         const titleSpan = document.createElement('span');
         titleSpan.className = 'history-title';
         titleSpan.textContent = conv.title || 'New Conversation';
@@ -718,7 +785,7 @@ async function loadConversation(conversationId) {
             });
 
             // Close sidebar on mobile/narrow screens if needed
-            // historySidebar.classList.remove('active');
+            historySidebar.classList.remove('active');
         }
     } catch (error) {
         console.error('Error loading conversation:', error);
@@ -726,9 +793,9 @@ async function loadConversation(conversationId) {
 }
 
 async function handleRenameConversation(id, currentTitle) {
-    try {
-        const newTitle = await window.electronAPI.showRenameDialog(currentTitle || '');
-        if (newTitle && newTitle !== currentTitle) {
+    const newTitle = await window.electronAPI.showRenameDialog(currentTitle || '');
+    if (newTitle && newTitle !== currentTitle) {
+        try {
             const response = await fetch(`${API_URL}/conversation/${id}/rename`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -738,9 +805,9 @@ async function handleRenameConversation(id, currentTitle) {
             if (response.ok) {
                 loadHistory(); // Refresh list
             }
+        } catch (error) {
+            console.error('Error renaming:', error);
         }
-    } catch (error) {
-        console.error('Error renaming:', error);
     }
 }
 
@@ -766,7 +833,7 @@ async function handleDeleteConversation(id) {
     }
 }
 
-// Get time-based greeting like JARVIS
+// Time-based greeting like JARVIS
 function getTimeBasedGreeting() {
     const hour = new Date().getHours();
     const userName = "Shreyas"; // You can make this dynamic if needed
@@ -788,14 +855,14 @@ function getTimeBasedGreeting() {
         greeting = `Good night, ${userName}. `;
     }
 
-    // Add context-aware messages like JARVIS
+    // Context-aware messages like JARVIS
     const contextMessages = {
         morning: [
             "Ready to start the day?",
             "All systems are operational.",
-            "How may I assist you today?",
+            "How can I assist you today?",
             "Your schedule is ready for review.",
-            "Time to conquer the world.",
+            "Let's conquer the world.",
             "Let's make today productive.",
             "What's on the agenda?",
             "Shall we begin?",
@@ -813,14 +880,14 @@ function getTimeBasedGreeting() {
             "Your digital workspace is prepared."
         ],
         afternoon: [
-            "How's your day going?",
+            "How is your day going?",
             "What can I help you with?",
             "All systems running smoothly.",
             "Ready when you are.",
             "Need a productivity boost?",
             "Let's keep the momentum going.",
             "Time to check off that to-do list.",
-            "How may I assist this afternoon?",
+            "How can I assist this afternoon?",
             "Still going strong?",
             "Let's finish what we started.",
             "Halfway through the day already.",
@@ -831,7 +898,7 @@ function getTimeBasedGreeting() {
             "Your afternoon update is ready.",
             "Let's maintain that energy.",
             "Working hard, I see.",
-            "Time to power through.",
+            "Let's power through.",
             "At your service, as always."
         ],
         evening: [
@@ -842,18 +909,18 @@ function getTimeBasedGreeting() {
             "Time to unwind or keep going?",
             "Let's review what you've accomplished.",
             "How was your day?",
-            "Ready for the evening?",
+            "Plans for the evening?",
             "Shall we tie up loose ends?",
             "Time to relax or power through?",
-            "The day's work is nearly done.",
+            "Today's work is nearly done.",
             "Let's finish strong.",
-            "What's left on your plate?",
+            "Anything left on your plate?",
             "Evening briefing ready.",
             "Time to reflect and recharge.",
             "You've earned a break.",
             "Let's close out the day properly.",
             "Standing by for evening tasks.",
-            "Ready to help you wind down.",
+            "Here to help you wind down.",
             "What can I do for you tonight?"
         ],
         night: [
@@ -865,7 +932,7 @@ function getTimeBasedGreeting() {
             "The night is young.",
             "Inspiration strikes at odd hours.",
             "Night owl mode activated.",
-            "I'm here, no matter the hour.",
+            "Here for you, no matter the hour.",
             "Let's make the most of this quiet time.",
             "The stars are out, and so are we.",
             "Darkness brings clarity sometimes.",
@@ -875,7 +942,7 @@ function getTimeBasedGreeting() {
             "Sleep is overrated anyway.",
             "The night shift begins.",
             "When do you sleep, exactly?",
-            "Midnight productivity mode enabled.",
+            "Silent productivity mode enabled.",
             "Let's turn night into opportunity."
         ]
     };
@@ -889,7 +956,7 @@ function getTimeBasedGreeting() {
 
 
 // Welcome Message
-async function displayWelcomeMessage() {
+function displayWelcomeMessage() {
     // Display local greeting immediately
     const greeting = getTimeBasedGreeting();
     addMessage(greeting, 'aria');
@@ -901,12 +968,11 @@ async function displayWelcomeMessage() {
         } catch (error) {
             console.log('Backend greeting skipped:', error.message);
         }
-    }, 500);
+    }, 100);
 }
 
-
 // Export for debugging
-window.ariaApp = {
+window.AriaApp = {
     addMessage,
     handleSendMessage,
     handleToggleVoice,

@@ -64,6 +64,12 @@ class AriaCore:
         threading.Thread(target=self._tts_worker, daemon=True).start()
         
         self.tts_enabled = True  # Default to enabled
+        
+        # Initialize Pygame Mixer once
+        try:
+            pygame.mixer.init()
+        except Exception as e:
+            print(f"Warning: Failed to initialize pygame mixer: {e}")
 
         self.check_microphones()
         # Index apps in background
@@ -204,7 +210,10 @@ class AriaCore:
             if text is None:
                 break
             
-            print(f"TTS Worker: Processing text: '{text[:50]}...'")
+            try:
+                print(f"TTS Worker: Processing text: '{text[:50]}...'")
+            except UnicodeEncodeError:
+                print(f"TTS Worker: Processing text: '{text[:50].encode('ascii', 'replace').decode()}...'")
             filename = f"her_voice_{int(time.time())}_{id(text)}.mp3"
             
             edge_tts_success = False
@@ -240,12 +249,12 @@ class AriaCore:
                 # Play the audio file
                 if os.path.exists(filename):
                     print(f"TTS Worker: Playing audio file {filename} (size: {os.path.getsize(filename)} bytes)")
-                    pygame.mixer.init()
+                    # pygame.mixer.init() # Already initialized
                     pygame.mixer.music.load(filename)
                     pygame.mixer.music.play()
                     while pygame.mixer.music.get_busy():
                         time.sleep(0.1)
-                    pygame.mixer.quit()
+                    # pygame.mixer.quit() # Don't quit, keep it alive
                     print("TTS Worker: Audio playback complete")
                     
                     # Cleanup
@@ -674,7 +683,7 @@ class AriaCore:
                     "body": draft_body
                 }
                 
-                self.speak(f"Here is the draft: {draft_body}")
+                self.speak("I have created a draft for you.")
                 self.speak("Do you want to send it?")
                 
                 # Set UI action for frontend buttons

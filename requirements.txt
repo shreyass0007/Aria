@@ -8,6 +8,7 @@ pygame
 fastapi
 uvicorn
 requests
+pydantic
 
 # AI & Machine Learning
 langchain
@@ -45,4 +46,5 @@ pyperclip
 # Local Speech & Streaming
 faster-whisper
 edge-tts
-asyncio
+torch
+zstandard

@@ -1,45 +1,37 @@
-import requests
-import json
-import time
+import os
+from dotenv import load_dotenv
+from langchain_anthropic import ChatAnthropic
 
-API_URL = "http://localhost:5000"
+load_dotenv()
 
-def test_model(model_name, prompt):
-    print(f"\n--- Testing Model: {model_name} ---")
-    payload = {
-        "message": prompt,
-        "model": model_name
-    }
+api_key = os.getenv("ANTHROPIC_API_KEY")
+
+if not api_key:
+    print("Error: ANTHROPIC_API_KEY not found in environment variables.")
+    exit(1)
+
+print(f"Anthropic API Key found: {api_key[:5]}...{api_key[-4:]}")
+
+models_to_test = [
+    "claude-3-haiku-20240307",
+    "claude-3-5-sonnet-20240620",
+    "claude-3-5-sonnet-20241022",
+    "claude-3-5-sonnet-latest",
+    "claude-3-opus-20240229",
+    "claude-3-sonnet-20240229"
+]
+
+print("\nTesting models...")
+
+for model in models_to_test:
+    print(f"\nTesting {model}...")
     try:
-        start_time = time.time()
-        response = requests.post(f"{API_URL}/message", json=payload)
-        end_time = time.time()
-        
-        if response.status_code == 200:
-            data = response.json()
-            print(f"Status: Success ({end_time - start_time:.2f}s)")
-            print(f"Response: {data.get('response')}")
-            return True
-        else:
-            print(f"Status: Failed ({response.status_code})")
-            print(f"Error: {response.text}")
-            return False
+        llm = ChatAnthropic(
+            model=model,
+            anthropic_api_key=api_key,
+            temperature=0.7
+        )
+        response = llm.invoke("Hello")
+        print(f"SUCCESS: {model}")
     except Exception as e:
-        print(f"Exception: {e}")
-        return False
-
-def verify_all():
-    print("Starting Multi-Model Verification...")
-    
-    # 1. Test OpenAI
-    test_model("openai", "Who are you? (Short answer)")
-    
-    # 2. Test Gemini
-    test_model("gemini", "Who are you? (Short answer)")
-    
-    # 3. Test Ollama (might fail if not running)
-    print("\nNote: Ollama test requires Ollama running locally.")
-    test_model("ollama", "Who are you? (Short answer)")
-
-if __name__ == "__main__":
-    verify_all()
+        print(f"FAILED: {model} - {str(e)[:100]}...")
