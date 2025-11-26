@@ -6,6 +6,12 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import sys
 import os
+import asyncio
+import platform
+
+# Fix for "ConnectionResetError: [WinError 10054]" on Windows
+if platform.system() == 'Windows':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 # Add project root to path if needed
 # Add project root to path if needed

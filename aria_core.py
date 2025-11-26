@@ -471,7 +471,14 @@ class AriaCore:
         
         # 0. Email Confirmation
         if self.pending_email:
-            if any(x in text for x in ["yes", "send", "confirm", "okay", "sure"]):
+            # CRITICAL FIX: Check if user is issuing a NEW command instead of confirming
+            # If they say "send mail to..." or "draft email...", it's a new request, not a confirmation.
+            if any(x in text for x in ["send mail", "send email", "draft email", "compose email"]):
+                self.speak("Discarding previous draft and starting a new one.")
+                self.pending_email = None
+                # Fall through to intent classifier
+            
+            elif any(x in text for x in ["yes", "send", "confirm", "okay", "sure"]):
                 self.speak("Sending email...")
                 to = self.pending_email["to"]
                 subject = self.pending_email["subject"]

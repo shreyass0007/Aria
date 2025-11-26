@@ -532,24 +532,40 @@ function addMessage(text, sender, uiAction = null) {
     if (sender === 'aria') {
         // Parse Markdown for Aria's messages with code block support
         console.log('🔍 DEBUG: Parsing message, has window.api.parseMarkdown?', !!(window.api && window.api.parseMarkdown));
-        console.log('🔍 DEBUG: Message text:', text.substring(0, 100));
 
         try {
-            // Always use our custom parser for code block support
-            const parsed = parseMessageWithCode(text);
-            console.log('🔍 DEBUG: Parsed HTML:', parsed.substring(0, 200));
-            bubble.innerHTML = parsed;
+            // Use the robust parser from preload (uses marked)
+            let parsedHtml = text;
+            if (window.api && window.api.parseMarkdown) {
+                parsedHtml = window.api.parseMarkdown(text);
+            } else {
+                // Fallback if API not available
+                parsedHtml = parseMessageWithCode(text);
+            }
 
-            // Replace code-block placeholders with actual formatted code blocks
-            const codeBlockPlaceholders = bubble.querySelectorAll('code-block');
-            console.log('🔍 DEBUG: Found code blocks:', codeBlockPlaceholders.length);
-            codeBlockPlaceholders.forEach(placeholder => {
-                const code = placeholder.textContent;
-                const language = placeholder.getAttribute('data-language');
-                console.log('🔍 DEBUG: Creating code block for language:', language);
-                const codeBlock = createCodeBlock(code, language);
-                placeholder.replaceWith(codeBlock);
+            bubble.innerHTML = parsedHtml;
+
+            // Post-process: Convert marked's <pre><code> blocks to our custom UI
+            const preBlocks = bubble.querySelectorAll('pre code');
+            preBlocks.forEach(codeElement => {
+                const preElement = codeElement.parentElement;
+                const code = codeElement.textContent;
+
+                // Detect language from class (e.g., "language-python")
+                let language = 'plaintext';
+                codeElement.classList.forEach(cls => {
+                    if (cls.startsWith('language-')) {
+                        language = cls.replace('language-', '');
+                    }
+                });
+
+                // Create our custom code block component
+                const customBlock = createCodeBlock(code, language);
+
+                // Replace the original <pre> with our custom block
+                preElement.replaceWith(customBlock);
             });
+
         } catch (e) {
             console.error('❌ Error parsing markdown:', e);
             // Fallback to plain text
