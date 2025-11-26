@@ -13,16 +13,16 @@ function createWindow() {
 
     // Create the browser window - sidebar style
     mainWindow = new BrowserWindow({
-        width: 380,
+        width: 300,
         height: screenHeight,
         x: 0,
         y: 0,
         frame: false, // Remove default title bar
         transparent: false,
         resizable: true,
-        minWidth: 340,
+        minWidth: 300,
         minHeight: 600,
-        maxWidth: 500,
+        maxWidth: screenWidth,
         backgroundColor: '#e0e7ff',
         alwaysOnTop: false,
         skipTaskbar: false,
