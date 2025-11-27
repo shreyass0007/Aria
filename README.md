@@ -23,7 +23,7 @@
 
 - 🎯 **Unified Interface** – Electron sidebar, CustomTkinter window, and CLI modes
 - 🎨 **Premium UX** – Arc-style glassmorphism, light/dark themes, smooth animations
-- 🧠 **Multi-Model AI** – Support for GPT-4o, GPT-4o-mini, Claude 3.5 Sonnet, Claude 3 Opus, and Gemini Pro via LangChain
+- 🧠 **Multi-Model AI** – Support for GPT-5.1, GPT-4o, GPT-4o-mini, GPT-3.5 Turbo, Claude Sonnet 4.5, Claude Haiku 4.5, Claude Opus 4.5, Claude Opus 4.1, and Gemini Pro via LangChain
 - 🎙️ **Advanced Voice Control** – Wake word detection, local Faster-Whisper transcription, Google/Edge TTS, and natural speech responses
 - 📧 **Email Management** – Gmail integration for sending emails via voice/text commands
 - 🗓️ **Calendar Integration** – Google Calendar OAuth for scheduling and event management
@@ -119,7 +119,7 @@
 
 | Requirement | Version / Notes |
 |-------------|-----------------|
-| **Python** | 3.10+ (tested on Windows 11) |
+| **Python** | 3.10+ (3.11 recommended, tested on Windows 11) |
 | **Node.js & npm** | Node 18+ (Electron 28 requires ≥18.0.0) |
 | **FFmpeg** | Optional, improves audio playback reliability |
 | **Microphone & Speakers** | Required for voice mode |
@@ -129,9 +129,10 @@
 | **Google Calendar** | Optional, requires `credentials.json` for calendar features |
 | **Gmail** | Optional, uses same `credentials.json` for email features |
 | **Notion API** | Optional, requires `NOTION_API_KEY` and `NOTION_DATABASE_ID` |
-| **MongoDB** | Optional, for conversation history (defaults to localhost) |
+| **MongoDB** | Optional, for conversation history (defaults to localhost:27017) |
 | **OpenWeatherMap API** | Optional, requires `OPENWEATHER_API_KEY` for weather features |
 | **CUDA** | Optional, for GPU acceleration of Faster-Whisper (CPU fallback available) |
+| **PyTorch** | Required for Faster-Whisper (installed via requirements.txt) |
 
 ---
 
@@ -165,6 +166,11 @@ pip install -r requirements.txt
 ```powershell
 pip install pipwin
 pipwin install pyaudio
+```
+
+**Note for PyTorch:** If you need CPU-only PyTorch (smaller download), use:
+```powershell
+pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
 ```
 
 **Note for Faster-Whisper:** The model will download automatically on first use. For GPU acceleration, ensure CUDA is installed.
@@ -301,11 +307,14 @@ Starts FastAPI server at `http://localhost:5000` for API testing or custom front
 ```
 
 **Available Models:**
+- `gpt-5.1` - OpenAI GPT-5.1 (future-proof)
 - `gpt-4o` - OpenAI GPT-4o (default)
 - `gpt-4o-mini` - OpenAI GPT-4o Mini
 - `gpt-3.5-turbo` - OpenAI GPT-3.5 Turbo
-- `claude-3-5-sonnet-20241022` - Anthropic Claude 3.5 Sonnet
-- `claude-3-opus-20240229` - Anthropic Claude 3 Opus
+- `claude-sonnet` - Anthropic Claude Sonnet 4.5
+- `claude-haiku` - Anthropic Claude Haiku 4.5
+- `claude-opus-4-5` - Anthropic Claude Opus 4.5
+- `claude-opus-4-1` - Anthropic Claude Opus 4.1
 - `gemini-pro` - Google Gemini Pro
 
 ---

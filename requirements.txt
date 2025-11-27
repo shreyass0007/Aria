@@ -1,50 +1,77 @@
+# ========================================
+# ARIA - AI Desktop Assistant
+# Python Dependencies
+# ========================================
+
 # Speech Recognition & Text-to-Speech
-SpeechRecognition
-gTTS
-pyaudio
-pygame
+# ------------------------------------
+SpeechRecognition>=3.10.0
+gTTS>=2.3.0
+pyaudio>=0.2.11
+pygame>=2.5.0
+edge-tts>=6.1.0
 
 # Web Framework & API
-fastapi
-uvicorn
-requests
-pydantic
+# ------------------------------------
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+requests>=2.31.0
+pydantic>=2.0.0
 
-# AI & Machine Learning
-langchain
-langchain-openai
-langchain-core
-langchain-google-genai
-langchain-anthropic
-google-generativeai
-anthropic
+# AI & Machine Learning - LangChain
+# ------------------------------------
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langchain-core>=0.1.0
+langchain-google-genai>=0.0.6
+langchain-anthropic>=0.1.0
 
-# Google APIs
-google-api-python-client
-google-auth-httplib2
-google-auth-oauthlib
+# AI & Machine Learning - Direct API Clients
+# ------------------------------------
+openai>=1.0.0
+google-generativeai>=0.3.0
+anthropic>=0.18.0
+
+# Google APIs (Calendar & Gmail)
+# ------------------------------------
+google-api-python-client>=2.100.0
+google-auth-httplib2>=0.1.1
+google-auth-oauthlib>=1.1.0
 
 # Database & Knowledge Management
-pymongo
-notion-client
+# ------------------------------------
+pymongo>=4.5.0
+notion-client>=2.0.0
 
 # GUI & UI
-customtkinter
-Pillow
+# ------------------------------------
+customtkinter>=5.2.0
+Pillow>=10.0.0
 
 # System Control (Windows)
-pycaw
-comtypes
-winshell
-psutil
+# ------------------------------------
+pycaw>=20230407
+comtypes>=1.2.0
+winshell>=0.6
+psutil>=5.9.0
 
 # Utilities
-wikipedia
-python-dotenv
-pyperclip
+# ------------------------------------
+wikipedia>=1.4.0
+python-dotenv>=1.0.0
+pyperclip>=1.8.2
 
-# Local Speech & Streaming
-faster-whisper
-edge-tts
-torch
-zstandard
+# Local Speech Recognition & Streaming
+# ------------------------------------
+faster-whisper>=0.9.0
+torch>=2.0.0
+torchaudio>=2.0.0
+zstandard>=0.21.0
+
+# Additional Dependencies
+# ------------------------------------
+# For async support
+asyncio; python_version < '3.7'
+
+# For data processing
+python-dateutil>=2.8.2
