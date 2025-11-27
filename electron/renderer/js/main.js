@@ -3,6 +3,7 @@ import { fetchAvailableModels, sendToBackend, getTTSStatus, setTTSStatus } from 
 import { createTitleBar, autoResizeTextarea, applyTheme, applyColorTheme } from './ui.js';
 import { addMessage, showThinkingIndicator, removeThinkingIndicator, animateSendButton } from './chat.js';
 import { handleToggleVoice } from './voice.js';
+import { loadConversationHistory } from './history.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     createTitleBar();
@@ -138,7 +139,15 @@ function handleNewChat() {
 
 function toggleHistory() {
     const historySidebar = document.getElementById('historySidebar');
-    if (historySidebar) historySidebar.classList.toggle('active');
+    if (historySidebar) {
+        const isOpening = !historySidebar.classList.contains('active');
+        historySidebar.classList.toggle('active');
+
+        // Load conversation history when opening the sidebar
+        if (isOpening) {
+            loadConversationHistory();
+        }
+    }
 }
 
 async function loadTTSStatus() {

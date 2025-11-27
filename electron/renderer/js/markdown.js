@@ -1,13 +1,25 @@
 export function parseMessageWithCode(text) {
+    const codeBlocks = [];
+
     // Parse fenced code blocks first (```language\ncode\n```)
     text = text.replace(/```(\w+)?\s*[\r\n]+([\s\S]*?)```/g, (match, language, code) => {
         const lang = language || 'plaintext';
-        return `<code-block data-language="${lang}">${escapeHtml(code.trim())}</code-block>`;
+        const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+        codeBlocks.push({
+            placeholder,
+            html: `<code-block data-language="${lang}">${escapeHtml(code.trim())}</code-block>`
+        });
+        return placeholder;
     });
 
     // Parse inline code (`code`)
     text = text.replace(/`([^`]+)`/g, (match, code) => {
-        return `<code class="inline-code">${escapeHtml(code)}</code>`;
+        const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+        codeBlocks.push({
+            placeholder,
+            html: `<code class="inline-code">${escapeHtml(code)}</code>`
+        });
+        return placeholder;
     });
 
     // Parse markdown links
@@ -15,6 +27,11 @@ export function parseMessageWithCode(text) {
 
     // Parse line breaks
     text = text.replace(/\n/g, '<br>');
+
+    // Restore code blocks
+    codeBlocks.forEach(block => {
+        text = text.split(block.placeholder).join(block.html);
+    });
 
     return text;
 }
