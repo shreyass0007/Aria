@@ -31,19 +31,10 @@
                 <div class="title-section">
                     <h1 class="title">Aria</h1>
                     <p class="subtitle">AI Assistant</p>
-                    <div class="model-selector-wrapper">
-                        <button id="modelSelector" class="model-selector" title="Select AI Model">
-                            <span id="selectedModel">GPT-4o</span>
-                            <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                        </button>
-                        <div id="modelDropdown" class="model-dropdown">
-                            <!-- Options will be populated by JS -->
-                        </div>
-                    </div>
+                    <select id="modelSelector" class="model-selector" title="Select AI Model">
+                        <option value="gpt-4o">GPT-4o</option>
+                        <!-- Options will be populated by JS -->
+                    </select>
                 </div>
             </div>
             <div class="header-controls">
@@ -106,7 +97,7 @@
     <div class="modal-overlay" id="settingsModal">
         <div class="modal">
             <div class="modal-header">
-                <h2>⚙️ Settings</h2>
+                <h2>ΓÜÖ∩╕Å Settings</h2>
             </div>
             <div class="modal-content">
                 <button class="modal-btn" id="clearChatBtn">
@@ -225,9 +216,7 @@
         <div class="history-list" id="historyList"></div>
     </aside>
 
-    <script src="js/marked.min.js"></script>
-    <script src="highlight.min.js"></script>
-    <script type="module" src="js/main.js"></script>
+    <script src="app.js"></script>
 </body>
 
 </html>

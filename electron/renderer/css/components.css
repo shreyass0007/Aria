@@ -1,0 +1,153 @@
+.icon-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--text-secondary);
+}
+
+.icon-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+    transition: all 0.3s ease;
+}
+
+.icon-btn:hover {
+    background: rgba(99, 102, 241, 0.2);
+    transform: scale(1.15) rotate(5deg);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    color: var(--accent);
+}
+
+.icon-btn:active {
+    transform: scale(0.95);
+    transition: transform 0.1s;
+}
+
+/* Modern SVG Icon Button Styling */
+.icon-btn.modern svg {
+    width: 18px;
+    height: 18px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.icon-btn.modern {
+    font-size: 0;
+    /* Remove emoji fallback */
+    position: relative;
+}
+
+.icon-btn.modern svg {
+    stroke: var(--text-primary);
+    opacity: 0.7;
+}
+
+.icon-btn.modern:hover {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: var(--accent-secondary);
+}
+
+.icon-btn.modern:hover svg {
+    opacity: 1;
+    stroke: var(--accent);
+    transform: scale(1.05);
+}
+
+.icon-btn.modern:active {
+    transform: scale(0.95);
+}
+
+.icon-btn.modern:active svg {
+    transform: scale(0.9);
+}
+
+.action-btn.confirm,
+.action-btn.cancel {
+    width: auto;
+    height: auto;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    backdrop-filter: blur(10px) saturate(180%);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.action-btn.confirm {
+    background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+    border: 1px solid var(--accent);
+    color: white;
+    box-shadow: 0 4px 15px var(--glass-shadow);
+}
+
+.action-btn.confirm:hover {
+    background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px var(--glass-shadow);
+    filter: brightness(1.1);
+}
+
+.action-btn.cancel {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+}
+
+.action-btn.cancel:hover {
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-right: 4px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 4px center;
+    padding-right: 20px;
+}
+
+.model-select-inline:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.model-select-inline:focus {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+}
+
+.model-select-inline option {
+    background: #1e1e2e;
+    color: #e2e8f0;
+    padding: 10px;
+}
+
+[data-theme="light"] .model-select-inline {
+    color: #64748b;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+[data-theme="light"] .model-select-inline:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #1e293b;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231e293b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+[data-theme="light"] .model-select-inline option {
+    background: #ffffff;
+    color: #1e293b;
+}

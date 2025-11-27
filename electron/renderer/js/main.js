@@ -65,8 +65,25 @@ function setupEventListeners() {
         option.addEventListener('click', () => handleColorThemeChange(option.dataset.theme));
     });
 
-    if (modelSelector) {
-        modelSelector.addEventListener('change', handleModelChange);
+    // Custom model selector dropdown
+    const modelSelectorBtn = document.getElementById('modelSelector');
+    const modelDropdown = document.getElementById('modelDropdown');
+
+    if (modelSelectorBtn && modelDropdown) {
+        // Toggle dropdown
+        modelSelectorBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            modelSelectorBtn.classList.toggle('active');
+            modelDropdown.classList.toggle('active');
+        });
+
+        // Close dropdown on outside click
+        document.addEventListener('click', (e) => {
+            if (!modelSelectorBtn.contains(e.target) && !modelDropdown.contains(e.target)) {
+                modelSelectorBtn.classList.remove('active');
+                modelDropdown.classList.remove('active');
+            }
+        });
     }
 
     if (settingsModal) {
@@ -180,14 +197,16 @@ async function loadAvailableModels() {
     try {
         const data = await fetchAvailableModels();
         if (data.status === 'success') {
-            const modelSelector = document.getElementById('modelSelector');
-            if (modelSelector) {
-                modelSelector.innerHTML = '';
+            const modelDropdown = document.getElementById('modelDropdown');
+            if (modelDropdown) {
+                modelDropdown.innerHTML = '';
                 data.models.forEach(model => {
-                    const option = document.createElement('option');
-                    option.value = model.id;
+                    const option = document.createElement('div');
+                    option.className = 'model-option';
+                    option.setAttribute('data-value', model.id);
                     option.textContent = model.name;
-                    modelSelector.appendChild(option);
+                    option.addEventListener('click', () => handleModelChange(model.id, model.name));
+                    modelDropdown.appendChild(option);
                 });
                 loadModelPreference();
             }
@@ -200,16 +219,41 @@ async function loadAvailableModels() {
 function loadModelPreference() {
     const savedModel = localStorage.getItem('selected_ai_model') || 'gpt-4o';
     state.currentModel = savedModel;
-    const modelSelector = document.getElementById('modelSelector');
-    if (modelSelector) {
-        modelSelector.value = savedModel;
-    }
+
+    // Find and get the model name
+    const modelOptions = document.querySelectorAll('.model-option');
+    modelOptions.forEach(option => {
+        if (option.getAttribute('data-value') === savedModel) {
+            const selectedModelSpan = document.getElementById('selectedModel');
+            if (selectedModelSpan) {
+                selectedModelSpan.textContent = option.textContent;
+            }
+            option.classList.add('selected');
+        }
+    });
 }
 
-function handleModelChange(event) {
-    const selectedModel = event.target.value;
-    state.currentModel = selectedModel;
-    localStorage.setItem('selected_ai_model', selectedModel);
+function handleModelChange(modelId, modelName) {
+    state.currentModel = modelId;
+    localStorage.setItem('selected_ai_model', modelId);
+
+    // Update selected model display
+    const selectedModelSpan = document.getElementById('selectedModel');
+    if (selectedModelSpan) {
+        selectedModelSpan.textContent = modelName;
+    }
+
+    // Update selected class
+    document.querySelectorAll('.model-option').forEach(opt => {
+        opt.classList.remove('selected');
+        if (opt.getAttribute('data-value') === modelId) {
+            opt.classList.add('selected');
+        }
+    });
+
+    // Close dropdown
+    document.getElementById('modelSelector').classList.remove('active');
+    document.getElementById('modelDropdown').classList.remove('active');
 }
 
 function handleToggleTheme() {

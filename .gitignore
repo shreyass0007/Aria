@@ -51,6 +51,3 @@ build/
 *.tmp
 *.temp
 .cache/CRITICAL_BACKUPS/
-
-# Temporary Audio
-her_voice*
