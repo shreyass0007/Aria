@@ -4,8 +4,10 @@ import { createTitleBar, autoResizeTextarea, applyTheme, applyColorTheme } from 
 import { addMessage, showThinkingIndicator, removeThinkingIndicator, animateSendButton } from './chat.js';
 import { handleToggleVoice } from './voice.js';
 import { loadConversationHistory } from './history.js';
+import { loadAllComponents } from './component-loader.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadAllComponents();
     createTitleBar();
     setupEventListeners();
     loadTheme();
