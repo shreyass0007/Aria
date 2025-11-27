@@ -993,16 +993,6 @@ Aria greets you based on the time of day:
 ```
 
 **Night (9 PM - 5 AM):**
-```
-"Midnight productivity mode enabled."
-"Burning the midnight oil?"
-```
-
----
-
-## ⚙️ Settings & Customization
-
-### Changing the Wake Word
 
 **Default:** "Aria"
 

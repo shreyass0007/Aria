@@ -87,6 +87,25 @@ Ask Aria anything, just like ChatGPT.
 | **Web** | "Open [Website]", "Search for [Query]" |
 | **System** | "Exit", "Quit" |
 
+### 7. Conversation History
+
+Aria automatically saves all your conversations, making it easy to revisit past chats.
+
+**Access History:**
+- Click the history button (clock icon 🕐) in the top header
+- Browse all your past conversations
+- Click any conversation to continue where you left off
+
+**Managing Your History:**
+- **Rename**: Hover over a conversation and click the pencil icon to give it a descriptive name
+- **Delete**: Click the trash icon to remove conversations you don't need
+- **New Chat**: Click the "New Chat" button to start a fresh conversation
+
+**Tips:**
+- Use descriptive names like "Python Help" or "Meeting Notes"
+- Add emojis to organize visually (📅 💻 📝)
+- Delete old test conversations to keep things tidy
+
 ---
 
 ## ❓ Troubleshooting
