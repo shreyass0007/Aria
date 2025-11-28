@@ -250,6 +250,46 @@ def set_tts_status(request: TTSRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Email Management Endpoints
+class EmailSendRequest(BaseModel):
+    to: str
+    subject: str
+    body: str
+
+@app.post("/email/send")
+def send_email(request: EmailSendRequest):
+    """Send an email via Gmail"""
+    try:
+        # Check if email manager is available
+        if not hasattr(aria, 'email') or aria.email is None:
+            raise HTTPException(
+                status_code=503, 
+                detail="Email functionality not configured. Please set up Gmail credentials."
+            )
+        
+        # Validate email fields
+        if not request.to or not request.subject or not request.body:
+            raise HTTPException(status_code=400, detail="Missing required fields")
+        
+        # Send email through aria's email manager
+        result = aria.email.send_email(request.to, request.subject, request.body)
+        
+        if "successfully" in result.lower():
+            return {
+                'status': 'success',
+                'message': result
+            }
+        else:
+            return {
+                'status': 'error',
+                'error': result
+            }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/conversations")
 def get_conversations(limit: int = 20):
     try:
@@ -310,6 +350,112 @@ def rename_conversation(conversation_id: str, request: RenameRequest):
             raise HTTPException(status_code=500, detail="Failed to rename conversation")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# Feature Status Endpoints for Modular System
+@app.get("/features/status")
+def get_all_features_status():
+    """Check availability of all optional features"""
+    try:
+        return {
+            "status": "success",
+            "features": {
+                "email": check_email_available(),
+                "calendar": check_calendar_available(),
+                "notion": check_notion_available(),
+                "weather": check_weather_available(),
+                "systemMonitor": check_system_monitor_available(),
+                "fileManager": True,  # Always available
+                "clipboardManager": True  # Always available
+            }
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e), "features": {}}
+
+@app.get("/features/{feature_name}/status")
+def get_feature_status(feature_name: str):
+    """Check if a specific feature is available"""
+    try:
+        feature_checks = {
+            "email": check_email_available,
+            "calendar": check_calendar_available,
+            "notion": check_notion_available,
+            "weather": check_weather_available,
+            "systemMonitor": check_system_monitor_available,
+            "fileManager": lambda: True,
+            "clipboardManager": lambda: True
+        }
+        
+        if feature_name not in feature_checks:
+            raise HTTPException(status_code=404, detail=f"Unknown feature: {feature_name}")
+        
+        available = feature_checks[feature_name]()
+        return {
+            "status": "success",
+            "feature": feature_name,
+            "available": available
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        return {"status": "error", "available": False, "error": str(e)}
+
+def check_email_available():
+    """Check if email functionality is configured"""
+    try:
+        # Check if credentials file exists
+        if not os.path.exists('credentials.json'):
+            return False
+        # Try importing email manager
+        from email_manager import EmailManager
+        return True
+    except:
+        return False
+
+def check_calendar_available():
+    """Check if calendar functionality is configured"""
+    try:
+        # Check if credentials file exists
+        if not os.path.exists('credentials.json'):
+            return False
+        # Try importing calendar manager
+        from calendar_manager import CalendarManager
+        return True
+    except:
+        return False
+
+def check_notion_available():
+    """Check if Notion functionality is configured"""
+    try:
+        # Check if Notion API key is set
+        notion_key = os.getenv('NOTION_API_KEY')
+        if not notion_key:
+            return False
+        # Try importing notion manager
+        from notion_manager import NotionManager
+        return True
+    except:
+        return False
+
+def check_weather_available():
+    """Check if weather functionality is configured"""
+    try:
+        # Check if weather API key is set
+        weather_key = os.getenv('OPENWEATHER_API_KEY')
+        if not weather_key:
+            return False
+        # Try importing weather manager
+        from weather_manager import WeatherManager
+        return True
+    except:
+        return False
+
+def check_system_monitor_available():
+    """Check if system monitoring is available"""
+    try:
+        from system_monitor import SystemMonitor
+        return True
+    except:
+        return False
 
 class SummarizeRequest(BaseModel):
     page_id: Optional[str] = None

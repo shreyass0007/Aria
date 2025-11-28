@@ -55,6 +55,9 @@ export async function loadConversationHistory() {
 /**
  * Render the list of conversations
  */
+/**
+ * Render the list of conversations
+ */
 function renderHistoryList(conversations) {
     const historyList = document.getElementById('historyList');
     if (!historyList) return;
@@ -83,31 +86,65 @@ function renderHistoryList(conversations) {
                 <div class="history-timestamp">${formatTimestamp(conv.updated_at)}</div>
             </div>
             <div class="history-actions">
-                <button class="action-btn rename-btn" data-id="${conv._id}" title="Rename">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                <button class="more-options-btn" title="More options">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="1"></circle>
+                        <circle cx="19" cy="12" r="1"></circle>
+                        <circle cx="5" cy="12" r="1"></circle>
                     </svg>
                 </button>
-                <button class="action-btn delete-btn delete" data-id="${conv._id}" title="Delete">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
-                </button>
+                <div class="history-dropdown">
+                    <button class="dropdown-item rename-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                        </svg>
+                        Rename
+                    </button>
+                    <button class="dropdown-item delete-btn delete">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        Delete
+                    </button>
+                </div>
             </div>
         `;
 
-        // Add click handler to load conversation (but not on action buttons)
+        // Add click handler to load conversation
         historyItem.addEventListener('click', (e) => {
-            if (!e.target.closest('.action-btn')) {
+            if (!e.target.closest('.history-actions')) {
                 loadConversation(conv._id);
             }
+        });
+
+        // Dropdown toggle logic
+        const moreBtn = historyItem.querySelector('.more-options-btn');
+        const dropdown = historyItem.querySelector('.history-dropdown');
+        const actionsContainer = historyItem.querySelector('.history-actions');
+
+        moreBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            // Close all other dropdowns
+            document.querySelectorAll('.history-dropdown.active').forEach(d => {
+                if (d !== dropdown) {
+                    d.classList.remove('active');
+                    d.closest('.history-actions').classList.remove('active');
+                    d.closest('.more-options-btn')?.classList.remove('active');
+                }
+            });
+
+            dropdown.classList.toggle('active');
+            actionsContainer.classList.toggle('active');
+            moreBtn.classList.toggle('active');
         });
 
         // Add rename handler
         const renameBtn = historyItem.querySelector('.rename-btn');
         renameBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            dropdown.classList.remove('active');
             promptRenameConversation(conv._id, conv.title);
         });
 
@@ -115,11 +152,27 @@ function renderHistoryList(conversations) {
         const deleteBtn = historyItem.querySelector('.delete-btn');
         deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            dropdown.classList.remove('active');
             confirmDeleteConversation(conv._id, conv.title);
         });
 
         historyList.appendChild(historyItem);
     });
+
+    // Global click listener to close dropdowns
+    // Remove existing listener to avoid duplicates if called multiple times
+    if (!window.historyDropdownListenerAdded) {
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.history-actions')) {
+                document.querySelectorAll('.history-dropdown.active').forEach(d => {
+                    d.classList.remove('active');
+                    d.closest('.history-actions').classList.remove('active');
+                    d.closest('.more-options-btn')?.classList.remove('active');
+                });
+            }
+        });
+        window.historyDropdownListenerAdded = true;
+    }
 }
 
 /**
@@ -169,13 +222,73 @@ export async function loadConversation(conversationId) {
     }
 }
 
+let conversationToRenameId = null;
+let conversationToDeleteId = null;
+let modalsInitialized = false;
+
+/**
+ * Initialize modal event listeners
+ */
+function initializeHistoryModals() {
+    if (modalsInitialized) return;
+
+    const renameModal = document.getElementById('renameModal');
+    const deleteModal = document.getElementById('deleteModal');
+    const renameInput = document.getElementById('renameInput');
+
+    // Rename Modal Buttons
+    document.getElementById('cancelRenameBtn')?.addEventListener('click', () => {
+        renameModal.classList.remove('active');
+        conversationToRenameId = null;
+    });
+
+    document.getElementById('confirmRenameBtn')?.addEventListener('click', async () => {
+        if (conversationToRenameId && renameInput.value.trim()) {
+            await renameConversation(conversationToRenameId, renameInput.value.trim());
+            renameModal.classList.remove('active');
+            conversationToRenameId = null;
+        }
+    });
+
+    // Delete Modal Buttons
+    document.getElementById('cancelDeleteBtn')?.addEventListener('click', () => {
+        deleteModal.classList.remove('active');
+        conversationToDeleteId = null;
+    });
+
+    document.getElementById('confirmDeleteBtn')?.addEventListener('click', async () => {
+        if (conversationToDeleteId) {
+            await deleteConversation(conversationToDeleteId);
+            deleteModal.classList.remove('active');
+            conversationToDeleteId = null;
+        }
+    });
+
+    // Close on overlay click
+    renameModal?.addEventListener('click', (e) => {
+        if (e.target === renameModal) renameModal.classList.remove('active');
+    });
+
+    deleteModal?.addEventListener('click', (e) => {
+        if (e.target === deleteModal) deleteModal.classList.remove('active');
+    });
+
+    modalsInitialized = true;
+}
+
 /**
  * Prompt user to rename a conversation
  */
-async function promptRenameConversation(conversationId, currentTitle) {
-    const newTitle = prompt('Enter new title:', currentTitle);
-    if (newTitle && newTitle.trim() && newTitle.trim() !== currentTitle) {
-        await renameConversation(conversationId, newTitle.trim());
+function promptRenameConversation(conversationId, currentTitle) {
+    initializeHistoryModals(); // Ensure listeners are attached
+    const renameModal = document.getElementById('renameModal');
+    const renameInput = document.getElementById('renameInput');
+
+    if (renameModal && renameInput) {
+        conversationToRenameId = conversationId;
+        renameInput.value = currentTitle;
+        renameModal.classList.add('active');
+        renameInput.focus();
     }
 }
 
@@ -210,9 +323,12 @@ async function renameConversation(conversationId, newTitle) {
  * Confirm and delete a conversation
  */
 function confirmDeleteConversation(conversationId, title) {
-    const confirmDelete = confirm(`Are you sure you want to delete "${title}"?`);
-    if (confirmDelete) {
-        deleteConversation(conversationId);
+    initializeHistoryModals(); // Ensure listeners are attached
+    const deleteModal = document.getElementById('deleteModal');
+
+    if (deleteModal) {
+        conversationToDeleteId = conversationId;
+        deleteModal.classList.add('active');
     }
 }
 

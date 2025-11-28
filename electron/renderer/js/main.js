@@ -1,4 +1,4 @@
-import { state } from './state.js';
+﻿import { state } from './state.js';
 import { fetchAvailableModels, sendToBackend, getTTSStatus, setTTSStatus } from './api.js';
 import { createTitleBar, autoResizeTextarea, applyTheme, applyColorTheme } from './ui.js';
 import { addMessage, showThinkingIndicator, removeThinkingIndicator, animateSendButton } from './chat.js';
@@ -287,10 +287,241 @@ function loadTheme() {
     applyColorTheme(savedColorTheme);
 }
 
+// Time-based greeting like JARVIS
+function getTimeBasedGreeting() {
+    const hour = new Date().getHours();
+    const userName = "Shreyas"; // You can make this dynamic if needed
+
+    let greeting = "";
+    let timeOfDay = "";
+
+    if (hour >= 5 && hour < 12) {
+        timeOfDay = "morning";
+        greeting = `Good morning, ${userName}. `;
+    } else if (hour >= 12 && hour < 17) {
+        timeOfDay = "afternoon";
+        greeting = `Good afternoon, ${userName}. `;
+    } else if (hour >= 17 && hour < 21) {
+        timeOfDay = "evening";
+        greeting = `Good evening, ${userName}. `;
+    } else {
+        timeOfDay = "night";
+        greeting = `Good night, ${userName}. `;
+    }
+
+    // Context-aware messages like JARVIS
+    const contextMessages = {
+        morning: [
+            "Ready to start the day?",
+            "All systems are operational.",
+            "How can I assist you today?",
+            "Your schedule is ready for review.",
+            "Let's conquer the world.",
+            "Let's make today productive.",
+            "What's on the agenda?",
+            "Shall we begin?",
+            "The world awaits your brilliance.",
+            "Ready to tackle today's challenges?",
+            "A fresh start awaits.",
+            "Let's make things happen.",
+            "Your productivity suite is ready.",
+            "Time to turn ideas into reality.",
+            "The early bird gets the worm.",
+            "Rise and shine! Let's get to work.",
+            "Another day, another opportunity.",
+            "Ready to make today count?",
+            "Let's start with a winning strategy.",
+            "Your digital workspace is prepared.",
+            "Coffee's ready. What's first?",
+            "Let's make magic happen today.",
+            "The sun is up, and so are we.",
+            "Your morning briefing is available.",
+            "Time to seize the day.",
+            "What masterpiece shall we create today?",
+            "All systems fully charged and ready.",
+            "Let's turn those dreams into plans.",
+            "The future starts now.",
+            "Your potential awaits activation.",
+            "Ready to break new ground?",
+            "Let's set the tone for an amazing day.",
+            "What brilliant idea will spark today?",
+            "Morning glory awaits.",
+            "Let's build something incredible."
+        ],
+        afternoon: [
+            "How is your day going?",
+            "What can I help you with?",
+            "All systems running smoothly.",
+            "Ready when you are.",
+            "Need a productivity boost?",
+            "Let's keep the momentum going.",
+            "Time to check off that to-do list.",
+            "How can I assist this afternoon?",
+            "Still going strong?",
+            "Let's finish what we started.",
+            "Halfway through the day already.",
+            "Need anything to stay on track?",
+            "Keeping things efficient, as always.",
+            "What's next on your list?",
+            "Shall we continue?",
+            "Your afternoon update is ready.",
+            "Let's maintain that energy.",
+            "Working hard, I see.",
+            "Let's power through.",
+            "At your service, as always.",
+            "The day is yours to command.",
+            "Peak performance hours are here.",
+            "Let's capitalize on this momentum.",
+            "What shall we accomplish next?",
+            "Cruising through the day nicely.",
+            "Your afternoon checkpoint is ready.",
+            "Time to double down on success.",
+            "How can I optimize your workflow?",
+            "Let's keep this winning streak alive.",
+            "Productivity levels looking excellent.",
+            "The hustle continues.",
+            "Let's make the most of these hours.",
+            "Your focus is impressive today.",
+            "Ready to crush some more goals?",
+            "The afternoon grind awaits."
+        ],
+        evening: [
+            "Welcome back. How can I help?",
+            "Ready to wrap up the day?",
+            "What do you need?",
+            "At your service.",
+            "Time to unwind or keep going?",
+            "Let's review what you've accomplished.",
+            "How was your day?",
+            "Plans for the evening?",
+            "Shall we tie up loose ends?",
+            "Time to relax or power through?",
+            "Today's work is nearly done.",
+            "Let's finish strong.",
+            "Anything left on your plate?",
+            "Evening briefing ready.",
+            "Time to reflect and recharge.",
+            "You've earned a break.",
+            "Let's close out the day properly.",
+            "Standing by for evening tasks.",
+            "Here to help you wind down.",
+            "What can I do for you tonight?",
+            "The golden hour approaches.",
+            "Time to shift into evening mode.",
+            "Let's recap today's victories.",
+            "Sunset productivity activated.",
+            "Evening operations standing by.",
+            "Ready for whatever comes next?",
+            "The day's final act begins.",
+            "Time for reflection or action?",
+            "Let's make this evening count.",
+            "Winding down or ramping up?",
+            "Your evening companion is here.",
+            "Shall we celebrate today's wins?",
+            "The twilight hours are yours.",
+            "Ready for some evening magic?",
+            "Let's end this day on a high note."
+        ],
+        night: [
+            "Burning the midnight oil?",
+            "Still working? Let me help.",
+            "How can I assist you tonight?",
+            "Ready whenever you are.",
+            "Late night session?",
+            "The night is young.",
+            "Inspiration strikes at odd hours.",
+            "Night owl mode activated.",
+            "Here for you, no matter the hour.",
+            "Let's make the most of this quiet time.",
+            "The stars are out, and so are we.",
+            "Darkness brings clarity sometimes.",
+            "Working late again, I see.",
+            "Your dedication is admirable.",
+            "Let me help you through the night.",
+            "Sleep is overrated anyway.",
+            "The night shift begins.",
+            "When do you sleep, exactly?",
+            "Silent productivity mode enabled.",
+            "Let's turn night into opportunity.",
+            "The world sleeps, but we create.",
+            "Midnight breakthrough incoming?",
+            "The nocturnal genius awakens.",
+            "Coffee or code? Both?",
+            "These quiet hours are golden.",
+            "Night mode: fully operational.",
+            "The best ideas come after dark.",
+            "Burning bright in the darkness.",
+            "Let's own these midnight hours.",
+            "Your nocturnal assistant reporting.",
+            "The moon is our only witness.",
+            "Late night brilliance in progress.",
+            "The witching hour of productivity.",
+            "Sleep later, create now.",
+            "Darkness fuels innovation."
+        ]
+    };
+
+    // Pick a random context message
+    const messages = contextMessages[timeOfDay];
+    const contextMsg = messages[Math.floor(Math.random() * messages.length)];
+
+    return greeting + contextMsg;
+}
+
 function displayWelcomeMessage() {
     // Check if chat is empty
     const chatContainer = document.getElementById('chatContainer');
     if (chatContainer && chatContainer.children.length === 0) {
-        addMessage('Hello! I am Aria. How can I help you today?', 'aria');
+        // Display time-based greeting
+        const greeting = getTimeBasedGreeting();
+        addMessage(greeting, 'aria');
     }
 }
+
+// DISABLED: Module loader system was removed
+// Uncomment and restore module-loader.js and feature-config.js to re-enable
+/*
+async function loadOptionalModules() {
+    console.log('🔌 Loading optional modules...');
+
+    try {
+        // Check backend feature availability
+        const featureStatus = await checkAllFeaturesStatus();
+
+        if (featureStatus.status !== 'success') {
+            console.warn('⚠️ Could not check feature status, modules will not load');
+            return;
+        }
+
+        const availableFeatures = featureStatus.features;
+        console.log('Available features:', availableFeatures);
+
+        // Module definitions
+        const modules = [
+            // Phase 2: Email Module
+            {
+                name: 'email',
+                init: async () => {
+                    const { initEmailModule } = await import('./modules/email.js');
+                    return await initEmailModule();
+                },
+                options: { showErrorToUser: false }
+            }
+
+            // More modules will be added in future phases
+        ];
+
+        // Load all modules in parallel
+        if (modules.length > 0) {
+            const results = await moduleLoader.loadModules(modules);
+            console.log(`✅ Loaded ${results.loaded}/${results.total} optional modules`);
+        } else {
+            console.log('ℹ️ No optional modules configured yet');
+        }
+
+    } catch (error) {
+        console.error('Error loading optional modules:', error);
+        // App continues normally even if module loading fails
+    }
+}
+*/

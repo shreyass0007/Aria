@@ -28,6 +28,7 @@ export async function loadAllComponents() {
         loadComponent('components/chat-area.html', 'chat-placeholder'),
         loadComponent('components/input-area.html', 'input-placeholder'),
         loadComponent('components/settings-modal.html', 'settings-modal-placeholder'),
-        loadComponent('components/history-sidebar.html', 'history-sidebar-placeholder')
+        loadComponent('components/history-sidebar.html', 'history-sidebar-placeholder'),
+        loadComponent('components/history-modals.html', 'history-modals-placeholder')
     ]);
 }

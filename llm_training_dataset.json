@@ -1,0 +1,843 @@
+{
+    "metadata": {
+        "version": "1.0",
+        "description": "ARIA Voice Assistant Command Training Dataset",
+        "total_intents": 40,
+        "total_examples": 220,
+        "categories": [
+            "power_management",
+            "volume_control",
+            "system_maintenance",
+            "clipboard_operations",
+            "screenshot_operations",
+            "system_monitoring",
+            "file_automation",
+            "file_operations",
+            "web_and_apps",
+            "media",
+            "productivity",
+            "information",
+            "email",
+            "general"
+        ]
+    },
+    "training_examples": [
+        {
+            "category": "power_management",
+            "intent": "shutdown",
+            "examples": [
+                {
+                    "input": "shutdown the computer",
+                    "parameters": {},
+                    "variations": [
+                        "turn off the computer",
+                        "shut down my pc",
+                        "power off the system",
+                        "turn off my computer",
+                        "shutdown pc"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "power_management",
+            "intent": "restart",
+            "examples": [
+                {
+                    "input": "restart the computer",
+                    "parameters": {},
+                    "variations": [
+                        "reboot my pc",
+                        "restart my system",
+                        "reboot the computer",
+                        "restart pc"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "power_management",
+            "intent": "lock",
+            "examples": [
+                {
+                    "input": "lock the screen",
+                    "parameters": {},
+                    "variations": [
+                        "lock my computer",
+                        "lock the system",
+                        "lock workstation",
+                        "lock pc"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "power_management",
+            "intent": "sleep",
+            "examples": [
+                {
+                    "input": "put computer to sleep",
+                    "parameters": {},
+                    "variations": [
+                        "sleep mode",
+                        "put pc to sleep",
+                        "enter sleep mode",
+                        "sleep the computer"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "power_management",
+            "intent": "cancel_shutdown",
+            "examples": [
+                {
+                    "input": "cancel shutdown",
+                    "parameters": {},
+                    "variations": [
+                        "abort shutdown",
+                        "stop shutdown",
+                        "cancel restart",
+                        "abort restart"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "volume_control",
+            "intent": "volume_up",
+            "examples": [
+                {
+                    "input": "increase volume",
+                    "parameters": {},
+                    "variations": [
+                        "turn up volume",
+                        "make it louder",
+                        "volume up",
+                        "increase sound",
+                        "raise volume"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "volume_control",
+            "intent": "volume_down",
+            "examples": [
+                {
+                    "input": "decrease volume",
+                    "parameters": {},
+                    "variations": [
+                        "turn down volume",
+                        "make it quieter",
+                        "volume down",
+                        "lower volume",
+                        "reduce sound"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "volume_control",
+            "intent": "volume_set",
+            "examples": [
+                {
+                    "input": "set volume to 50",
+                    "parameters": {
+                        "level": 50
+                    },
+                    "variations": [
+                        "volume 75",
+                        "set volume at 30",
+                        "change volume to 60",
+                        "make volume 80"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "volume_control",
+            "intent": "volume_mute",
+            "examples": [
+                {
+                    "input": "mute system",
+                    "parameters": {},
+                    "variations": [
+                        "mute audio",
+                        "mute sound",
+                        "turn off sound",
+                        "silence audio"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "volume_control",
+            "intent": "volume_unmute",
+            "examples": [
+                {
+                    "input": "unmute system",
+                    "parameters": {},
+                    "variations": [
+                        "unmute audio",
+                        "turn on sound",
+                        "restore audio",
+                        "unmute"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "volume_control",
+            "intent": "volume_check",
+            "examples": [
+                {
+                    "input": "what's the volume",
+                    "parameters": {},
+                    "variations": [
+                        "check volume",
+                        "current volume level",
+                        "what is the volume level",
+                        "volume status"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "system_maintenance",
+            "intent": "recycle_bin_empty",
+            "examples": [
+                {
+                    "input": "empty recycle bin",
+                    "parameters": {},
+                    "variations": [
+                        "clear recycle bin",
+                        "empty trash",
+                        "clean recycle bin",
+                        "delete recycle bin contents"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "system_maintenance",
+            "intent": "recycle_bin_check",
+            "examples": [
+                {
+                    "input": "check recycle bin",
+                    "parameters": {},
+                    "variations": [
+                        "recycle bin status",
+                        "what's in recycle bin",
+                        "check trash",
+                        "how many items in recycle bin"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "clipboard_operations",
+            "intent": "clipboard_copy",
+            "examples": [
+                {
+                    "input": "copy hello world to clipboard",
+                    "parameters": {
+                        "text": "hello world"
+                    },
+                    "variations": [
+                        "copy meeting at 3pm to clipboard",
+                        "clipboard copy this is a test",
+                        "copy to clipboard call john tomorrow"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "clipboard_operations",
+            "intent": "clipboard_read",
+            "examples": [
+                {
+                    "input": "read clipboard",
+                    "parameters": {},
+                    "variations": [
+                        "what's in the clipboard",
+                        "clipboard contents",
+                        "show clipboard",
+                        "check clipboard"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "clipboard_operations",
+            "intent": "clipboard_clear",
+            "examples": [
+                {
+                    "input": "clear clipboard",
+                    "parameters": {},
+                    "variations": [
+                        "empty clipboard",
+                        "delete clipboard",
+                        "reset clipboard",
+                        "clear clipboard contents"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "screenshot_operations",
+            "intent": "screenshot_take",
+            "examples": [
+                {
+                    "input": "take a screenshot",
+                    "parameters": {},
+                    "variations": [
+                        "capture screen",
+                        "screenshot",
+                        "take screenshot called bug_report",
+                        "capture screen as project_demo",
+                        "screenshot the display"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "system_monitoring",
+            "intent": "battery_check",
+            "examples": [
+                {
+                    "input": "check battery",
+                    "parameters": {},
+                    "variations": [
+                        "battery status",
+                        "what's my battery percentage",
+                        "how much battery left",
+                        "battery level"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "system_monitoring",
+            "intent": "cpu_check",
+            "examples": [
+                {
+                    "input": "check CPU",
+                    "parameters": {},
+                    "variations": [
+                        "CPU usage",
+                        "how much CPU am I using",
+                        "processor usage",
+                        "CPU status"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "system_monitoring",
+            "intent": "ram_check",
+            "examples": [
+                {
+                    "input": "check RAM",
+                    "parameters": {},
+                    "variations": [
+                        "memory usage",
+                        "how much RAM am I using",
+                        "RAM status",
+                        "check memory"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "system_monitoring",
+            "intent": "system_stats",
+            "examples": [
+                {
+                    "input": "system stats",
+                    "parameters": {},
+                    "variations": [
+                        "check system status",
+                        "system information",
+                        "all system statistics",
+                        "show system stats"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "file_automation",
+            "intent": "organize_downloads",
+            "examples": [
+                {
+                    "input": "organize downloads",
+                    "parameters": {},
+                    "variations": [
+                        "organize downloads folder",
+                        "clean up downloads",
+                        "sort downloads",
+                        "organize my downloads"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "file_automation",
+            "intent": "organize_desktop",
+            "examples": [
+                {
+                    "input": "organize desktop",
+                    "parameters": {},
+                    "variations": [
+                        "clean desktop",
+                        "sort desktop files",
+                        "organize my desktop",
+                        "tidy desktop"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "file_operations",
+            "intent": "file_create",
+            "examples": [
+                {
+                    "input": "create a file called notes.txt",
+                    "parameters": {
+                        "filename": "notes.txt",
+                        "location": "desktop"
+                    },
+                    "variations": [
+                        "create file test.txt on desktop",
+                        "make a file named report.doc in documents",
+                        "create readme.md in downloads",
+                        "create hi.txt in download section"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "file_operations",
+            "intent": "file_read",
+            "examples": [
+                {
+                    "input": "read notes.txt",
+                    "parameters": {
+                        "filename": "notes.txt"
+                    },
+                    "variations": [
+                        "read the file report.pdf",
+                        "show me contents of todo.txt",
+                        "open and read meeting_notes.doc",
+                        "what's in the file data.csv"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "file_operations",
+            "intent": "file_info",
+            "examples": [
+                {
+                    "input": "get info on report.pdf",
+                    "parameters": {
+                        "filename": "report.pdf"
+                    },
+                    "variations": [
+                        "file information for document.docx",
+                        "show details of image.png",
+                        "info about video.mp4",
+                        "file details for notes.txt"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "file_operations",
+            "intent": "file_append",
+            "examples": [
+                {
+                    "input": "append to notes.txt Meeting at 3 PM",
+                    "parameters": {
+                        "filename": "notes.txt",
+                        "content": "Meeting at 3 PM"
+                    },
+                    "variations": [
+                        "add to todo.txt buy groceries",
+                        "append call john to reminders.txt",
+                        "add text to log.txt new entry"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "file_operations",
+            "intent": "file_delete",
+            "examples": [
+                {
+                    "input": "delete the file old_draft.txt",
+                    "parameters": {
+                        "filename": "old_draft.txt"
+                    },
+                    "variations": [
+                        "remove test.txt",
+                        "delete obsolete_data.csv",
+                        "remove old_report.pdf"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "file_operations",
+            "intent": "file_rename",
+            "examples": [
+                {
+                    "input": "rename notes.txt to important_notes.txt",
+                    "parameters": {
+                        "old_name": "notes.txt",
+                        "new_name": "important_notes.txt"
+                    },
+                    "variations": [
+                        "rename report.doc to final_report.doc",
+                        "change file name from draft to final",
+                        "rename test to production"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "file_operations",
+            "intent": "file_move",
+            "examples": [
+                {
+                    "input": "move screenshot.png to pictures",
+                    "parameters": {
+                        "filename": "screenshot.png",
+                        "destination": "pictures"
+                    },
+                    "variations": [
+                        "move report.pdf to documents",
+                        "transfer image.jpg to pictures folder",
+                        "move video.mp4 to videos"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "file_operations",
+            "intent": "file_copy",
+            "examples": [
+                {
+                    "input": "copy report.pdf to documents",
+                    "parameters": {
+                        "filename": "report.pdf",
+                        "destination": "documents"
+                    },
+                    "variations": [
+                        "copy notes.txt to desktop",
+                        "duplicate image.png to pictures",
+                        "copy backup.zip to downloads"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "file_operations",
+            "intent": "file_search",
+            "examples": [
+                {
+                    "input": "search for aria_logo on downloads",
+                    "parameters": {
+                        "pattern": "aria_logo",
+                        "location": "downloads"
+                    },
+                    "variations": [
+                        "find presentation in documents",
+                        "search for *.pdf on desktop",
+                        "find all images in pictures",
+                        "search for invoice in downloads"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "web_and_apps",
+            "intent": "web_open",
+            "examples": [
+                {
+                    "input": "open YouTube",
+                    "parameters": {
+                        "url": "https://youtube.com",
+                        "name": "YouTube"
+                    },
+                    "variations": [
+                        "open Instagram",
+                        "go to Gmail",
+                        "open Twitter",
+                        "launch LinkedIn",
+                        "open GitHub",
+                        "go to reddit.com",
+                        "open stackoverflow.com"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "web_and_apps",
+            "intent": "app_open",
+            "examples": [
+                {
+                    "input": "open Chrome",
+                    "parameters": {
+                        "app_name": "Chrome"
+                    },
+                    "variations": [
+                        "launch VS Code",
+                        "open Calculator",
+                        "start Spotify",
+                        "open Notion",
+                        "launch Discord",
+                        "open Figma",
+                        "start PyCharm"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "web_and_apps",
+            "intent": "web_search",
+            "examples": [
+                {
+                    "input": "search for Python tutorials",
+                    "parameters": {
+                        "query": "Python tutorials"
+                    },
+                    "variations": [
+                        "Google latest AI news",
+                        "search best restaurants near me",
+                        "look up how to fix Python import errors",
+                        "search for best laptops under $1000"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "media",
+            "intent": "music_play",
+            "examples": [
+                {
+                    "input": "play lofi music",
+                    "parameters": {
+                        "song": "lofi"
+                    },
+                    "variations": [
+                        "play some taylor swift",
+                        "play jazz",
+                        "play Python tutorial",
+                        "play relaxing music"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "productivity",
+            "intent": "calendar_query",
+            "examples": [
+                {
+                    "input": "what do I have today",
+                    "parameters": {},
+                    "variations": [
+                        "what's my schedule",
+                        "show upcoming events",
+                        "what's on my calendar",
+                        "check my schedule"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "productivity",
+            "intent": "calendar_create",
+            "examples": [
+                {
+                    "input": "schedule a meeting tomorrow at 3 PM",
+                    "parameters": {
+                        "event": "meeting",
+                        "time": "tomorrow at 3 PM"
+                    },
+                    "variations": [
+                        "schedule standup on Monday at 9 AM",
+                        "create event team review next Friday at 2 PM",
+                        "schedule doctor appointment on December 1st at 10 AM"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "productivity",
+            "intent": "notion_query",
+            "examples": [
+                {
+                    "input": "search notion for project notes",
+                    "parameters": {
+                        "query": "project notes"
+                    },
+                    "variations": [
+                        "summarize the notion page about AI",
+                        "find goals in notion",
+                        "search my notion for meeting notes"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "productivity",
+            "intent": "notion_create",
+            "examples": [
+                {
+                    "input": "add milk to grocery list in notion",
+                    "parameters": {
+                        "content": "milk",
+                        "list": "grocery list"
+                    },
+                    "variations": [
+                        "add task to notion todo list",
+                        "create notion page for new project",
+                        "add note to notion ideas"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "information",
+            "intent": "time_check",
+            "examples": [
+                {
+                    "input": "what time is it",
+                    "parameters": {},
+                    "variations": [
+                        "tell me the time",
+                        "current time",
+                        "what's the time",
+                        "time please"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "information",
+            "intent": "date_check",
+            "examples": [
+                {
+                    "input": "what's today's date",
+                    "parameters": {},
+                    "variations": [
+                        "tell me the date",
+                        "current date",
+                        "what date is it",
+                        "today's date"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "information",
+            "intent": "weather_check",
+            "examples": [
+                {
+                    "input": "what's the weather in London",
+                    "parameters": {
+                        "city": "London"
+                    },
+                    "variations": [
+                        "check weather in New York",
+                        "weather in Tokyo",
+                        "what's the weather",
+                        "weather forecast for Paris"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "email",
+            "intent": "email_send",
+            "examples": [
+                {
+                    "input": "send an email to john@example.com about meeting",
+                    "parameters": {
+                        "recipient": "john@example.com",
+                        "subject": "meeting"
+                    },
+                    "variations": [
+                        "email sarah@company.com the project update",
+                        "send email to team@startup.com",
+                        "compose email to boss@work.com about vacation"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "general",
+            "intent": "general_chat",
+            "examples": [
+                {
+                    "input": "tell me a joke",
+                    "parameters": {},
+                    "variations": [
+                        "who are you",
+                        "explain quantum computing",
+                        "write a poem about rain",
+                        "what can you do",
+                        "help me with something",
+                        "how are you"
+                    ]
+                }
+            ]
+        }
+    ],
+    "context_examples": [
+        {
+            "scenario": "User wants to manage computer power",
+            "conversation": [
+                {
+                    "user": "I'm done working for today",
+                    "intent": "general_chat"
+                },
+                {
+                    "user": "shutdown the computer",
+                    "intent": "shutdown"
+                }
+            ]
+        },
+        {
+            "scenario": "User organizing files",
+            "conversation": [
+                {
+                    "user": "my desktop is messy",
+                    "intent": "general_chat"
+                },
+                {
+                    "user": "organize desktop",
+                    "intent": "organize_desktop"
+                },
+                {
+                    "user": "also clean up downloads",
+                    "intent": "organize_downloads"
+                }
+            ]
+        },
+        {
+            "scenario": "User planning schedule",
+            "conversation": [
+                {
+                    "user": "what do I have tomorrow",
+                    "intent": "calendar_query"
+                },
+                {
+                    "user": "schedule meeting at 2pm",
+                    "intent": "calendar_create"
+                }
+            ]
+        }
+    ]
+}

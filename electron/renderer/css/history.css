@@ -133,50 +133,97 @@
     opacity: 0.7;
 }
 
+/* History Item Actions */
 .history-actions {
-    display: flex;
-    gap: 6px;
-    opacity: 1;
-    transition: opacity 0.3s, transform 0.3s;
+    position: relative;
+    opacity: 0;
+    transition: opacity 0.2s ease;
 }
 
-.action-btn {
+.history-item:hover .history-actions,
+.history-actions.active {
+    opacity: 1;
+}
+
+.more-options-btn {
     width: 28px;
     height: 28px;
     border-radius: 6px;
-    border: 1px solid var(--glass-border);
-    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.more-options-btn:hover,
+.more-options-btn.active {
+    background: rgba(255, 255, 255, 0.1);
     color: var(--text-primary);
 }
 
-.action-btn svg {
+/* Dropdown Menu */
+.history-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 140px;
+    background: var(--bg-card);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    padding: 4px;
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px) scale(0.95);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: top right;
+}
+
+.history-dropdown.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(4px) scale(1);
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item svg {
     width: 14px;
     height: 14px;
-    stroke: currentColor;
     opacity: 0.7;
 }
 
-.action-btn:hover {
-    background: rgba(99, 102, 241, 0.2);
-    border-color: var(--accent);
-    transform: scale(1.1);
-    color: var(--accent);
+.dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.08);
 }
 
-.action-btn:hover svg {
-    opacity: 1;
-}
-
-.action-btn.delete:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: #ef4444;
+.dropdown-item.delete {
     color: #ef4444;
+}
+
+.dropdown-item.delete:hover {
+    background: rgba(239, 68, 68, 0.1);
 }
 
 /* Loading and empty states */

@@ -123,6 +123,30 @@ class CommandIntentClassifier:
             if match:
                 parameters["city"] = match.group(1).strip()
 
+        # Normalize location parameters for file operations
+        if intent.startswith("file_") and "location" in parameters:
+            location = parameters.get("location", "").lower()
+            # Map various location phrases to standard shortcuts
+            location_mapping = {
+                "download": "downloads",
+                "download section": "downloads",
+                "downloads folder": "downloads",
+                "downloads area": "downloads",
+                "desktop": "desktop", 
+                "document": "documents",
+                "documents folder": "documents",
+                "picture": "pictures",
+                "pictures folder": "pictures",
+                "music": "music",
+                "music folder": "music",
+                "video": "videos",
+                "videos folder": "videos"
+            }
+            for key, value in location_mapping.items():
+                if key in location:
+                    parameters["location"] = value
+                    break
+
         return {"intent": intent, "confidence": result.get("confidence", 0.0), "parameters": parameters}
 
     def _build_classification_prompt(self, user_text: str) -> str:
@@ -145,6 +169,9 @@ CLASSIFICATION RULES:
 4. Distinguish between "file_search" (local files) and "web_search" (Google).
    - "find resume on desktop" -> file_search
    - "search for python tutorials" -> web_search
+5. For file operations, extract location as one of: desktop, downloads, documents, pictures, music, videos
+   - "download section" or "in downloads" -> location: "downloads"
+   - "on desktop" or "desktop area" -> location: "desktop"
 
 EXAMPLES:
 - "shutdown the computer" -> intent: "shutdown"
@@ -158,6 +185,9 @@ EXAMPLES:
 - "what time is it?" -> intent: "time_check"
 - "search for pasta recipes" -> intent: "web_search", parameters: {{"query": "pasta recipes"}}
 - "find all pdfs in downloads" -> intent: "file_search", parameters: {{"pattern": "*.pdf", "location": "downloads"}}
+- "create file hi.txt in download section" -> intent: "file_create", parameters: {{"filename": "hi.txt", "location": "downloads"}}
+- "create test.txt on desktop" -> intent: "file_create", parameters: {{"filename": "test.txt", "location": "desktop"}}
+- " readme.md in documents" -> intent: "file_create", parameters: {{"filename": "readme.md", "location": "documents"}}
 - "what's the weather in London" -> intent: "weather_check", parameters: {{"city": "London"}}
 - "send an email to john@example.com about meeting" -> intent: "email_send"
 - "take screenshot" -> intent: "screenshot_take"
@@ -166,11 +196,11 @@ EXAMPLES:
 - "tell me a joke" -> intent: "general_chat"
 
 Return ONLY a JSON object with this exact structure:
-{{
+{{{{
     "intent": "the_intent_name",
     "confidence": 0.95,
     "parameters": {{}}
-}}
+}}}}
 """
         return prompt
 

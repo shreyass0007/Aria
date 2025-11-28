@@ -56,3 +56,27 @@ export async function setTTSStatus(enabled) {
     });
     return await response.json();
 }
+
+// Feature status endpoints for modular system
+export async function checkFeatureStatus(featureName) {
+    try {
+        const response = await fetch(`${API_URL}/features/${featureName}/status`);
+        if (!response.ok) return { available: false };
+        return await response.json();
+    } catch (error) {
+        console.warn(`Feature ${featureName} check failed:`, error);
+        return { available: false };
+    }
+}
+
+export async function checkAllFeaturesStatus() {
+    try {
+        const response = await fetch(`${API_URL}/features/status`);
+        if (!response.ok) throw new Error('Failed to fetch feature status');
+        return await response.json();
+    } catch (error) {
+        console.error('Failed to check features:', error);
+        return { status: 'error', features: {} };
+    }
+}
+

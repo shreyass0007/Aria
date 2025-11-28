@@ -1,0 +1,40 @@
+<!-- Email Compose Modal -->
+<div id="emailComposeModal" class="modal">
+    <div class="modal-content email-compose-content">
+        <div class="modal-header">
+            <h2>✉️ Compose Email</h2>
+            <button class="close-btn" id="closeEmailComposeBtn" aria-label="Close">×</button>
+        </div>
+
+        <div class="modal-body">
+            <form id="emailComposeForm">
+                <div class="form-group">
+                    <label for="emailTo">To:</label>
+                    <input type="email" id="emailTo" placeholder="recipient@example.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="emailSubject">Subject:</label>
+                    <input type="text" id="emailSubject" placeholder="Email subject" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="emailBody">Message:</label>
+                    <textarea id="emailBody" rows="10" placeholder="Write your message here..." required></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="emailSaveDraftBtn">
+                        💾 Save Draft
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="emailCancelBtn">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="emailPreviewBtn">
+                        👁️ Preview & Send
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

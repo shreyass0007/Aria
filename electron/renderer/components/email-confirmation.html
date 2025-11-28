@@ -1,0 +1,50 @@
+<!-- Email Confirmation/Preview Modal -->
+<div id="emailConfirmationModal" class="modal">
+    <div class="modal-content email-confirmation-content">
+        <div class="modal-header">
+            <h2>📧 Review Email</h2>
+            <button class="close-btn" id="closeEmailConfirmationBtn" aria-label="Close">×</button>
+        </div>
+
+        <div class="modal-body">
+            <div class="email-preview">
+                <div class="email-preview-header">
+                    <div class="email-field">
+                        <strong>From:</strong>
+                        <span id="emailPreviewFrom">your.email@gmail.com</span>
+                    </div>
+                    <div class="email-field">
+                        <strong>To:</strong>
+                        <span id="emailPreviewTo"></span>
+                    </div>
+                    <div class="email-field">
+                        <strong>Subject:</strong>
+                        <span id="emailPreviewSubject"></span>
+                    </div>
+                </div>
+
+                <div class="email-preview-divider"></div>
+
+                <div class="email-preview-body">
+                    <pre id="emailPreviewBody"></pre>
+                </div>
+            </div>
+
+            <div class="email-status" id="emailStatus" style="display: none;">
+                <div class="status-message"></div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="emailEditBtn">
+                    ✏️ Edit
+                </button>
+                <button type="button" class="btn btn-secondary" id="emailConfirmCancelBtn">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="emailSendBtn">
+                    📤 Send Email
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
