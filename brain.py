@@ -151,6 +151,20 @@ class AriaBrain:
         
         return llm
 
+    def _get_system_prompt(self) -> str:
+        """Reads the system prompt from the file or returns a default."""
+        try:
+            # Try to find the file in the current directory or project root
+            paths = ["llm_system_prompt.txt", "d:\\CODEING\\PROJECTS\\ARIA\\llm_system_prompt.txt"]
+            for path in paths:
+                if os.path.exists(path):
+                    with open(path, "r", encoding="utf-8") as f:
+                        return f.read()
+            return "You are Aria, an advanced AI assistant. You are helpful, friendly, and conversational."
+        except Exception as e:
+            print(f"Error reading system prompt: {e}")
+            return "You are Aria, an advanced AI assistant. You are helpful, friendly, and conversational."
+
     def ask(self, user_input: str, model_name: str = "gpt-4o", conversation_history: list = None, long_term_context: list = None) -> str:
         """
         Passes the user's message to the selected model via LangChain.
@@ -174,7 +188,8 @@ class AriaBrain:
             messages = []
             
             # Add system message for context
-            messages.append(SystemMessage(content="You are Aria, an advanced AI assistant. You are helpful, friendly, and conversational."))
+            system_prompt = self._get_system_prompt()
+            messages.append(SystemMessage(content=system_prompt))
             
             # Add long-term memory context if provided
             if long_term_context:
@@ -229,7 +244,8 @@ class AriaBrain:
             messages = []
             
             # Add system message for context
-            messages.append(SystemMessage(content="You are Aria, an advanced AI assistant. You are helpful, friendly, and conversational."))
+            system_prompt = self._get_system_prompt()
+            messages.append(SystemMessage(content=system_prompt))
             
             # Add long-term memory context if provided
             if long_term_context:

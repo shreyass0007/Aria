@@ -8,6 +8,7 @@ import sys
 import os
 import asyncio
 import platform
+import datetime
 
 # Fix for "ConnectionResetError: [WinError 10054]" on Windows
 if platform.system() == 'Windows':
@@ -21,18 +22,21 @@ from aria_core import AriaCore
 from conversation_manager import ConversationManager
 
 from memory_manager import MemoryManager
+from system_monitor import SystemMonitor
 
 # Initialize Aria Core
 aria = None
 voice_mode_active = False
 conversation_mgr = None
 memory_mgr = None
+system_monitor = None
 
 def init_aria():
-    global aria, conversation_mgr, memory_mgr
+    global aria, conversation_mgr, memory_mgr, system_monitor
     aria = AriaCore(on_speak=None)  # We'll handle speech separately
     conversation_mgr = ConversationManager()
     memory_mgr = MemoryManager()
+    system_monitor = SystemMonitor()
     
     # Create initial conversation if MongoDB is connected
     if conversation_mgr.is_connected():
@@ -46,6 +50,10 @@ from contextlib import asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     init_aria()
+    # Start background scheduler
+    asyncio.create_task(background_scheduler())
+    # Start system health monitor
+    asyncio.create_task(background_health_monitor())
     yield
     # Shutdown logic if needed
 
@@ -197,15 +205,18 @@ def process_message(request: MessageRequest):
         
         message_lower = message.lower().strip()
         
-        # List of keywords that indicate specific commands (not general chat)
-        specific_command_keywords = [
-            'open ', 'play ', 'search ', 'google ', 'volume ', 'shutdown', 'restart',
-            'lock', 'sleep', 'weather', 'email', 'send mail', 'calendar', 'notion',
-            'screenshot', 'clipboard', 'battery', 'cpu', 'ram', 'organize',
-            'file ', 'create file', 'read file', 'time', 'date'
-        ]
+        # SMART ROUTING: Classify intent first
+        # This replaces the old keyword-based "gatekeeper"
         
-        is_specific_command = any(keyword in message_lower for keyword in specific_command_keywords)
+        # Special check for Wake Word to ensure Smart Greeting triggers
+        if message.lower().strip() == "aria":
+            intent = "wake_word"
+            intent_data = {"intent": "wake_word", "confidence": 1.0, "parameters": {}}
+        else:
+            intent_data = aria.command_classifier.classify_intent(message)
+            intent = intent_data.get("intent")
+        
+        print(f"DEBUG: Smart Router classified as: {intent}")
         
         responses = []
         
@@ -216,7 +227,7 @@ def process_message(request: MessageRequest):
         original_callback = aria.on_speak
         aria.on_speak = capture_response
         
-        if not is_specific_command and aria.brain and aria.brain.is_available():
+        if intent == "general_chat" and aria.brain and aria.brain.is_available():
             # General chat - use brain.ask() with conversation history AND long-term context
             try:
                 response_text = aria.brain.ask(
@@ -230,10 +241,10 @@ def process_message(request: MessageRequest):
             except Exception as e:
                 print(f"Error using brain.ask with history: {e}")
                 # Fallback to process_command
-                aria.process_command(message, model_name=model)
+                aria.process_command(message, model_name=model, intent_data=intent_data)
         else:
-            # Specific command - use aria.process_command()
-            aria.process_command(message, model_name=model)
+            # Specific command - use aria.process_command() with the pre-classified intent
+            aria.process_command(message, model_name=model, intent_data=intent_data)
         
         # Restore original callback
         aria.on_speak = original_callback
@@ -586,6 +597,207 @@ def summarize_notion_page(request: SummarizeRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+import asyncio
+
+# Global queue for UI notifications
+ui_message_queue = []
+
+@app.get("/briefing")
+async def get_briefing():
+    """
+    Returns a morning briefing summary.
+    """
+    try:
+        briefing_text = aria.get_morning_briefing()
+        return {"status": "success", "briefing": briefing_text}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/notifications")
+def get_notifications():
+    """Get pending notifications for the UI"""
+    global ui_message_queue
+    if ui_message_queue:
+        # Return all pending messages and clear the queue
+        messages = list(ui_message_queue)
+        ui_message_queue.clear()
+        return {"status": "success", "notifications": messages}
+    return {"status": "success", "notifications": []}
+
+async def background_scheduler():
+    """
+    Background task to check for upcoming events and proactively remind the user.
+    Runs every 15 minutes.
+    """
+    global ui_message_queue
+    print("Starting Background Scheduler...")
+    reminded_events_30m = set()
+    reminded_events_5m = set()
+    
+    # Wait 10 seconds for frontend to connect
+    print("Scheduler: Waiting 10s for frontend...")
+    await asyncio.sleep(10)
+    print("Scheduler: Woke up. Starting check loop.")
+    
+    while True:
+        try:
+            if aria.calendar:
+                print("Scheduler: Checking for upcoming events...")
+                # Get raw events
+                events = aria.calendar.get_upcoming_events_raw(max_results=5)
+                
+                now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+                
+                for event in events:
+                    event_id = event['id']
+                    summary = event['summary']
+                    start_str = event['start'].get('dateTime', event['start'].get('date'))
+                    
+                    if not start_str or 'T' not in start_str:
+                        continue # Skip all-day events for now or handle differently
+                        
+                    # Parse start time
+                    if 'Z' in start_str:
+                        start_dt = datetime.datetime.fromisoformat(start_str.replace('Z', '+00:00')).replace(tzinfo=None)
+                    else:
+                        # Handle offset if present, or assume UTC if naive (though Google usually sends offset)
+                        # Simplification: Convert to UTC naive for comparison
+                        dt = datetime.datetime.fromisoformat(start_str)
+                        if dt.tzinfo:
+                            start_dt = dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+                        else:
+                            start_dt = dt
+                    
+                    # Check if starting in < 30 mins and > 0 mins
+                    time_diff = (start_dt - now).total_seconds() / 60
+                    
+                    # 5-Minute Warning (Urgent)
+                    if 0 < time_diff <= 5 and event_id not in reminded_events_5m:
+                        print(f"Scheduler: URGENT! Event '{summary}' is starting in {int(time_diff)} mins.")
+                        
+                        if aria.brain and aria.brain.is_available():
+                            prompt = f"""
+                            You are Aria. The user has an event '{summary}' starting in {int(time_diff)} minutes.
+                            Generate a short, urgent verbal reminder.
+                            Example: "Hurry up, your meeting starts in 5 minutes!"
+                            """
+                            llm = aria.brain.get_llm()
+                            if llm:
+                                from langchain_core.messages import HumanMessage, SystemMessage
+                                response = llm.invoke([
+                                    SystemMessage(content="You are Aria, a helpful assistant."),
+                                    HumanMessage(content=prompt)
+                                ])
+                                reminder_text = response.content.strip()
+                                
+                                # Push to UI queue
+                                ui_message_queue.append({
+                                    "type": "assistant_message",
+                                    "content": reminder_text,
+                                    "timestamp": datetime.datetime.now().isoformat()
+                                })
+                                
+                                aria.speak(reminder_text)
+                                reminded_events_5m.add(event_id)
+                                reminded_events_30m.add(event_id) # Prevent 30m reminder if we jumped straight to 5m
+                        else:
+                            reminder_text = f"Urgent: {summary} starts in {int(time_diff)} minutes."
+                            ui_message_queue.append({
+                                "type": "assistant_message",
+                                "content": reminder_text,
+                                "timestamp": datetime.datetime.now().isoformat()
+                            })
+                            aria.speak(reminder_text)
+                            reminded_events_5m.add(event_id)
+                            reminded_events_30m.add(event_id)
+
+                    # 30-Minute Heads Up (Standard)
+                    elif 5 < time_diff <= 30 and event_id not in reminded_events_30m:
+                        print(f"Scheduler: Heads up! Event '{summary}' is starting in {int(time_diff)} mins.")
+                        
+                        if aria.brain and aria.brain.is_available():
+                            prompt = f"""
+                            You are Aria. The user has an event '{summary}' starting in {int(time_diff)} minutes.
+                            Generate a short, friendly, proactive verbal reminder.
+                            Example: "Excuse me, just a heads up that your meeting starts in 10 minutes."
+                            """
+                            llm = aria.brain.get_llm()
+                            if llm:
+                                from langchain_core.messages import HumanMessage, SystemMessage
+                                response = llm.invoke([
+                                    SystemMessage(content="You are Aria, a helpful assistant."),
+                                    HumanMessage(content=prompt)
+                                ])
+                                reminder_text = response.content.strip()
+                                
+                                # Push to UI queue
+                                ui_message_queue.append({
+                                    "type": "assistant_message",
+                                    "content": reminder_text,
+                                    "timestamp": datetime.datetime.now().isoformat()
+                                })
+                                
+                                aria.speak(reminder_text)
+                                reminded_events_30m.add(event_id)
+                        else:
+                            reminder_text = f"Reminder: {summary} starts in {int(time_diff)} minutes."
+                            ui_message_queue.append({
+                                "type": "assistant_message",
+                                "content": reminder_text,
+                                "timestamp": datetime.datetime.now().isoformat()
+                            })
+                            aria.speak(reminder_text)
+                            reminded_events_30m.add(event_id)
+                            
+            # Wait for 15 minutes before next check
+            await asyncio.sleep(900)
+                            
+        except Exception as e:
+            print(f"Scheduler Error: {e}")
+            import traceback
+            traceback.print_exc()
+            await asyncio.sleep(60) # Wait a bit before retrying on error
+
+async def background_health_monitor():
+    """
+    Background task to monitor system health (Battery/CPU).
+    """
+    print("Starting System Health Monitor...")
+    global ui_message_queue
+    
+    # Wait 15 seconds for startup
+    await asyncio.sleep(15)
+    
+    while True:
+        try:
+            # Check health
+            alerts = system_monitor.check_health()
+            
+            if alerts:
+                for alert in alerts:
+                    print(f"System Monitor: {alert}")
+                    
+                    # Push to UI
+                    ui_message_queue.append({
+                        "type": "assistant_message",
+                        "content": alert,
+                        "timestamp": datetime.datetime.now().isoformat()
+                    })
+                    
+                    # Speak
+                    if aria:
+                        aria.speak(alert)
+            
+            # Check every 60 seconds
+            await asyncio.sleep(60)
+            
+        except Exception as e:
+            print(f"System Monitor Error: {e}")
+            await asyncio.sleep(60)
+
+
 
 def run_server():
     """Run the FastAPI server using Uvicorn"""

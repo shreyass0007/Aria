@@ -172,6 +172,9 @@ CLASSIFICATION RULES:
 5. For file operations, extract location as one of: desktop, downloads, documents, pictures, music, videos
    - "download section" or "in downloads" -> location: "downloads"
    - "on desktop" or "desktop area" -> location: "desktop"
+6. For calendar queries, extract the date reference (e.g., "today", "tomorrow", "next friday", "april 13").
+   - "what's my schedule for tomorrow?" -> intent: "calendar_query", parameters: {{"date_reference": "tomorrow"}}
+   - "do i have any meetings on friday?" -> intent: "calendar_query", parameters: {{"date_reference": "friday"}}
 
 EXAMPLES:
 - "shutdown the computer" -> intent: "shutdown"
@@ -180,6 +183,7 @@ EXAMPLES:
 - "play some taylor swift" -> intent: "music_play", parameters: {{"song": "taylor swift"}}
 - "schedule meeting tomorrow at 5pm" -> intent: "calendar_create"
 - "what's on my schedule?" -> intent: "calendar_query"
+- "what do i have tomorrow?" -> intent: "calendar_query", parameters: {{"date_reference": "tomorrow"}}
 - "summarize my notion page about goals" -> intent: "notion_query"
 - "add milk to grocery list in notion" -> intent: "notion_create"
 - "what time is it?" -> intent: "time_check"
@@ -203,35 +207,3 @@ Return ONLY a JSON object with this exact structure:
 }}}}
 """
         return prompt
-
-# Convenience function
-def classify_command(user_text: str, brain: AriaBrain) -> Dict[str, Any]:
-    """Helper to classify a command using a given brain instance."""
-    classifier = CommandIntentClassifier(brain)
-    return classifier.classify_intent(user_text)
-
-if __name__ == "__main__":
-    from brain import AriaBrain
-    brain = AriaBrain()
-    classifier = CommandIntentClassifier(brain)
-    test_commands = [
-        "shutdown the computer",
-        "turn off my pc",
-        "restart system",
-        "lock my screen",
-        "increase the volume",
-        "set volume to 50",
-        "empty the trash",
-        "what's the weather in London",
-        "what's the weather?",
-        "take screenshot",
-        "capture screen"
-    ]
-    print("Testing Command Intent Classifier:")
-    print("=" * 60)
-    for cmd in test_commands:
-        result = classifier.classify_intent(cmd)
-        print(f"\nCommand: '{cmd}'")
-        print(f"Intent: {result['intent']}")
-        print(f"Confidence: {result['confidence']}")
-        print(f"Parameters: {result['parameters']}")

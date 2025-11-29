@@ -1,4 +1,4 @@
-﻿import { state } from './state.js';
+import { state } from './state.js';
 import { fetchAvailableModels, sendToBackend, getTTSStatus, setTTSStatus, waitForBackend } from './api.js';
 import { createTitleBar, autoResizeTextarea, applyTheme, applyColorTheme } from './ui.js';
 import { addMessage, showThinkingIndicator, removeThinkingIndicator, animateSendButton } from './chat.js';
@@ -23,8 +23,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     loadModelPreference();
+    loadModelPreference();
     displayWelcomeMessage();
+
+    // Start polling for backend notifications (e.g. proactive reminders)
+    setInterval(pollNotifications, 3000);
 });
+
+async function pollNotifications() {
+    try {
+        const response = await fetch('http://localhost:5000/notifications');
+        const data = await response.json();
+
+        if (data.status === 'success' && data.notifications && data.notifications.length > 0) {
+            data.notifications.forEach(notification => {
+                if (notification.type === 'assistant_message') {
+                    addMessage(notification.content, 'aria');
+                }
+            });
+        }
+    } catch (error) {
+        // Silent fail for polling errors to avoid console spam
+    }
+}
 
 window.onerror = function (message, source, lineno, colno, error) {
     console.error('Global Error:', message, source, lineno, colno, error);
@@ -486,13 +507,33 @@ function getTimeBasedGreeting() {
     return greeting + contextMsg;
 }
 
-function displayWelcomeMessage() {
+async function displayWelcomeMessage() {
     // Check if chat is empty
     const chatContainer = document.getElementById('chatContainer');
     if (chatContainer && chatContainer.children.length === 0) {
-        // Display time-based greeting
-        const greeting = getTimeBasedGreeting();
-        addMessage(greeting, 'aria');
+
+        // Try to get Morning Briefing first
+        try {
+            const response = await fetch('http://localhost:5000/briefing');
+            const data = await response.json();
+
+            if (data.status === 'success' && data.briefing) {
+                addMessage(data.briefing, 'aria');
+                // Also speak it? The backend doesn't auto-speak this one, so we might want to trigger TTS here if needed.
+                // But for now, let's just display it. The user can click to speak if they want, or we can send a TTS command.
+                // Actually, let's make it speak automatically for that "Jarvis" feel.
+                // We can do this by sending a hidden command or just letting the user read it.
+                // Let's stick to text for now to be safe, or use the existing TTS toggle state.
+            } else {
+                // Fallback to generic
+                const greeting = getTimeBasedGreeting();
+                addMessage(greeting, 'aria');
+            }
+        } catch (e) {
+            // Fallback to generic on error
+            const greeting = getTimeBasedGreeting();
+            addMessage(greeting, 'aria');
+        }
     }
 }
 
