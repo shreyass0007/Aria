@@ -20,15 +20,19 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from aria_core import AriaCore
 from conversation_manager import ConversationManager
 
+from memory_manager import MemoryManager
+
 # Initialize Aria Core
 aria = None
 voice_mode_active = False
 conversation_mgr = None
+memory_mgr = None
 
 def init_aria():
-    global aria, conversation_mgr
+    global aria, conversation_mgr, memory_mgr
     aria = AriaCore(on_speak=None)  # We'll handle speech separately
     conversation_mgr = ConversationManager()
+    memory_mgr = MemoryManager()
     
     # Create initial conversation if MongoDB is connected
     if conversation_mgr.is_connected():
@@ -154,11 +158,55 @@ def process_message(request: MessageRequest):
                     conversation_mgr.create_conversation()
             conversation_id = conversation_mgr.get_current_conversation_id()
         
-        # Save user message
+        # Retrieve conversation history before saving new message
+        conversation_history = []
+        if conversation_mgr.is_connected() and conversation_id:
+            conversation_data = conversation_mgr.get_conversation(conversation_id)
+            if conversation_data and 'messages' in conversation_data:
+                # Get last 25 messages for context (12-13 exchanges)
+                recent_messages = conversation_data['messages'][-25:]
+                conversation_history = [
+                    {"role": msg["role"], "content": msg["content"]}
+                    for msg in recent_messages
+                ]
+        
+        # Retrieve Long-Term Memory Context (RAG)
+        long_term_context = []
+        if memory_mgr and memory_mgr.is_available():
+            # Search for relevant messages from OTHER conversations
+            # We exclude the current conversation to avoid duplication with conversation_history
+            long_term_context = memory_mgr.search_relevant_context(
+                query=message,
+                top_k=5,
+                exclude_conversation=conversation_id
+            )
+            if long_term_context:
+                print(f"DEBUG: Found {len(long_term_context)} relevant past memories")
+        
+        # Save user message to MongoDB
         if conversation_mgr.is_connected() and conversation_id:
             conversation_mgr.add_message(conversation_id, 'user', message)
+            
+        # Save user message to Vector DB (Long-term memory)
+        if memory_mgr and memory_mgr.is_available() and conversation_id:
+            memory_mgr.add_message(conversation_id, message, 'user')
         
-        # Process command through Aria
+        # Check if this is a specific command or general chat
+        # If it's a general chat, use brain.ask() with conversation history
+        # Otherwise, use aria.process_command() for specific intents
+        
+        message_lower = message.lower().strip()
+        
+        # List of keywords that indicate specific commands (not general chat)
+        specific_command_keywords = [
+            'open ', 'play ', 'search ', 'google ', 'volume ', 'shutdown', 'restart',
+            'lock', 'sleep', 'weather', 'email', 'send mail', 'calendar', 'notion',
+            'screenshot', 'clipboard', 'battery', 'cpu', 'ram', 'organize',
+            'file ', 'create file', 'read file', 'time', 'date'
+        ]
+        
+        is_specific_command = any(keyword in message_lower for keyword in specific_command_keywords)
+        
         responses = []
         
         def capture_response(text):
@@ -168,8 +216,24 @@ def process_message(request: MessageRequest):
         original_callback = aria.on_speak
         aria.on_speak = capture_response
         
-        # Process the command
-        aria.process_command(message, model_name=model)
+        if not is_specific_command and aria.brain and aria.brain.is_available():
+            # General chat - use brain.ask() with conversation history AND long-term context
+            try:
+                response_text = aria.brain.ask(
+                    message, 
+                    model_name=model, 
+                    conversation_history=conversation_history,
+                    long_term_context=long_term_context
+                )
+                # Use aria.speak to queue audio AND capture text via callback
+                aria.speak(response_text)
+            except Exception as e:
+                print(f"Error using brain.ask with history: {e}")
+                # Fallback to process_command
+                aria.process_command(message, model_name=model)
+        else:
+            # Specific command - use aria.process_command()
+            aria.process_command(message, model_name=model)
         
         # Restore original callback
         aria.on_speak = original_callback
@@ -183,9 +247,13 @@ def process_message(request: MessageRequest):
             ui_action = aria.last_ui_action
             aria.last_ui_action = None # Clear it
         
-        # Save assistant message
+        # Save assistant message to MongoDB
         if conversation_mgr.is_connected() and conversation_id:
             conversation_mgr.add_message(conversation_id, 'assistant', response_text)
+            
+        # Save assistant message to Vector DB (Long-term memory)
+        if memory_mgr and memory_mgr.is_available() and conversation_id:
+            memory_mgr.add_message(conversation_id, response_text, 'assistant')
         
         return {
             'status': 'success',

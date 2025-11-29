@@ -41,9 +41,9 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 
     // Open DevTools in development mode
-    if (process.argv.includes('--dev')) {
-        mainWindow.webContents.openDevTools();
-    }
+    // if (process.argv.includes('--dev')) {
+    mainWindow.webContents.openDevTools();
+    // }
 
     mainWindow.on('closed', function () {
         mainWindow = null;

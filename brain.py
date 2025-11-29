@@ -151,9 +151,16 @@ class AriaBrain:
         
         return llm
 
-    def ask(self, user_input: str, model_name: str = "gpt-4o") -> str:
+    def ask(self, user_input: str, model_name: str = "gpt-4o", conversation_history: list = None, long_term_context: list = None) -> str:
         """
         Passes the user's message to the selected model via LangChain.
+        
+        Args:
+            user_input: The current user message
+            model_name: The AI model to use
+            conversation_history: Optional list of previous messages in format:
+                [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]
+            long_term_context: Optional list of relevant past messages from other conversations
         """
         llm = self.get_llm(model_name)
         
@@ -161,16 +168,53 @@ class AriaBrain:
             return "I'm sorry, but no AI models are available. Please check your API keys."
 
         try:
-            # Invoke the model directly
-            response = llm.invoke(user_input)
+            from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+            
+            # Build message list with conversation history
+            messages = []
+            
+            # Add system message for context
+            messages.append(SystemMessage(content="You are Aria, an advanced AI assistant. You are helpful, friendly, and conversational."))
+            
+            # Add long-term memory context if provided
+            if long_term_context:
+                context_str = "Relevant context from past conversations:\n"
+                for item in long_term_context:
+                    # item is expected to be a dict with 'text', 'timestamp', etc.
+                    timestamp = item.get('timestamp', 'Unknown time')
+                    text = item.get('text', '')
+                    context_str += f"- [{timestamp}] {text}\n"
+                
+                messages.append(SystemMessage(content=context_str))
+            
+            # Add conversation history if provided
+            if conversation_history:
+                for msg in conversation_history:
+                    if msg.get("role") == "user":
+                        messages.append(HumanMessage(content=msg.get("content", "")))
+                    elif msg.get("role") == "assistant":
+                        messages.append(AIMessage(content=msg.get("content", "")))
+            
+            # Add current user message
+            messages.append(HumanMessage(content=user_input))
+            
+            # Invoke the model with message history
+            response = llm.invoke(messages)
             return response.content
         except Exception as e:
             return f"I encountered an error thinking about that with {model_name}: {e}"
 
-    def stream_ask(self, user_input: str, model_name: str = "gpt-4o"):
+    def stream_ask(self, user_input: str, model_name: str = "gpt-4o", conversation_history: list = None, long_term_context: list = None):
         """
         Streams the response from the selected model.
         Yields chunks of text as they are generated.
+        
+        Args:
+            user_input: The current user message
+            model_name: The AI model to use
+            conversation_history: Optional list of previous messages in format:
+                [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]
+            long_term_context: Optional list of relevant past messages from other conversations
         """
         llm = self.get_llm(model_name)
         
@@ -179,8 +223,38 @@ class AriaBrain:
             return
 
         try:
-            # Stream the response
-            for chunk in llm.stream(user_input):
+            from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+            
+            # Build message list with conversation history
+            messages = []
+            
+            # Add system message for context
+            messages.append(SystemMessage(content="You are Aria, an advanced AI assistant. You are helpful, friendly, and conversational."))
+            
+            # Add long-term memory context if provided
+            if long_term_context:
+                context_str = "Relevant context from past conversations:\n"
+                for item in long_term_context:
+                    # item is expected to be a dict with 'text', 'timestamp', etc.
+                    timestamp = item.get('timestamp', 'Unknown time')
+                    text = item.get('text', '')
+                    context_str += f"- [{timestamp}] {text}\n"
+                
+                messages.append(SystemMessage(content=context_str))
+            
+            # Add conversation history if provided
+            if conversation_history:
+                for msg in conversation_history:
+                    if msg.get("role") == "user":
+                        messages.append(HumanMessage(content=msg.get("content", "")))
+                    elif msg.get("role") == "assistant":
+                        messages.append(AIMessage(content=msg.get("content", "")))
+            
+            # Add current user message
+            messages.append(HumanMessage(content=user_input))
+            
+            # Stream the response with message history
+            for chunk in llm.stream(messages):
                 yield chunk.content
         except Exception as e:
             yield f"I encountered an error thinking about that with {model_name}: {e}"

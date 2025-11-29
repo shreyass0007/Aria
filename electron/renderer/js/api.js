@@ -80,3 +80,20 @@ export async function checkAllFeaturesStatus() {
     }
 }
 
+export async function waitForBackend(maxRetries = 20, delay = 1000) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            const response = await fetch(`${API_URL}/health`);
+            if (response.ok) {
+                console.log('Backend is ready!');
+                return true;
+            }
+        } catch (error) {
+            console.log(`Waiting for backend... (${i + 1}/${maxRetries})`);
+        }
+        await new Promise(resolve => setTimeout(resolve, delay));
+    }
+    console.error('Backend failed to start within timeout.');
+    return false;
+}
+

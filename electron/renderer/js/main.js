@@ -1,5 +1,5 @@
 ﻿import { state } from './state.js';
-import { fetchAvailableModels, sendToBackend, getTTSStatus, setTTSStatus } from './api.js';
+import { fetchAvailableModels, sendToBackend, getTTSStatus, setTTSStatus, waitForBackend } from './api.js';
 import { createTitleBar, autoResizeTextarea, applyTheme, applyColorTheme } from './ui.js';
 import { addMessage, showThinkingIndicator, removeThinkingIndicator, animateSendButton } from './chat.js';
 import { handleToggleVoice } from './voice.js';
@@ -11,11 +11,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     createTitleBar();
     setupEventListeners();
     loadTheme();
-    loadTTSStatus();
-    loadAvailableModels();
+
+    // Wait for backend to be ready before making API calls
+    const backendReady = await waitForBackend();
+    if (backendReady) {
+        loadTTSStatus();
+        loadAvailableModels();
+    } else {
+        console.error("Backend failed to initialize. Some features may not work.");
+        // Optional: Show error in UI
+    }
+
     loadModelPreference();
     displayWelcomeMessage();
 });
+
+window.onerror = function (message, source, lineno, colno, error) {
+    console.error('Global Error:', message, source, lineno, colno, error);
+    // alert(`Error: ${message}`); // Optional: alert user
+};
+
+window.onunhandledrejection = function (event) {
+    console.error('Unhandled Rejection:', event.reason);
+};
 
 function setupEventListeners() {
     const sendBtn = document.getElementById('sendBtn');

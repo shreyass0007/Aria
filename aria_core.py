@@ -210,6 +210,7 @@ class AriaCore:
         
         while True:
             text = self.tts_queue.get()
+            print(f"TTS Worker: Dequeued text: {text}")
             if text is None:
                 break
             
@@ -217,7 +218,12 @@ class AriaCore:
                 print(f"TTS Worker: Processing text: '{text[:50]}...'")
             except UnicodeEncodeError:
                 print(f"TTS Worker: Processing text: '{text[:50].encode('ascii', 'replace').decode()}...'")
-            filename = f"her_voice_{int(time.time())}_{id(text)}.mp3"
+            
+            # Create temp_voice folder if it doesn't exist
+            voice_folder = "temp_voice"
+            os.makedirs(voice_folder, exist_ok=True)
+            
+            filename = os.path.join(voice_folder, f"her_voice_{int(time.time())}_{id(text)}.mp3")
             
             edge_tts_success = False
             try:
@@ -326,7 +332,10 @@ class AriaCore:
         
         # Add to queue for background playback only if TTS is enabled
         if self.tts_enabled and clean_text:
+            print(f"TTS: Adding to queue: {clean_text}")
             self.tts_queue.put(clean_text)
+        else:
+            print(f"TTS: Not adding to queue. Enabled: {self.tts_enabled}, Text: {bool(clean_text)}")
 
     def listen(self):
         # Acquire lock to ensure only one thread listens at a time
@@ -340,8 +349,10 @@ class AriaCore:
                     # Listen for audio
                     audio = self.recognizer.listen(source, timeout=5, phrase_time_limit=10)
                     
-                    # Save temporary file for Whisper
-                    temp_wav = f"temp_voice_{int(time.time())}.wav"
+                    # Save temporary file for Whisper in temp_voice folder
+                    voice_folder = "temp_voice"
+                    os.makedirs(voice_folder, exist_ok=True)
+                    temp_wav = os.path.join(voice_folder, f"temp_voice_{int(time.time())}.wav")
                     with open(temp_wav, "wb") as f:
                         f.write(audio.get_wav_data())
                     
@@ -536,21 +547,20 @@ class AriaCore:
                     self.speak(f"Summarizing {page_title}...")
                     summary = self.brain.summarize_text(content, max_sentences=5)
                     
-                    # Format structured output
+                    # Format structured output with clean markdown
                     word_count = page_data.get("word_count", 0)
                     
-                    structured_output = f"""
-📄 NOTION PAGE SUMMARY
+                    structured_output = f"""## 📄 Notion Page Summary
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📌 Page: {page_title}
-📊 Word Count: {word_count} words
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+**Page:** {page_title}  
+**Word Count:** {word_count} words
 
-💡 Summary:
+---
+
+### 💡 Summary
 {summary}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 """
                     self.speak(structured_output)
                     return
@@ -943,20 +953,19 @@ class AriaCore:
                     content = page_data.get("content", "")
                     summary = self.brain.summarize_text(content, max_sentences=5)
                     
-                    # Format output
+                    # Format output with clean markdown
                     word_count = page_data.get("word_count", 0)
-                    structured_output = f"""
-📄 NOTION PAGE SUMMARY
+                    structured_output = f"""## 📄 Notion Page Summary
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📌 Page: {page['title']}
-📊 Word Count: {word_count} words
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+**Page:** {page['title']}  
+**Word Count:** {word_count} words
 
-💡 Summary:
+---
+
+### 💡 Summary
 {summary}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+---
 """
                     self.speak(structured_output)
                     
