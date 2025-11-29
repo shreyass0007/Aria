@@ -192,10 +192,14 @@ class MemoryManager:
         
         try:
             # Delete and recreate collection
-            self.client.delete_collection("aria_conversations")
+            try:
+                self.client.delete_collection("aria_conversations_v2")
+            except ValueError:
+                pass # Collection might not exist
+                
             self.collection = self.client.create_collection(
-                name="aria_conversations",
-                metadata={"description": "Long-term conversation memory for Aria"}
+                name="aria_conversations_v2",
+                metadata={"hnsw:space": "cosine", "description": "Long-term conversation memory for Aria"}
             )
             print("[OK] Memory cleared")
             return True
