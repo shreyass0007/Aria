@@ -133,7 +133,7 @@ class CalendarManager:
             print(f"Calendar Create Error: {e}")
             return "I couldn't create the calendar event due to an error."
 
-    def get_upcoming_events(self, max_results=5, start_date=None, end_date=None):
+    def get_upcoming_events(self, max_results=15, start_date=None, end_date=None):
         """
         Gets upcoming events.
         If start_date and end_date are provided (datetime objects), filters by that range.
@@ -213,8 +213,8 @@ class CalendarManager:
         now = datetime.datetime.now(ist)
         
         if target_date_str == 'today':
-            # Start from NOW, not midnight, to show only upcoming events
-            start_date = now
+            # Start from midnight to show ALL events for today (including past ones)
+            start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
             # End at midnight tonight
             end_date = now.replace(hour=23, minute=59, second=59, microsecond=999999)
         elif target_date_str == 'tomorrow':
@@ -232,7 +232,7 @@ class CalendarManager:
         start_utc = start_date.astimezone(datetime.timezone.utc)
         end_utc = end_date.astimezone(datetime.timezone.utc)
         
-        return self.get_upcoming_events(max_results=10, start_date=start_utc, end_date=end_utc)
+        return self.get_upcoming_events(max_results=15, start_date=start_utc, end_date=end_utc)
 
     def get_upcoming_events_raw(self, max_results=5):
         """
@@ -259,3 +259,75 @@ class CalendarManager:
         except Exception as e:
             print(f"Calendar Raw Fetch Error: {e}")
             return []
+
+    def get_current_event(self):
+        """
+        Gets the event happening right now.
+        """
+        if not self.service:
+            self.authenticate()
+
+        if not self.service:
+            return None
+
+        try:
+            ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+            now = datetime.datetime.now(ist)
+            time_min = now.isoformat()
+            # Look for events starting before now + 1 min to catch current ones
+            # But the API logic for 'current' is tricky. 
+            # Better to fetch today's events and filter in Python.
+            
+            start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            end_of_day = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+            
+            start_utc = start_of_day.astimezone(datetime.timezone.utc)
+            end_utc = end_of_day.astimezone(datetime.timezone.utc)
+            
+            events_result = self.service.events().list(
+                calendarId='primary', 
+                timeMin=start_utc.isoformat(),
+                timeMax=end_utc.isoformat(),
+                singleEvents=True,
+                orderBy='startTime'
+            ).execute()
+            
+            events = events_result.get('items', [])
+            
+            for event in events:
+                start_str = event['start'].get('dateTime')
+                end_str = event['end'].get('dateTime')
+                
+                if not start_str or not end_str:
+                    continue # All day events or missing time
+                    
+                # Parse
+                if 'Z' in start_str:
+                    start_dt = datetime.datetime.fromisoformat(start_str.replace('Z', '+00:00'))
+                    end_dt = datetime.datetime.fromisoformat(end_str.replace('Z', '+00:00'))
+                else:
+                    start_dt = datetime.datetime.fromisoformat(start_str)
+                    end_dt = datetime.datetime.fromisoformat(end_str)
+                
+                # Convert now to same tz if needed, but simple comparison works if both aware
+                if start_dt <= now <= end_dt:
+                    return f"Right now, you have: {event['summary']} (until {end_dt.astimezone(ist).strftime('%I:%M %p')})"
+            
+            # If no current event, find next one
+            for event in events:
+                start_str = event['start'].get('dateTime')
+                if not start_str: continue
+                
+                if 'Z' in start_str:
+                    start_dt = datetime.datetime.fromisoformat(start_str.replace('Z', '+00:00'))
+                else:
+                    start_dt = datetime.datetime.fromisoformat(start_str)
+                    
+                if start_dt > now:
+                     return f"You are free right now. Next up is {event['summary']} at {start_dt.astimezone(ist).strftime('%I:%M %p')}."
+
+            return "You have no more events scheduled for today."
+            
+        except Exception as e:
+            print(f"Calendar Current Event Error: {e}")
+            return "I couldn't check your current status."

@@ -33,7 +33,11 @@
 - 📊 **System Monitoring** – Real-time battery, CPU, and RAM status monitoring
 - 📋 **Clipboard & Screenshots** – Clipboard operations and screenshot capture
 - 🌤️ **Weather Updates** – Real-time weather information with friendly advice
-- 💬 **Conversation History** – MongoDB-backed conversation persistence
+- 💬 **Conversation History** – MongoDB-backed conversation persistence with RAG memory
+- 🧠 **RAG Memory System** – ChromaDB vector database for semantic search across all conversations
+- 🤖 **Proactive Actions** – Calendar monitoring, auto-launch apps, Deep Work mode automation
+- 📡 **Background Services** – Health monitoring, event reminders, system alerts
+- 🏗️ **Modular Architecture** – Refactored codebase with specialized managers for scalability
 - 🎵 **Media Control** – Quick access to music libraries and web media
 - 🤖 **Intent Classification** – LLM-based natural language command understanding
 
@@ -54,64 +58,81 @@
 │                    FastAPI Backend Server                       │
 │  ┌──────────────────────────────────────────────────────────┐   │
 │  │              backend_fastapi.py                          │   │
-│  │  /health  /greeting  /message  /models/*  /voice/*       │   │
-│  └────────────────────┬─────────────────────────────────────┘   │
-└───────────────────────┼─────────────────────────────────────────┘
-                        │
-┌───────────────────────▼─────────────────────────────────────────┐
+│  │  /health /greeting /message /models/* /conversations/*   │   │
+│  │  /voice/* /email/* /notion/* /features/* /briefing       │   │
+│  └────────────┬─────────────────┬───────────────────────────┘   │
+│               │                 │ Background Tasks              │
+│               │  ┌──────────────▼──────────────────────────┐    │
+│               │  │  • Health Monitor (Battery/CPU Alerts)  │   │
+│               │  │  • Calendar Scheduler (Event Reminders) │   │
+│               │  └─────────────────────────────────────────┘   │
+└───────────────┼─────────────────────────────────────────────────┘
+                │
+┌───────────────▼─────────────────────────────────────────────────┐
 │                      Aria Core Engine                           │
 │  ┌──────────────────────────────────────────────────────────┐   │
 │  │                    aria_core.py                          │   │
-│  │  • Speech Recognition & TTS (Faster-Whisper, Edge-TTS) │   │
-│  │  • Command Routing & Intent Classification               │   │
-│  │  • Desktop App Control                                   │   │
-│  │  • Web Automation                                        │   │
+│  │         Modular Orchestrator & Coordinator               │   │
 │  └───────┬──────────────────────────────────────────────────┘   │
+│          │                                                      │
+│  ┌───────▼──────────┬───────────────┬───────────────┬────────┐  │
+│  │ Command          │  TTS          │  App          │ Speech │  │
+│  │ Processor        │  Manager      │  Launcher     │ Input  │  │
+│  └───────┬──────────┴───────────────┴───────────────┴────────┘  │
 │          │                                                      │
 │  ┌───────▼──────────┬───────────────┬───────────────┬────────┐  │
 │  │   AriaBrain      │  Calendar     │   Notion      │ System │  │
 │  │   (LangChain)    │  Manager      │   Manager     │ Control│  │
-│  └───────┬──────────┴───────────────┴───────────────┴────────┘  │
-│          │                                                      │
-│  ┌───────▼──────────┬───────────────┬───────────────┬────────┐  │
-│  │  File Manager    │   Weather     │ Conversation  │ Email  │  │
-│  │  (CRUD Ops)      │   Manager     │   Manager     │Manager │  │
+│  └───────┬──────────┴───────┬───────┴───────────────┴────────┘  │
+│          │                  │                                   │
+│  ┌───────▼──────────┬───────▼───────┬───────────────┬────────┐  │
+│  │  File Manager    │  Proactive    │ Conversation  │ Email  │  │
+│  │  (CRUD Ops)      │  Manager      │   Manager     │Manager │  │
+│  └──────────────────┴───────────────┴───────┬───────┴────────┘  │
+│                                             │                   │
+│  ┌──────────────────┬───────────────┬───────▼───────┬────────┐  │
+│  │ System Monitor   │  Clipboard    │ Memory        │Weather │  │
+│  │  (Battery/CPU)   │  Screenshot   │ Manager       │Manager │  │
+│  │                  │               │ (ChromaDB)    │        │  │
 │  └──────────────────┴───────────────┴───────────────┴────────┘  │
-│                                                                  │
-│  ┌──────────────────┬───────────────┬────────────────────────┐  │
-│  │ System Monitor   │  Clipboard    │  Speech Engine         │  │
-│  │  (Battery/CPU)   │  Screenshot   │  (Faster-Whisper)      │  │
-│  └──────────────────┴───────────────┴────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-                        │
-        ┌───────────────┼───────────────┬───────────────┐
-        │               │               │               │
-┌───────▼────┐  ┌───────▼─────┐  ┌───────▼────┐  ┌───────▼────┐
-│   OpenAI   │  │   Google    │  │   Notion   │  │  Anthropic │
-│   GPT-4o   │  │  Calendar   │  │    API     │  │   Claude   │
-│  Gemini    │  │    Gmail    │  │            │  │            │
-└────────────┘  └─────────────┘  └────────────┘  └────────────┘
+└──────────────────────────────────────┬──────────────────────────┘
+                                       │
+        ┌──────────────┬───────────────┼──────────────┬──────────┐
+        │              │               │              │          │
+┌───────▼────┐  ┌──────▼─────┐  ┌──────▼─────┐  ┌────▼────┐  ┌─▼──────┐
+│   OpenAI   │  │   Google   │  │   Notion   │  │Anthropic│  │ChromaDB│
+│   GPT-4o   │  │  Calendar  │  │    API     │  │ Claude  │  │ Vector │
+│  Gemini    │  │   Gmail    │  │            │  │         │  │   DB   │
+└────────────┘  └────────────┘  └────────────┘  └─────────┘  └────────┘
 ```
 
 ### Core Components
 
 | Component | Description |
 |-----------|-------------|
-| **`aria_core.py`** | Central orchestrator handling speech I/O, command routing, and system integration |
-| **`brain.py`**     | LangChain-powered AI brain supporting multiple models (GPT-4o, Claude, Gemini) for conversations and structured data extraction |
-| **`backend_fastapi.py`** | FastAPI REST API server exposing endpoints for Electron frontend |
+| **`aria_core.py`** | Central orchestrator handling component coordination and system integration |
+| **`brain.py`**     | LangChain-powered AI brain supporting multiple models (GPT-4o, Claude, Gemini) with RAG context integration |
+| **`backend_fastapi.py`** | FastAPI REST API server with 21+ endpoints and background task schedulers |
+| **`memory_manager.py`** | ChromaDB-based RAG memory system for semantic search across all conversations |
+| **`command_processor.py`** | Command routing and processing logic with 750+ lines of intent handling |
 | **`command_intent_classifier.py`** | LLM-based intent classification for natural language commands |
-| **`speech_engine.py`** | Local Faster-Whisper model for offline speech transcription |
+| **`proactive_manager.py`** | Calendar monitoring and automated action triggers (app launching, Deep Work mode) |
+| **`tts_manager.py`** | Text-to-speech management with Edge-TTS integration |
+| **`app_launcher.py`** | Desktop application launcher with fuzzy matching |
+| **`speech_input.py`** | Speech recognition module with Faster-Whisper local transcription |
+| **`greeting_service.py`** | Time-based greetings and morning briefing generation |
 | **`calendar_manager.py`** | Google Calendar OAuth and event management |
 | **`email_manager.py`** | Gmail API integration for sending emails |
 | **`notion_manager.py`** | Notion API integration for page search and summarization |
 | **`file_manager.py`** | Complete file CRUD operations with safety checks |
 | **`system_control.py`** | Volume control, power management, and system maintenance |
-| **`system_monitor.py`** | Real-time battery, CPU, and RAM monitoring |
+| **`system_monitor.py`** | Real-time battery, CPU, and RAM monitoring with alerts |
 | **`clipboard_screenshot.py`** | Clipboard operations and screenshot capture functionality |
 | **`weather_manager.py`** | OpenWeatherMap integration with conversational advice |
 | **`conversation_manager.py`** | MongoDB-backed conversation history persistence |
+| **`speech_engine.py`** | Faster-Whisper local speech transcription engine |
 | **`file_automation.py`** | Automatic file organization by type |
+| **`music_library.py`** | Music URL mappings and media control |
 
 ---
 
@@ -281,13 +302,26 @@ Starts FastAPI server at `http://localhost:5000` for API testing or custom front
 |--------|----------|-------------|--------------|
 | `GET` | `/health` | Health check | - |
 | `GET` | `/greeting` | Get time-based greeting | - |
+| `GET` | `/briefing` | Get morning briefing summary | - |
+| `GET` | `/notifications` | Get pending UI notifications | - |
 | `GET` | `/models/available` | List available AI models | - |
 | `GET` | `/models/current` | Get currently selected model | - |
 | `POST` | `/models/set` | Set the current AI model | `{"model": "gpt-4o"}` |
-| `POST` | `/message` | Process text message | `{"message": "text", "conversation_id": "uuid", "model": "gpt-4o"}` |
+| `POST` | `/message` | Process text message with RAG context | `{"message": "text", "conversation_id": "uuid", "model": "gpt-4o"}` |
+| `GET` | `/conversations` | List all conversations | - |
+| `GET` | `/conversation/{id}` | Get specific conversation | - |
+| `POST` | `/conversation/new` | Create new conversation | - |
+| `PUT` | `/conversation/{id}/rename` | Rename conversation | `{"title": "New Title"}` |
+| `DELETE` | `/conversation/{id}` | Delete conversation | - |
 | `POST` | `/voice/start` | Start voice listening | - |
 | `GET` | `/voice/listen` | Long-poll for transcribed text | - |
 | `POST` | `/voice/stop` | Stop voice listening | - |
+| `GET` | `/settings/tts` | Get TTS enabled status | - |
+| `POST` | `/settings/tts` | Set TTS enabled status | `{"enabled": true}` |
+| `POST` | `/email/send` | Send email via Gmail | `{"to": "email@example.com", "subject": "Subject", "body": "Content"}` |
+| `GET` | `/features/status` | Get all features availability | - |
+| `GET` | `/features/{name}/status` | Check specific feature status | - |
+| `POST` | `/notion/summarize` | Summarize Notion page | `{"page_id": "id", "page_url": "url", "page_title": "title"}` |
 
 **Response Format:**
 ```json
@@ -426,6 +460,74 @@ Starts FastAPI server at `http://localhost:5000` for API testing or custom front
 - **Organize Desktop**: Cleans up desktop files
 - **Category Folders**: Images, Documents, Audio, Video, Archives, Code, etc.
 
+### RAG Memory System
+
+- **ChromaDB Integration**: Vector database for semantic search across all conversations
+- **Automatic Embedding**: Uses OpenAI embeddings (`text-embedding-3-small`) for message storage
+- **Semantic Search**: Finds relevant past conversations based on meaning, not just keywords
+- **Context-Aware Responses**: Injects top 5 relevant memories from past conversations into current responses
+- **Configurable**: Adjust similarity threshold (default 0.4), max results (default 5), and embedding model
+- **Privacy-Focused**: Excludes current conversation to avoid duplication
+- **Statistics**: Track total messages stored and embedding model used
+
+**Example Usage:**
+- User asks: "What was that restaurant recommendation?"
+- Aria searches across ALL past conversations for semantically similar mentions of restaurants
+- Returns relevant context from weeks or months ago automatically
+
+### Proactive Actions
+
+- **Calendar Monitoring**: Checks Google Calendar every 60 seconds for upcoming events
+- **Keyword-Based Triggers**: Automatically detects keywords in calendar events and triggers actions
+  - **Zoom**: Auto-launches Zoom app when "zoom" detected in event title
+  - **Teams**: Opens Microsoft Teams for "teams" meetings
+  - **Google Meet**: Opens browser to meet.google.com for "meet" events
+  - **Discord**: Launches Discord for "discord" calls
+  - **Coding Sessions**: Opens VS Code when "coding" or "dev" detected
+  - **Gym/Workout**: Announces workout time
+- **Deep Work Mode**: Automatically activates during "Focus Time" events
+  - Enables Windows Do Not Disturb (DND)
+  - Minimizes distracting applications
+  - Announces mode activation via TTS
+  - Automatically deactivates when focus session ends
+- **Time-Based Reminders**: 
+  - 5-minute reminders for imminent events (urgent tone)
+  - Never reminds twice for same event
+- **Expandable**: Easily add new keyword-to-action mappings
+
+**Example Scenarios:**
+- Calendar event: "Zoom Standup @ 10 AM" → At 9:55 AM, Aria says "You have a Zoom meeting in 5 minutes. Opening Zoom." and launches Zoom
+- Calendar event: "Focus Time 2-4 PM" → At 2:00 PM, Aria enables DND, minimizes distractions, announces "Focus Time detected. Activating Deep Work mode."
+
+### Background Services
+
+**Health Monitoring (runs every 60 seconds):**
+- **Battery Alerts**: Warns when battery below 20% and not charging
+- **CPU Alerts**: Notifies when CPU usage above 90% for extended periods
+- **TTS Announcements**: Speaks alerts aloud for immediate attention
+- **UI Notifications**: Pushes alerts to notification queue for frontend display
+
+**Calendar Scheduler (runs every 15 minutes):**
+- **30-Minute Reminders**: Friendly heads-up for events starting in 5-30 minutes
+- **5-Minute Reminders**: Urgent warnings for events starting in 0-5 minutes
+- **LLM-Generated Messages**: Uses AI to create natural, contextual reminder text
+  - Example: "Hurry up, your meeting starts in 5 minutes!"
+  - Example: "Excuse me, just a heads up that your meeting starts in 10 minutes."
+- **No Duplicate Reminders**: Tracks reminded events to prevent spam
+- **Auto-Speaks**: Announcements via TTS for hands-free awareness
+
+**UI Notification Queue:**
+- Centralized queue for all background notifications
+- Frontend polls `/notifications` endpoint
+- Automatically clears after retrieval
+- Timestamped messages for chronological display
+
+### File Automation
+
+- **Organize Downloads**: Automatically sorts files by type
+- **Organize Desktop**: Cleans up desktop files
+- **Category Folders**: Images, Documents, Audio, Video, Archives, Code, etc.
+
 ### Conversation History
 
 - MongoDB-backed conversation persistence
@@ -440,11 +542,18 @@ Starts FastAPI server at `http://localhost:5000` for API testing or custom front
 
 ```
 ARIA/
-├── aria_core.py                 # Core orchestrator
-├── backend_fastapi.py           # FastAPI REST API server
-├── brain.py                     # LangChain/OpenAI/Claude/Gemini integration
-├── calendar_manager.py          # Google Calendar OAuth
+├── aria_core.py                 # Core orchestrator (refactored, modular)
+├── backend_fastapi.py           # FastAPI REST API server with 21+ endpoints
+├── brain.py                     # LangChain/OpenAI/Claude/Gemini with RAG integration
+├── memory_manager.py            # ChromaDB RAG memory system
+├── proactive_manager.py         # Calendar monitoring and proactive actions
+├── command_processor.py         # Command routing and processing (750+ lines)
 ├── command_intent_classifier.py # LLM-based intent classification
+├── tts_manager.py               # Text-to-speech management
+├── app_launcher.py              # Desktop application launcher
+├── speech_input.py              # Speech recognition module
+├── greeting_service.py          # Time-based greetings and briefings
+├── calendar_manager.py          # Google Calendar OAuth
 ├── conversation_manager.py      # MongoDB conversation storage
 ├── email_manager.py             # Gmail API integration
 ├── file_automation.py           # File organization automation
@@ -458,11 +567,13 @@ ARIA/
 ├── system_monitor.py            # System monitoring (battery, CPU, RAM)
 ├── clipboard_screenshot.py      # Clipboard & screenshot operations
 ├── weather_manager.py           # Weather API integration
+├── test_backend_comprehensive.py # Comprehensive backend testing (21 endpoints)
 ├── requirements.txt             # Python dependencies
 ├── .env                         # Environment variables (create this)
 ├── credentials.json             # Google OAuth credentials (download)
 ├── token.pickle                 # Cached Google Calendar token
-├── token_gmail.pickle           # Cached Gmail token
+├── token_gmail.pickle          # Cached Gmail token
+├── vector_db/                   # ChromaDB vector database directory
 │
 ├── electron/                    # Electron frontend
 │   ├── main.js                  # Electron main process
@@ -634,6 +745,9 @@ python test_system_monitor.py
 
 # Test email integration
 python test_email_integration.py
+
+# Test all backend endpoints comprehensively (21 tests)
+python test_backend_comprehensive.py
 ```
 
 ---
@@ -682,6 +796,7 @@ This project is licensed under the MIT License. See `LICENSE` file for details.
 - Anthropic for Claude API
 - Google for Gemini API and Calendar/Gmail APIs
 - LangChain for LLM orchestration
+- ChromaDB for vector database and RAG memory
 - Electron team for the framework
 - Faster-Whisper for local speech recognition
 - All open-source contributors

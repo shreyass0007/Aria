@@ -155,13 +155,18 @@ export function addMessage(text, sender, uiAction = null) {
             emailPreview.appendChild(buttonContainer);
 
             bubble.appendChild(emailPreview);
+        } else if (uiAction && uiAction.type === 'music_playing') {
+            // Show music player when music starts playing
+            if (window.musicPlayer && uiAction.data && uiAction.data.track_info) {
+                window.musicPlayer.onTrackChanged(uiAction.data.track_info);
+            }
         }
     } else {
         bubble.textContent = text;
     }
 
-    messageWrapper.appendChild(bubble);
     message.appendChild(messageWrapper);
+    messageWrapper.appendChild(bubble);
     chatContainer.appendChild(message);
 
     setTimeout(() => {

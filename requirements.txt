@@ -76,3 +76,8 @@ asyncio; python_version < '3.7'
 
 # For data processing
 python-dateutil>=2.8.2
+
+# Music Playback
+# ------------------------------------
+yt-dlp>=2023.0.0
+python-vlc>=3.0.0

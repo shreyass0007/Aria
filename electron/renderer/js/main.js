@@ -5,6 +5,7 @@ import { addMessage, showThinkingIndicator, removeThinkingIndicator, animateSend
 import { handleToggleVoice } from './voice.js';
 import { loadConversationHistory } from './history.js';
 import { loadAllComponents } from './component-loader.js';
+import { initMusicPlayer } from './music-player.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadAllComponents();
@@ -25,6 +26,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadModelPreference();
     loadModelPreference();
     displayWelcomeMessage();
+
+    // Initialize music player
+    initMusicPlayer();
 
     // Start polling for backend notifications (e.g. proactive reminders)
     setInterval(pollNotifications, 3000);

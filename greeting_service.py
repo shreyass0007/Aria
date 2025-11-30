@@ -1,8 +1,11 @@
 import datetime
 
 class GreetingService:
-    def __init__(self, calendar_manager):
+    def __init__(self, calendar_manager, weather_manager=None, email_manager=None, brain=None):
         self.calendar = calendar_manager
+        self.weather_manager = weather_manager
+        self.email_manager = email_manager
+        self.brain = brain
 
     def get_time_based_greeting(self):
         """Returns a time-based greeting, potentially enhanced with calendar events."""
@@ -30,35 +33,94 @@ class GreetingService:
             
         return f"{greeting}. How can I help you?"
 
+    def check_and_update_briefing_status(self):
+        """
+        Checks if the morning briefing should be shown.
+        Returns True if:
+        1. It is between 5 AM and 10 AM.
+        2. Briefing has NOT been shown today.
+        Updates the state file if returning True.
+        """
+        import json
+        import os
+        
+        ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+        now = datetime.datetime.now(ist)
+        hour = now.hour
+        today_str = now.strftime("%Y-%m-%d")
+        
+        # 1. Check Time Window (5 AM - 10 AM)
+        if not (5 <= hour < 10):
+            return False
+            
+        # 2. Check State File
+        state_file = "briefing_state.json"
+        state = {}
+        
+        if os.path.exists(state_file):
+            try:
+                with open(state_file, "r") as f:
+                    state = json.load(f)
+            except Exception as e:
+                print(f"Error reading briefing state: {e}")
+                
+        last_briefing_date = state.get("last_briefing_date")
+        
+        if last_briefing_date == today_str:
+            return False # Already shown today
+            
+        # 3. Update State
+        try:
+            state["last_briefing_date"] = today_str
+            with open(state_file, "w") as f:
+                json.dump(state, f)
+            return True
+        except Exception as e:
+            print(f"Error writing briefing state: {e}")
+            return True # Default to showing it if we can't write state (fail open)
+
     def get_morning_briefing(self):
         """
-        Generates a briefing summarizing today's important events.
+        Generates a smart briefing ONLY if check_and_update_briefing_status() returns True.
+        Otherwise returns None (signaling to use normal greeting).
         """
-        ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
-        hour = datetime.datetime.now(ist).hour
-        
-        if 5 <= hour < 12:
-            greeting = "Good morning, Shreyas"
-        elif 12 <= hour < 17:
-            greeting = "Good afternoon, Shreyas"
-        else:
-            greeting = "Good evening, Shreyas"
+        # Check if we should show the briefing
+        if not self.check_and_update_briefing_status():
+            return None
 
-        today_events = self.calendar.get_events_for_date("today")
+        ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+        now = datetime.datetime.now(ist)
         
-        if "No events found" in today_events:
-            return f"{greeting}. You have no events scheduled for today. Enjoy your free time!"
-        
-        # If it's a list (raw data), summarize it
-        if isinstance(today_events, list):
-            # Use LLM to summarize if available, but here we do simple string manip
-            # Actually, AriaCore used self.brain for this in _humanize_response
-            # But here we just return a string.
-            # Let's keep it simple for now.
+        # 1. Get Weather
+        weather_info = "Weather data unavailable"
+        if self.weather_manager:
             try:
-                return f"{greeting}. You have {len(today_events)} events today. The first one is {today_events[0]}."
+                weather_info = self.weather_manager.get_weather("Pimpri, Maharashtra, India")
             except Exception as e:
-                print(f"Error generating briefing: {e}")
-                return f"{greeting}. You have {len(today_events)} events today."
+                print(f"Briefing Error (Weather): {e}")
+
+        # 2. Get Calendar (For TODAY)
+        events_list = []
+        try:
+            events_list = self.calendar.get_events_for_date("today")
+            if isinstance(events_list, str): # Handle "No events found" string
+                events_list = []
+        except Exception as e:
+            print(f"Briefing Error (Calendar): {e}")
+
+        # 3. Get Emails (Always relevant)
+        email_count = 0
+        if self.email_manager:
+            try:
+                messages = self.email_manager.list_messages(max_results=10, query="is:unread")
+                if isinstance(messages, list):
+                    email_count = len(messages)
+            except Exception as e:
+                print(f"Briefing Error (Email): {e}")
+
+        # 4. Synthesize with Brain
+        if self.brain:
+            return self.brain.generate_briefing_summary(weather_info, events_list, email_count, mode="morning briefing")
         
-        return f"{greeting}. Here is your schedule: {today_events}"
+        # Fallback
+        return f"Good morning. Weather: {weather_info}. You have {len(events_list)} events today."

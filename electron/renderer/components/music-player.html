@@ -1,0 +1,101 @@
+<!-- Music Player Floating Action Button -->
+<button class="music-fab hidden" id="musicFab" aria-label="Open Music Player">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M9 18V5l12-2v13"></path>
+        <circle cx="6" cy="18" r="3"></circle>
+        <circle cx="18" cy="16" r="3"></circle>
+    </svg>
+</button>
+
+<!-- Music Player Container -->
+<div class="music-player-container minimized" id="musicPlayer">
+    <div class="music-player-header" id="musicPlayerHeader">
+        <span class="music-player-title" id="compactTrackInfo">No track playing</span>
+        <div class="music-player-actions">
+            <button class="music-player-expand" id="musicPlayerExpand" aria-label="Expand Player">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <polyline points="9 21 3 21 3 15"></polyline>
+                    <line x1="21" y1="3" x2="14" y2="10"></line>
+                    <line x1="3" y1="21" x2="10" y2="14"></line>
+                </svg>
+            </button>
+            <button class="music-player-close" id="musicPlayerClose" aria-label="Close Player">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="music-player-content">
+        <!-- Album Art -->
+        <div class="music-album-art" id="albumArt">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+        </div>
+
+        <!-- Track Info -->
+        <div class="music-info">
+            <div class="music-track-title" id="trackTitle">No track playing</div>
+            <div class="music-track-artist" id="trackArtist">Select a song to play</div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="music-progress-container">
+            <div class="music-progress-bar" id="progressBar">
+                <div class="music-progress-fill" id="progressFill"></div>
+            </div>
+            <div class="music-time-labels">
+                <span id="currentTime">0:00</span>
+                <span id="totalTime">0:00</span>
+            </div>
+        </div>
+
+        <!-- Playback Controls -->
+        <div class="music-controls">
+            <button class="music-control-btn" id="prevBtn" aria-label="Previous">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <polygon points="19 20 9 12 19 4 19 20"></polygon>
+                    <line x1="5" y1="19" x2="5" y2="5"></line>
+                </svg>
+            </button>
+
+            <button class="music-control-btn primary" id="playPauseBtn" aria-label="Play/Pause">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    id="playIcon">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    id="pauseIcon" style="display: none;">
+                    <rect x="6" y="4" width="4" height="16"></rect>
+                    <rect x="14" y="4" width="4" height="16"></rect>
+                </svg>
+            </button>
+
+            <button class="music-control-btn" id="nextBtn" aria-label="Next">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                    <line x1="19" y1="5" x2="19" y2="19"></line>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Volume Control -->
+        <div class="music-volume-container">
+            <div class="music-volume-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+            </div>
+            <div class="music-volume-slider" id="volumeSlider">
+                <div class="music-volume-fill" id="volumeFill"></div>
+            </div>
+        </div>
+    </div>
+</div>

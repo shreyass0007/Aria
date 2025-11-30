@@ -574,3 +574,52 @@ class AriaBrain:
         except Exception as e:
             print(f"Error generating draft: {e}")
             return context
+    def generate_briefing_summary(self, weather_info: str, calendar_events: list, email_count: int, user_name: str = "Shreyas", mode: str = "morning briefing") -> str:
+        """
+        Generates a radio-host style briefing.
+        """
+        llm = self.get_llm("gpt-4o")
+        if not llm:
+            return f"Here is your data: {weather_info}. You have {len(calendar_events)} events and {email_count} unread emails."
+
+        # Format calendar events for the prompt
+        events_str = "No events scheduled."
+        if calendar_events:
+            events_str = "\n".join([str(e) for e in calendar_events])
+
+        template = """
+        You are Aria, an energetic and professional AI assistant giving a {mode}.
+        
+        User: {user_name}
+        Current Weather: {weather_info}
+        Calendar Events:
+        {events_str}
+        Unread Emails: {email_count}
+        
+        Task: Generate a concise, engaging, 30-second script.
+        - Start with a warm greeting appropriate for the time of day.
+        - Summarize the weather.
+        - Highlight the most important events, specifically looking for keywords like 'Meeting', 'Exam', 'Call', 'Zoom', or 'Interview'.
+        - Mention the unread email count.
+        - End with a motivating closing.
+        - Do NOT use markdown or bullet points. Write it as a spoken paragraph.
+        """
+        
+        prompt = PromptTemplate(
+            input_variables=["mode", "user_name", "weather_info", "events_str", "email_count"],
+            template=template
+        )
+        
+        try:
+            formatted_prompt = prompt.format(
+                mode=mode,
+                user_name=user_name,
+                weather_info=weather_info,
+                events_str=events_str,
+                email_count=email_count
+            )
+            response = llm.invoke(formatted_prompt)
+            return response.content.strip()
+        except Exception as e:
+            print(f"Error generating briefing summary: {e}")
+            return f"I couldn't generate the full briefing, but here is what I know: {weather_info}. You have {len(calendar_events)} events."

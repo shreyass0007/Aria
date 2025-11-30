@@ -62,6 +62,10 @@ class CommandIntentClassifier:
         "web_search": "Search Google/Web for information",
         # Media
         "music_play": "Play music or specific song",
+        "music_pause": "Pause currently playing music",
+        "music_resume": "Resume paused music",
+        "music_stop": "Stop music playback",
+        "music_volume": "Set music volume",
         # Productivity
         "calendar_query": "Check schedule/events",
         "calendar_create": "Create a calendar event",
@@ -97,7 +101,7 @@ class CommandIntentClassifier:
                 
             response = llm.invoke(prompt)
             content = response.content.strip()
-            print(f"CLASSIFIER DEBUG - Raw response: {content[:200]}...")
+            # print(f"CLASSIFIER DEBUG - Raw response: {content[:200]}...")
             
             # Use regex to find JSON object
             json_match = re.search(r"\{.*\}", content, re.DOTALL)
@@ -109,7 +113,10 @@ class CommandIntentClassifier:
                 result = {}
         except Exception as e:
             print(f"Error classifying intent: {e}")
-            print(f"Raw response was: {content if 'content' in locals() else 'No response'}")
+            try:
+                print(f"Raw response was: {content[:100].encode('utf-8', errors='ignore').decode('utf-8') if 'content' in locals() else 'No response'}")
+            except Exception:
+                print("Raw response was: [Content with unicode]")
             return {"intent": "general_chat", "confidence": 0.0, "parameters": {}}
 
         intent = result.get("intent", "general_chat")
@@ -167,29 +174,6 @@ CLASSIFICATION RULES:
 2. If the command is a general question or conversation (e.g., "tell me a joke", "who are you"), use "general_chat".
 3. Extract relevant parameters.
 4. Distinguish between "file_search" (local files) and "web_search" (Google).
-   - "find resume on desktop" -> file_search
-   - "search for python tutorials" -> web_search
-5. For file operations, extract location as one of: desktop, downloads, documents, pictures, music, videos
-   - "download section" or "in downloads" -> location: "downloads"
-   - "on desktop" or "desktop area" -> location: "desktop"
-6. For calendar queries, extract the date reference (e.g., "today", "tomorrow", "next friday", "april 13").
-   - "what's my schedule for tomorrow?" -> intent: "calendar_query", parameters: {{"date_reference": "tomorrow"}}
-   - "do i have any meetings on friday?" -> intent: "calendar_query", parameters: {{"date_reference": "friday"}}
-
-EXAMPLES:
-- "shutdown the computer" -> intent: "shutdown"
-- "open youtube" -> intent: "web_open", parameters: {{"url": "https://youtube.com", "name": "YouTube"}}
-- "open calculator" -> intent: "app_open", parameters: {{"app_name": "calculator"}}
-- "play some taylor swift" -> intent: "music_play", parameters: {{"song": "taylor swift"}}
-- "schedule meeting tomorrow at 5pm" -> intent: "calendar_create"
-- "what's on my schedule?" -> intent: "calendar_query"
-- "what do i have tomorrow?" -> intent: "calendar_query", parameters: {{"date_reference": "tomorrow"}}
-- "summarize my notion page about goals" -> intent: "notion_query"
-- "add milk to grocery list in notion" -> intent: "notion_create"
-- "what time is it?" -> intent: "time_check"
-- "search for pasta recipes" -> intent: "web_search", parameters: {{"query": "pasta recipes"}}
-- "find all pdfs in downloads" -> intent: "file_search", parameters: {{"pattern": "*.pdf", "location": "downloads"}}
-- "create file hi.txt in download section" -> intent: "file_create", parameters: {{"filename": "hi.txt", "location": "downloads"}}
 - "create test.txt on desktop" -> intent: "file_create", parameters: {{"filename": "test.txt", "location": "desktop"}}
 - " readme.md in documents" -> intent: "file_create", parameters: {{"filename": "readme.md", "location": "documents"}}
 - "what's the weather in London" -> intent: "weather_check", parameters: {{"city": "London"}}

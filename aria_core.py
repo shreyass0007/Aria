@@ -12,9 +12,9 @@ from file_manager import FileManager
 from weather_manager import WeatherManager
 from clipboard_screenshot import ClipboardScreenshot
 from system_monitor import SystemMonitor
-from system_monitor import SystemMonitor
 from email_manager import EmailManager
-from deep_work_manager import DeepWorkManager
+from proactive_manager import ProactiveManager
+from music_library import MusicManager
 
 # New Modules
 from tts_manager import TTSManager
@@ -40,6 +40,7 @@ class AriaCore:
         self.clipboard_screenshot = ClipboardScreenshot()
         self.system_monitor = SystemMonitor()
         self.email_manager = EmailManager()
+        self.music_manager = MusicManager()
         
         # Alias for backward compatibility
         self.email = self.email_manager
@@ -48,10 +49,14 @@ class AriaCore:
         self.tts_manager = TTSManager(on_speak=on_speak)
         self.app_launcher = AppLauncher(self.tts_manager)
         self.speech_input = SpeechInput(self.tts_manager)
-        self.speech_input = SpeechInput(self.tts_manager)
-        self.greeting_service = GreetingService(self.calendar)
-        self.deep_work_manager = DeepWorkManager(self.calendar, self.tts_manager)
-        self.deep_work_manager.start_monitoring()
+        self.greeting_service = GreetingService(
+            calendar_manager=self.calendar,
+            weather_manager=self.weather_manager,
+            email_manager=self.email_manager,
+            brain=self.brain
+        )
+        self.proactive_manager = ProactiveManager(self.calendar, self.tts_manager, self.app_launcher)
+        self.proactive_manager.start_monitoring()
         
         self.command_processor = CommandProcessor(
             tts_manager=self.tts_manager,
@@ -67,7 +72,8 @@ class AriaCore:
             clipboard_screenshot=self.clipboard_screenshot,
             system_monitor=self.system_monitor,
             email_manager=self.email_manager,
-            greeting_service=self.greeting_service
+            greeting_service=self.greeting_service,
+            music_manager=self.music_manager
         )
 
         self.check_microphones()

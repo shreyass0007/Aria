@@ -29,6 +29,7 @@ export async function loadAllComponents() {
         loadComponent('components/input-area.html', 'input-placeholder'),
         loadComponent('components/settings-modal.html', 'settings-modal-placeholder'),
         loadComponent('components/history-sidebar.html', 'history-sidebar-placeholder'),
-        loadComponent('components/history-modals.html', 'history-modals-placeholder')
+        loadComponent('components/history-modals.html', 'history-modals-placeholder'),
+        loadComponent('components/music-player.html', 'music-player-placeholder')
     ]);
 }

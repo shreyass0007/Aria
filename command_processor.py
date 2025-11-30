@@ -10,7 +10,7 @@ import random
 class CommandProcessor:
     def __init__(self, tts_manager, app_launcher, brain, calendar, notion, automator, 
                  system_control, command_classifier, file_manager, weather_manager, 
-                 clipboard_screenshot, system_monitor, email_manager, greeting_service):
+                 clipboard_screenshot, system_monitor, email_manager, greeting_service, music_manager):
         self.tts_manager = tts_manager
         self.app_launcher = app_launcher
         self.brain = brain
@@ -25,11 +25,15 @@ class CommandProcessor:
         self.system_monitor = system_monitor
         self.email_manager = email_manager
         self.greeting_service = greeting_service
+        self.music_manager = music_manager
         
         self.wake_word = "aria"
         self.pending_email = None
         self.pending_notion_pages = None
         self.last_ui_action = None
+        
+        # Short-term memory for context awareness (last 10 turns)
+        self.conversation_history = []
 
     def is_similar(self, a, b, threshold=0.8):
         return difflib.SequenceMatcher(None, a, b).ratio() >= threshold
@@ -53,10 +57,13 @@ class CommandProcessor:
             return data_text
             
         try:
+            current_time = datetime.datetime.now().strftime("%I:%M %p")
             prompt = f"""
             You are Aria, a helpful AI assistant.
+            The current time is {current_time}.
             Convert the following raw data about {context} into a friendly, conversational response.
-            Keep it concise (max 2 sentences) and natural.
+            If there are many items, you can list them or summarize them naturally.
+            Distinguish between past and future events based on the current time.
             
             Raw Data:
             {data_text}
@@ -67,7 +74,12 @@ class CommandProcessor:
                     SystemMessage(content="You are Aria. Be friendly and concise."),
                     HumanMessage(content=prompt)
                 ])
-                return response.content.strip()
+                result = response.content.strip()
+                try:
+                    print(f"DEBUG: Humanized response: {result.encode('utf-8', errors='ignore').decode('utf-8')}")
+                except Exception:
+                    print("DEBUG: Humanized response: [Content with emojis]")
+                return result
             return data_text
         except Exception as e:
             print(f"Error humanizing response: {e}")
@@ -245,14 +257,25 @@ class CommandProcessor:
             if new_word:
                 self.wake_word = new_word
                 self.tts_manager.speak(f"Wake word changed to {self.wake_word}")
-            else:
-                self.tts_manager.speak("Change it to what?")
+            return
+
+        # Daily Briefing Trigger
+        if any(x in text for x in ["good morning", "morning briefing", "daily briefing", "brief me"]):
+            self.tts_manager.speak("Good morning! Gathering your briefing...")
+            briefing = self.greeting_service.get_morning_briefing()
+            self.tts_manager.speak(briefing)
             return
 
         # Identity
         if any(x in text for x in ["who are you", "what is your name", "introduce yourself"]):
             # Use LLM for identity to be more natural
             self.tts_manager.speak(self.brain.ask(text))
+            return
+
+        # Clear Context / New Topic
+        if any(x in text for x in ["new topic", "clear memory", "forget context", "start over"]):
+            self.conversation_history = []
+            self.tts_manager.speak("Okay, starting fresh. What's on your mind?")
             return
 
         # ---------------------------------------------------------
@@ -324,18 +347,43 @@ class CommandProcessor:
             
             self.tts_manager.speak(self._get_random_response("media_play", song))
             
-            lib = getattr(music_library, "music", {}) or {}
-            if song in lib:
-                self.safe_open_url(lib[song], "")
-            else:
-                # Fuzzy match
-                matches = difflib.get_close_matches(song, list(lib.keys()), n=1, cutoff=0.6)
-                if matches:
-                    self.safe_open_url(lib[matches[0]], "")
-                else:
-                    # Fallback to YouTube search
-                    q = urllib.parse.quote_plus(song)
-                    self.safe_open_url(f"https://www.youtube.com/results?search_query={q}", "")
+            # Use MusicManager for playback
+            result = self.music_manager.play_music(song)
+            self.tts_manager.speak(result)
+            
+            # Set UI action to show music player
+            track_info = self.music_manager.current_track_info
+            self.last_ui_action = {
+                "type": "music_playing",
+                "data": {
+                    "track_info": track_info
+                }
+            }
+            return
+
+        elif intent == "music_pause":
+            result = self.music_manager.pause()
+            self.tts_manager.speak(result)
+            return
+
+        elif intent == "music_resume" or intent == "music_unpause":
+            result = self.music_manager.resume()
+            self.tts_manager.speak(result)
+            return
+
+        elif intent == "music_stop":
+            result = self.music_manager.stop()
+            self.tts_manager.speak(result)
+            return
+            
+        elif intent == "music_volume":
+            level = parameters.get("level")
+            if level:
+                try:
+                    vol = int(level)
+                    self.tts_manager.speak(self.music_manager.set_volume(vol))
+                except ValueError:
+                    self.tts_manager.speak("Invalid volume level.")
             return
 
         # --- SYSTEM CONTROL ---
@@ -570,10 +618,11 @@ class CommandProcessor:
             return
             
         elif intent == "calendar_query":
-            # 1. Check for LLM-extracted date reference
+            # 1. Check for LLM-extracted parameters
             date_ref = parameters.get("date_reference", "").lower()
+            time_scope = parameters.get("time_scope", "all_day").lower() # Default to all_day for "schedule" queries
             
-            # 2. Fallback to fuzzy match if no parameter (handling typos like "todya")
+            # 2. Fallback to fuzzy match if no parameter
             if not date_ref:
                 words = text.split()
                 if any(self.is_similar(w, "today", 0.8) for w in words):
@@ -581,18 +630,34 @@ class CommandProcessor:
                 elif any(self.is_similar(w, "tomorrow", 0.8) for w in words):
                     date_ref = "tomorrow"
 
-            # 3. Execute Query
+            # 3. Execute Query based on Scope
+            if time_scope == "current":
+                # "What should I do now?"
+                response = self.calendar.get_current_event()
+                self.tts_manager.speak(response)
+                return
+
+            elif time_scope == "upcoming" and date_ref == "today":
+                 # "Upcoming events today" (from now onwards)
+                 # We can use get_upcoming_events which defaults to starting from NOW
+                 raw_data = self.calendar.get_upcoming_events(max_results=15)
+                 response = self._humanize_response(raw_data, "upcoming events for today")
+                 self.tts_manager.speak(response)
+                 return
+
+            # Default / All Day logic
             if date_ref == "today":
+                # "Schedule for today" -> All day (past & future)
                 raw_data = self.calendar.get_events_for_date("today")
-                response = self._humanize_response(raw_data, "today's schedule")
+                response = self._humanize_response(raw_data, "today's full schedule")
                 self.tts_manager.speak(response)
             elif date_ref == "tomorrow":
                 raw_data = self.calendar.get_events_for_date("tomorrow")
                 response = self._humanize_response(raw_data, "tomorrow's schedule")
                 self.tts_manager.speak(response)
             else:
-                # Default / Upcoming
-                raw_data = self.calendar.get_upcoming_events()
+                # Default fallback
+                raw_data = self.calendar.get_upcoming_events(max_results=15)
                 response = self._humanize_response(raw_data, "upcoming events")
                 self.tts_manager.speak(response)
             return
@@ -669,5 +734,18 @@ class CommandProcessor:
 
         # --- FALLBACK ---
         # If no specific intent matched, use LLM for general chat
-        # Use ask() instead of query_llm() to leverage the new system prompt
-        self.tts_manager.speak(self.brain.ask(text))
+        # Use ask() instead of query_llm() to leverage the new system prompt AND conversation history
+        
+        # Add user message to history
+        self.conversation_history.append({"role": "user", "content": text})
+        
+        # Keep history short (last 10 messages = 5 turns)
+        if len(self.conversation_history) > 10:
+            self.conversation_history = self.conversation_history[-10:]
+            
+        response = self.brain.ask(text, conversation_history=self.conversation_history)
+        
+        # Add assistant response to history
+        self.conversation_history.append({"role": "assistant", "content": response})
+        
+        self.tts_manager.speak(response)
