@@ -8,7 +8,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 # If modifying these scopes, delete the file token_gmail.pickle.
-SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+SCOPES = ['https://www.googleapis.com/auth/gmail.send', 'https://www.googleapis.com/auth/gmail.readonly']
 
 class EmailManager:
     def __init__(self):
@@ -78,6 +78,87 @@ class EmailManager:
         except Exception as e:
             print(f"Email Send Error: {e}")
             return "I couldn't send the email due to an unexpected error."
+
+    def get_unread_emails(self, max_results=5):
+        """Retrieves unread emails from the inbox."""
+        if not self.service:
+            self.authenticate()
+            
+        if not self.service:
+            return "Gmail service not available."
+
+        try:
+            # List messages with label 'UNREAD'
+            results = self.service.users().messages().list(userId='me', labelIds=['UNREAD'], maxResults=max_results).execute()
+            messages = results.get('messages', [])
+
+            if not messages:
+                return "You have no unread emails."
+
+            email_list = []
+            for msg in messages:
+                txt = self.service.users().messages().get(userId='me', id=msg['id']).execute()
+                payload = txt['payload']
+                headers = payload['headers']
+                
+                subject = "No Subject"
+                sender = "Unknown Sender"
+                
+                for d in headers:
+                    if d['name'] == 'Subject':
+                        subject = d['value']
+                    if d['name'] == 'From':
+                        sender = d['value']
+                
+                snippet = txt.get('snippet', '')
+                email_list.append(f"From: {sender}\nSubject: {subject}\nSnippet: {snippet}\n")
+
+            return "\n---\n".join(email_list)
+            
+        except HttpError as error:
+            print(f"Gmail API Error: {error}")
+            return "I encountered a problem retrieving your emails."
+    def search_emails(self, query, max_results=5):
+        """Searches for emails matching the query."""
+        if not self.service:
+            self.authenticate()
+            
+        if not self.service:
+            return "Gmail service not available."
+
+        try:
+            results = self.service.users().messages().list(userId='me', q=query, maxResults=max_results).execute()
+            messages = results.get('messages', [])
+
+            if not messages:
+                return "No emails found matching your search."
+
+            email_list = []
+            for msg in messages:
+                txt = self.service.users().messages().get(userId='me', id=msg['id']).execute()
+                payload = txt['payload']
+                headers = payload['headers']
+                
+                subject = "No Subject"
+                sender = "Unknown Sender"
+                
+                for d in headers:
+                    if d['name'] == 'Subject':
+                        subject = d['value']
+                    if d['name'] == 'From':
+                        sender = d['value']
+                
+                snippet = txt.get('snippet', '')
+                email_list.append(f"From: {sender}\nSubject: {subject}\nSnippet: {snippet}\n")
+
+            return "\n---\n".join(email_list)
+            
+        except HttpError as error:
+            print(f"Gmail API Error: {error}")
+            return "I encountered a problem searching your emails."
+        except Exception as e:
+            print(f"Email Search Error: {e}")
+            return "I couldn't search your emails due to an unexpected error."
 
 if __name__ == "__main__":
     # Test the module

@@ -122,7 +122,7 @@ class CommandProcessor:
             return random.choice(options)
         return f"Executing {intent}."
 
-    def process_command(self, text: str, model_name: str = "openai", intent_data: dict = None):
+    def process_command(self, text: str, model_name: str = "openai", intent_data: dict = None, extra_data: dict = None):
         text = text.lower().strip()
         if not text:
             return
@@ -141,6 +141,12 @@ class CommandProcessor:
             
             elif any(x in text for x in ["yes", "send", "confirm", "okay", "sure"]):
                 self.tts_manager.speak("Sending email...")
+                
+                # Update body if provided in extra_data
+                if extra_data and extra_data.get("updated_body"):
+                    self.pending_email["body"] = extra_data.get("updated_body")
+                    print(f"DEBUG: Using updated email body: {self.pending_email['body']}")
+                
                 to = self.pending_email["to"]
                 subject = self.pending_email["subject"]
                 body = self.pending_email["body"]
@@ -387,6 +393,20 @@ class CommandProcessor:
             return
 
         # --- SYSTEM CONTROL ---
+        elif intent == "focus_mode_on":
+            self.tts_manager.speak("Activating Focus Mode. Minimizing distractions.")
+            self.system_control.set_dnd(True)
+            self.system_control.minimize_all_windows()
+            return
+        elif intent == "focus_mode_off":
+            self.tts_manager.speak("Deactivating Focus Mode.")
+            self.system_control.set_dnd(False)
+            return
+        elif intent == "minimize_all":
+            self.tts_manager.speak("Minimizing all windows.")
+            self.system_control.minimize_all_windows()
+            return
+
         elif intent == "volume_up":
             self.system_control.increase_volume()
             self.tts_manager.speak(self._get_random_response("volume_up"))
@@ -433,6 +453,9 @@ class CommandProcessor:
                 user_name = os.getenv("USER_NAME", "User")
                 draft_body = self.brain.generate_email_draft(to, subject, body_context, sender_name=user_name)
                 
+                if not subject or subject.lower() == "no subject":
+                    subject = "Message from Aria"
+                
                 self.pending_email = {
                     "to": to,
                     "subject": subject,
@@ -453,6 +476,22 @@ class CommandProcessor:
                 }
             else:
                 self.tts_manager.speak("I need more details. Who is it for, and what should I say?")
+            return
+
+        elif intent == "email_check":
+            self.tts_manager.speak("Checking your inbox...")
+            emails = self.email_manager.get_unread_emails()
+            
+            if "no unread emails" in emails.lower():
+                self.tts_manager.speak("You have no unread emails.")
+            elif "problem" in emails.lower() or "error" in emails.lower():
+                self.tts_manager.speak(emails)
+            else:
+                # Humanize the list of emails
+                self.tts_manager.speak(f"Here are your latest unread emails:\n\n{emails}")
+                # Ideally, we could use the LLM to summarize them
+                summary = self._humanize_response(emails, "unread emails")
+                self.tts_manager.speak(summary)
             return
 
         elif intent == "shutdown":
@@ -618,46 +657,39 @@ class CommandProcessor:
             return
             
         elif intent == "calendar_query":
-            # 1. Check for LLM-extracted parameters
-            date_ref = parameters.get("date_reference", "").lower()
-            time_scope = parameters.get("time_scope", "all_day").lower() # Default to all_day for "schedule" queries
+            # 1. Extract parameters from LLM
+            target_date = parameters.get("target_date")
+            query_type = parameters.get("query_type", "events")
+            time_scope = parameters.get("time_scope", "all_day")
             
-            # 2. Fallback to fuzzy match if no parameter
-            if not date_ref:
+            # 2. Fallback for legacy/fuzzy extraction if LLM missed it
+            if not target_date:
                 words = text.split()
                 if any(self.is_similar(w, "today", 0.8) for w in words):
-                    date_ref = "today"
+                    target_date = "today"
                 elif any(self.is_similar(w, "tomorrow", 0.8) for w in words):
-                    date_ref = "tomorrow"
-
-            # 3. Execute Query based on Scope
-            if time_scope == "current":
-                # "What should I do now?"
-                response = self.calendar.get_current_event()
+                    target_date = "tomorrow"
+            
+            # 3. Handle Free Time Query
+            if query_type == "free_time":
+                if not target_date: target_date = "today"
+                response = self.calendar.get_free_slots(target_date, time_scope)
                 self.tts_manager.speak(response)
                 return
 
-            elif time_scope == "upcoming" and date_ref == "today":
-                 # "Upcoming events today" (from now onwards)
-                 # We can use get_upcoming_events which defaults to starting from NOW
-                 raw_data = self.calendar.get_upcoming_events(max_results=15)
-                 response = self._humanize_response(raw_data, "upcoming events for today")
-                 self.tts_manager.speak(response)
-                 return
-
-            # Default / All Day logic
-            if date_ref == "today":
-                # "Schedule for today" -> All day (past & future)
-                raw_data = self.calendar.get_events_for_date("today")
-                response = self._humanize_response(raw_data, "today's full schedule")
-                self.tts_manager.speak(response)
-            elif date_ref == "tomorrow":
-                raw_data = self.calendar.get_events_for_date("tomorrow")
-                response = self._humanize_response(raw_data, "tomorrow's schedule")
+            # 4. Handle Event Query
+            if target_date:
+                # Specific date query
+                raw_data = self.calendar.get_events_for_date(target_date, time_scope)
+                context_str = f"schedule for {target_date}"
+                if time_scope != "all_day":
+                    context_str += f" ({time_scope})"
+                
+                response = self._humanize_response(raw_data, context_str)
                 self.tts_manager.speak(response)
             else:
-                # Default fallback
-                raw_data = self.calendar.get_upcoming_events(max_results=15)
+                # Default: Upcoming events
+                raw_data = self.calendar.get_upcoming_events(max_results=9)
                 response = self._humanize_response(raw_data, "upcoming events")
                 self.tts_manager.speak(response)
             return
@@ -727,9 +759,19 @@ class CommandProcessor:
             return
 
         elif intent == "notion_create":
-            self.tts_manager.speak("Creating Notion page...")
-            # TODO: Implement creation logic
-            self.tts_manager.speak("Notion page creation not fully implemented yet.")
+            self.tts_manager.speak("Analyzing your request...")
+            details = self.brain.parse_notion_intent(text)
+            
+            title = details.get("title")
+            content = details.get("content", "")
+            target = details.get("target")
+            
+            if title:
+                self.tts_manager.speak(f"Creating page '{title}'...")
+                result = self.notion.create_page(title, content, target)
+                self.tts_manager.speak(result)
+            else:
+                self.tts_manager.speak("I couldn't understand what page to create. Please specify a title.")
             return
 
         # --- FALLBACK ---

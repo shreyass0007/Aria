@@ -23,6 +23,7 @@ from conversation_manager import ConversationManager
 
 from memory_manager import MemoryManager
 from system_monitor import SystemMonitor
+from music_library import MusicManager
 
 # Initialize Aria Core
 aria = None
@@ -30,13 +31,15 @@ voice_mode_active = False
 conversation_mgr = None
 memory_mgr = None
 system_monitor = None
+music_mgr = None
 
 def init_aria():
-    global aria, conversation_mgr, memory_mgr, system_monitor
+    global aria, conversation_mgr, memory_mgr, system_monitor, music_mgr
     aria = AriaCore(on_speak=None)  # We'll handle speech separately
     conversation_mgr = ConversationManager()
     memory_mgr = MemoryManager()
     system_monitor = SystemMonitor()
+    music_mgr = MusicManager()
     
     # Create initial conversation if MongoDB is connected
     if conversation_mgr.is_connected():
@@ -145,6 +148,7 @@ class MessageRequest(BaseModel):
     message: str
     conversation_id: Optional[str] = None
     model: Optional[str] = "gpt-4o"
+    extra_data: Optional[Dict[str, Any]] = None
 
 @app.post("/message")
 def process_message(request: MessageRequest):
@@ -152,6 +156,7 @@ def process_message(request: MessageRequest):
         message = request.message
         conversation_id = request.conversation_id
         model = request.model
+        extra_data = request.extra_data
         
         if not message:
             raise HTTPException(status_code=400, detail="No message provided")
@@ -208,8 +213,18 @@ def process_message(request: MessageRequest):
         # SMART ROUTING: Classify intent first
         # This replaces the old keyword-based "gatekeeper"
         
+        # PRIORITY: Check for pending email confirmation FIRST
+        # If we are waiting for a confirmation, "yes" should trigger the email send, NOT general chat.
+        if aria.command_processor.pending_email:
+            print("DEBUG: Pending email found. Bypassing classifier for confirmation check.")
+            # We still want to allow "cancel" or "no", so we let process_command handle it.
+            # We force intent to be something that process_command will look at, or just rely on process_command's internal check.
+            # Since process_command checks pending_email at the very top, we just need to ensure we call it.
+            intent = "email_confirmation" # Dummy intent to force process_command path
+            intent_data = {"intent": "email_confirmation", "confidence": 1.0, "parameters": {}}
+        
         # Special check for Wake Word to ensure Smart Greeting triggers
-        if message.lower().strip() == "aria":
+        elif message.lower().strip() == "aria":
             intent = "wake_word"
             intent_data = {"intent": "wake_word", "confidence": 1.0, "parameters": {}}
         else:
@@ -241,10 +256,10 @@ def process_message(request: MessageRequest):
             except Exception as e:
                 print(f"Error using brain.ask with history: {e}")
                 # Fallback to process_command
-                aria.process_command(message, model_name=model, intent_data=intent_data)
+                aria.process_command(message, model_name=model, intent_data=intent_data, extra_data=extra_data)
         else:
             # Specific command - use aria.process_command() with the pre-classified intent
-            aria.process_command(message, model_name=model, intent_data=intent_data)
+            aria.process_command(message, model_name=model, intent_data=intent_data, extra_data=extra_data)
         
         # Restore original callback
         aria.on_speak = original_callback
@@ -329,7 +344,59 @@ def set_tts_status(request: TTSRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Email Management Endpoints
+# Music Control Endpoints
+class VolumeRequest(BaseModel):
+    volume: int
+
+@app.post("/music/pause")
+def pause_music():
+    """Pause music playback"""
+    try:
+        if music_mgr:
+            result = music_mgr.pause()
+            response_data = {
+                'status': 'success', 
+                'message': result.get('message', 'Music paused'),
+                'is_playing': result.get('is_playing', False)
+            }
+            print(f"[Music Pause] Returning: {response_data}")
+            return response_data
+        else:
+            raise HTTPException(status_code=503, detail="Music manager not initialized")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/music/resume")
+def resume_music():
+    """Resume music playback"""
+    try:
+        if music_mgr:
+            result = music_mgr.resume()
+            response_data = {
+                'status': 'success',
+                'message': result.get('message', 'Music resumed'),
+                'is_playing': result.get('is_playing', True)
+            }
+            print(f"[Music Resume] Returning: {response_data}")
+            return response_data
+        else:
+            raise HTTPException(status_code=503, detail="Music manager not initialized")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/music/volume")
+def set_music_volume(request: VolumeRequest):
+    """Set music volume (0-100)"""
+    try:
+        if music_mgr:
+            volume = max(0, min(100, request.volume))
+            result = music_mgr.set_volume(volume)
+            return {'status': 'success', 'message': result, 'volume': volume}
+        else:
+            raise HTTPException(status_code=503, detail="Music manager not initialized")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 class EmailSendRequest(BaseModel):
     to: str
     subject: str

@@ -21,6 +21,10 @@ class CommandIntentClassifier:
         "lock": "Lock the screen/workstation",
         "sleep": "Put computer to sleep",
         "cancel_shutdown": "Cancel pending shutdown/restart",
+        # Focus & Window Management
+        "focus_mode_on": "Turn on Focus Mode / Deep Work / Do Not Disturb",
+        "focus_mode_off": "Turn off Focus Mode / Deep Work",
+        "minimize_all": "Minimize all windows / Show desktop",
         # Volume Control
         "volume_up": "Increase system volume",
         "volume_down": "Decrease system volume",
@@ -77,6 +81,7 @@ class CommandIntentClassifier:
         "weather_check": "Check weather for a specific location",
         # Email
         "email_send": "Send an email",
+        "email_check": "Check unread emails or inbox",
         # General
         "general_chat": "General conversation/questions (fallback)"
     }
@@ -160,28 +165,47 @@ class CommandIntentClassifier:
         """Construct the prompt for the LLM to classify the command."""
         intent_list = [f'  - "{intent}": {desc}' for intent, desc in self.COMMAND_INTENTS.items()]
         intent_descriptions = "\n".join(intent_list)
+        
+        # Get current date for context
+        import datetime
+        now = datetime.datetime.now()
+        current_date_str = now.strftime("%A, %Y-%m-%d")
+        
         prompt = f"""You are a command intent classifier for a voice assistant.
 
 Your task is to analyze the user's command and determine their intent.
+
+CURRENT DATE: {current_date_str}
 
 USER COMMAND: "{user_text}"
 
 AVAILABLE INTENTS:
 {intent_descriptions}
 
+NEGATIVE CONSTRAINTS:
+1. Do NOT invent new intents.
+2. If the user asks for an action not listed in AVAILABLE INTENTS, output "general_chat".
+3. Do NOT assume you can perform actions like "change settings", "update system", "install software", "change wallpaper", "change theme", or "order food".
+4. If the user asks for "change wallpaper" or "dark mode", use "general_chat".
+5. If the user asks for "download X" (where X is a file/video from web), use "general_chat" (unless it matches a specific file automation intent).
+6. If the user asks "can you see this?", use "general_chat".
+
 CLASSIFICATION RULES:
 1. Choose the MOST SPECIFIC intent that matches the user's command.
 2. If the command is a general question or conversation (e.g., "tell me a joke", "who are you"), use "general_chat".
 3. Extract relevant parameters.
 4. Distinguish between "file_search" (local files) and "web_search" (Google).
+5. For 'calendar_query':
+   - Extract 'target_date' in YYYY-MM-DD format if possible (resolve "today", "tomorrow", "next friday" based on CURRENT DATE).
+   - Extract 'query_type': "events" (default) or "free_time" (if asking for empty slots/availability).
+   - Extract 'time_scope': "morning" (5AM-12PM), "afternoon" (12PM-5PM), "evening" (5PM-9PM), or "all_day" (default).
+
+EXAMPLES:
 - "create test.txt on desktop" -> intent: "file_create", parameters: {{"filename": "test.txt", "location": "desktop"}}
-- " readme.md in documents" -> intent: "file_create", parameters: {{"filename": "readme.md", "location": "documents"}}
 - "what's the weather in London" -> intent: "weather_check", parameters: {{"city": "London"}}
-- "send an email to john@example.com about meeting" -> intent: "email_send"
-- "take screenshot" -> intent: "screenshot_take"
-- "take a screenshot" -> intent: "screenshot_take"
-- "capture screen" -> intent: "screenshot_take"
-- "tell me a joke" -> intent: "general_chat"
+- "what do I have on Friday?" -> intent: "calendar_query", parameters: {{"target_date": "2023-10-27", "query_type": "events", "time_scope": "all_day"}}
+- "when am I free tomorrow morning?" -> intent: "calendar_query", parameters: {{"target_date": "2023-10-28", "query_type": "free_time", "time_scope": "morning"}}
+- "do I have any meetings this afternoon?" -> intent: "calendar_query", parameters: {{"target_date": "2023-10-26", "query_type": "events", "time_scope": "afternoon"}}
 
 Return ONLY a JSON object with this exact structure:
 {{{{

@@ -133,7 +133,7 @@ class CalendarManager:
             print(f"Calendar Create Error: {e}")
             return "I couldn't create the calendar event due to an error."
 
-    def get_upcoming_events(self, max_results=15, start_date=None, end_date=None):
+    def get_upcoming_events(self, max_results=9, start_date=None, end_date=None):
         """
         Gets upcoming events.
         If start_date and end_date are provided (datetime objects), filters by that range.
@@ -176,7 +176,6 @@ class CalendarManager:
                 return "No upcoming events found for this period."
             
             result_text = "Here are the events:\n"
-            result_text = "Here are the events:\n"
             ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
             
             for event in events:
@@ -204,35 +203,150 @@ class CalendarManager:
             print(f"Calendar Fetch Error: {e}")
             return "I couldn't check your calendar right now."
 
-    def get_events_for_date(self, target_date_str):
+    def get_events_for_date(self, target_date_str, time_scope="all_day"):
         """
         Get events for a specific date ('today', 'tomorrow', or YYYY-MM-DD).
         Filters out past events if querying for 'today'.
+        Supports time_scope: 'morning', 'afternoon', 'evening', 'all_day'.
         """
         ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
         now = datetime.datetime.now(ist)
         
         if target_date_str == 'today':
-            # Start from midnight to show ALL events for today (including past ones)
             start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            # End at midnight tonight
             end_date = now.replace(hour=23, minute=59, second=59, microsecond=999999)
         elif target_date_str == 'tomorrow':
             start_date = (now + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
             end_date = start_date.replace(hour=23, minute=59, second=59, microsecond=999999)
         else:
-            # Try parsing YYYY-MM-DD
             try:
                 start_date = datetime.datetime.strptime(target_date_str, "%Y-%m-%d").replace(tzinfo=ist)
                 end_date = start_date.replace(hour=23, minute=59, second=59, microsecond=999999)
             except:
                 return self.get_upcoming_events() # Fallback
 
+        # Apply Time Scope
+        if time_scope == "morning":
+            # 5 AM to 12 PM
+            start_date = start_date.replace(hour=5, minute=0)
+            end_date = start_date.replace(hour=11, minute=59)
+        elif time_scope == "afternoon":
+            # 12 PM to 5 PM
+            start_date = start_date.replace(hour=12, minute=0)
+            end_date = start_date.replace(hour=16, minute=59)
+        elif time_scope == "evening":
+            # 5 PM to 9 PM
+            start_date = start_date.replace(hour=17, minute=0)
+            end_date = start_date.replace(hour=21, minute=59)
+        
         # Convert to UTC for API
         start_utc = start_date.astimezone(datetime.timezone.utc)
         end_utc = end_date.astimezone(datetime.timezone.utc)
         
-        return self.get_upcoming_events(max_results=15, start_date=start_utc, end_date=end_utc)
+        return self.get_upcoming_events(max_results=9, start_date=start_utc, end_date=end_utc)
+
+    def get_free_slots(self, target_date_str, time_scope="all_day"):
+        """
+        Calculates free time slots for a specific date and time scope.
+        """
+        if not self.service:
+            self.authenticate()
+            
+        ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+        now = datetime.datetime.now(ist)
+        
+        # Determine base date range
+        if target_date_str == 'today':
+            base_date = now
+        elif target_date_str == 'tomorrow':
+            base_date = now + datetime.timedelta(days=1)
+        else:
+            try:
+                base_date = datetime.datetime.strptime(target_date_str, "%Y-%m-%d").replace(tzinfo=ist)
+            except:
+                base_date = now
+
+        # Define working hours / scope boundaries
+        day_start_hour = 9 # 9 AM
+        day_end_hour = 21 # 9 PM
+        
+        start_dt = base_date.replace(hour=day_start_hour, minute=0, second=0, microsecond=0)
+        end_dt = base_date.replace(hour=day_end_hour, minute=0, second=0, microsecond=0)
+
+        if time_scope == "morning":
+            start_dt = base_date.replace(hour=6, minute=0)
+            end_dt = base_date.replace(hour=12, minute=0)
+        elif time_scope == "afternoon":
+            start_dt = base_date.replace(hour=12, minute=0)
+            end_dt = base_date.replace(hour=17, minute=0)
+        elif time_scope == "evening":
+            start_dt = base_date.replace(hour=17, minute=0)
+            end_dt = base_date.replace(hour=21, minute=0)
+
+        # Ensure we don't look in the past if it's today
+        if target_date_str == 'today' and start_dt < now:
+            start_dt = now
+            if start_dt >= end_dt:
+                return "That time has already passed."
+
+        # Fetch events for this range
+        start_utc = start_dt.astimezone(datetime.timezone.utc)
+        end_utc = end_dt.astimezone(datetime.timezone.utc)
+        
+        try:
+            events_result = self.service.events().list(
+                calendarId='primary', 
+                timeMin=start_utc.isoformat(),
+                timeMax=end_utc.isoformat(),
+                singleEvents=True,
+                orderBy='startTime'
+            ).execute()
+            events = events_result.get('items', [])
+        except Exception as e:
+            return f"Error checking calendar: {e}"
+
+        # Calculate gaps
+        free_slots = []
+        current_pointer = start_dt
+        
+        for event in events:
+            # Parse event start/end
+            start_str = event['start'].get('dateTime')
+            end_str = event['end'].get('dateTime')
+            if not start_str or not end_str: continue # Skip all-day events for gap calc (simplified)
+            
+            if 'Z' in start_str:
+                ev_start = datetime.datetime.fromisoformat(start_str.replace('Z', '+00:00')).astimezone(ist)
+                ev_end = datetime.datetime.fromisoformat(end_str.replace('Z', '+00:00')).astimezone(ist)
+            else:
+                ev_start = datetime.datetime.fromisoformat(start_str).astimezone(ist)
+                ev_end = datetime.datetime.fromisoformat(end_str).astimezone(ist)
+
+            # Check for gap
+            if ev_start > current_pointer:
+                gap_duration = (ev_start - current_pointer).total_seconds() / 60
+                if gap_duration >= 15: # Minimum 15 min slot
+                    free_slots.append((current_pointer, ev_start))
+            
+            # Move pointer
+            if ev_end > current_pointer:
+                current_pointer = ev_end
+
+        # Check final gap
+        if current_pointer < end_dt:
+            gap_duration = (end_dt - current_pointer).total_seconds() / 60
+            if gap_duration >= 15:
+                free_slots.append((current_pointer, end_dt))
+
+        if not free_slots:
+            return f"You are fully booked during the {time_scope}."
+        
+        # Format output
+        response = f"Here are your free slots for {time_scope}:\n"
+        for start, end in free_slots:
+            response += f"- {start.strftime('%I:%M %p')} to {end.strftime('%I:%M %p')}\n"
+            
+        return response
 
     def get_upcoming_events_raw(self, max_results=5):
         """
@@ -273,10 +387,6 @@ class CalendarManager:
         try:
             ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
             now = datetime.datetime.now(ist)
-            time_min = now.isoformat()
-            # Look for events starting before now + 1 min to catch current ones
-            # But the API logic for 'current' is tricky. 
-            # Better to fetch today's events and filter in Python.
             
             start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
             end_of_day = now.replace(hour=23, minute=59, second=59, microsecond=999999)

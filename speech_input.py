@@ -25,7 +25,7 @@ class SpeechInput:
             try:
                 with sr.Microphone() as source:
                     print("Listening...")
-                    self.recognizer.adjust_for_ambient_noise(source, duration=0.5)
+                    self.recognizer.adjust_for_ambient_noise(source, duration=0.2)
                     self.recognizer.energy_threshold = 300
                     
                     # Listen for audio

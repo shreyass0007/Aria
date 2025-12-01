@@ -55,7 +55,7 @@ class AriaCore:
             email_manager=self.email_manager,
             brain=self.brain
         )
-        self.proactive_manager = ProactiveManager(self.calendar, self.tts_manager, self.app_launcher)
+        self.proactive_manager = ProactiveManager(self.calendar, self.system_control, self.tts_manager, self.app_launcher)
         self.proactive_manager.start_monitoring()
         
         self.command_processor = CommandProcessor(
@@ -136,8 +136,8 @@ class AriaCore:
     def get_morning_briefing(self):
         return self.greeting_service.get_morning_briefing()
 
-    def process_command(self, text: str, model_name: str = "openai", intent_data: dict = None):
-        self.command_processor.process_command(text, model_name, intent_data)
+    def process_command(self, text: str, model_name: str = "openai", intent_data: dict = None, extra_data: dict = None):
+        self.command_processor.process_command(text, model_name, intent_data, extra_data)
 
     def safe_open_url(self, url: str, description: str = ""):
         return self.command_processor.safe_open_url(url, description)

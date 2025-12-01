@@ -221,11 +221,15 @@ class MusicPlayer {
 
     async pause() {
         try {
+            console.log('[Music Player] Pause clicked, current state:', this.isPlaying);
             const response = await fetch('http://localhost:5000/music/pause', {
                 method: 'POST'
             });
             if (response.ok) {
-                this.updatePlayingState(false);
+                const data = await response.json();
+                console.log('[Music Player] Pause response:', data);
+                // Use the actual state from backend
+                this.updatePlayingState(data.is_playing || false);
             }
         } catch (error) {
             console.error('Error pausing music:', error);
@@ -234,11 +238,15 @@ class MusicPlayer {
 
     async resume() {
         try {
+            console.log('[Music Player] Resume clicked, current state:', this.isPlaying);
             const response = await fetch('http://localhost:5000/music/resume', {
                 method: 'POST'
             });
             if (response.ok) {
-                this.updatePlayingState(true);
+                const data = await response.json();
+                console.log('[Music Player] Resume response:', data);
+                // Use the actual state from backend
+                this.updatePlayingState(data.is_playing || false);
             }
         } catch (error) {
             console.error('Error resuming music:', error);
@@ -292,6 +300,7 @@ class MusicPlayer {
     }
 
     updatePlayingState(isPlaying) {
+        console.log('[Music Player] updatePlayingState called with:', isPlaying, 'current:', this.isPlaying);
         this.isPlaying = isPlaying;
 
         if (isPlaying) {
@@ -299,11 +308,13 @@ class MusicPlayer {
             this.pauseIcon.style.display = 'block';
             this.albumArt?.classList.add('playing');
             this.fab?.classList.add('playing');
+            console.log('[Music Player] UI set to PLAYING state');
         } else {
             this.playIcon.style.display = 'block';
             this.pauseIcon.style.display = 'none';
             this.albumArt?.classList.remove('playing');
             this.fab?.classList.remove('playing');
+            console.log('[Music Player] UI set to PAUSED state');
         }
     }
 

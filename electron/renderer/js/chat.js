@@ -124,9 +124,12 @@ export function addMessage(text, sender, uiAction = null) {
             confirmBtn.className = 'action-btn confirm';
             confirmBtn.textContent = 'Send Email';
             confirmBtn.onclick = async () => {
-                // const editedBody = bodyTextarea.value; // Not used in backend call currently?
+                const editedBody = bodyTextarea.value;
                 addMessage('Yes, send it.', 'user');
-                const data = await sendToBackend('Yes');
+
+                // Send confirmation with updated body
+                const data = await sendToBackend('Yes', { updated_body: editedBody });
+
                 emailPreview.remove();
                 if (data.response) {
                     addMessage(data.response, 'aria', data.ui_action);

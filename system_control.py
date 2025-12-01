@@ -6,6 +6,7 @@ Handles volume control, power management, and system maintenance
 import os
 import subprocess
 import ctypes
+import winreg
 from pycaw.pycaw import AudioUtilities
 import winshell
 
@@ -212,6 +213,60 @@ class SystemControl:
                 
         except Exception as e:
             return f"Error checking recycle bin: {str(e)}"
+
+
+    # ==================== WINDOWS & FOCUS MANAGEMENT ====================
+
+    def set_dnd(self, enable: bool):
+        """
+        Toggles Windows Focus Assist / Do Not Disturb.
+        """
+        try:
+            # Registry path for Notifications
+            key_path = r"Software\Microsoft\Windows\CurrentVersion\Notifications\Settings"
+            
+            # NOC_GLOBAL_SETTING_TOASTS_ENABLED: 1 = On (Notifications allowed), 0 = Off (DND)
+            value = 0 if enable else 1
+            
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_WRITE) as key:
+                winreg.SetValueEx(key, "NOC_GLOBAL_SETTING_TOASTS_ENABLED", 0, winreg.REG_DWORD, value)
+            
+            state = "enabled" if enable else "disabled"
+            return f"Do Not Disturb {state}"
+            
+        except Exception as e:
+            return f"Failed to toggle DND: {str(e)}"
+
+    def minimize_all_windows(self):
+        """Minimizes all windows except Aria and the Taskbar."""
+        try:
+            user32 = ctypes.windll.user32
+            
+            def enum_handler(hwnd, ctx):
+                if user32.IsWindowVisible(hwnd):
+                    length = user32.GetWindowTextLengthW(hwnd)
+                    buff = ctypes.create_unicode_buffer(length + 1)
+                    user32.GetWindowTextW(hwnd, buff, length + 1)
+                    title = buff.value
+                    
+                    # Skip essential windows
+                    if not title or title == "Program Manager":
+                        return True
+                    
+                    # Check for Aria (assuming window title contains "Aria")
+                    if "Aria" in title:
+                        return True
+                        
+                    # Minimize (SW_MINIMIZE = 6)
+                    user32.ShowWindow(hwnd, 6)
+                    
+                return True
+    
+            WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_int, ctypes.c_long)
+            user32.EnumWindows(WNDENUMPROC(enum_handler), 0)
+            return "All windows minimized"
+        except Exception as e:
+            return f"Error minimizing windows: {str(e)}"
 
 
 if __name__ == "__main__":

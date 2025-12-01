@@ -12,11 +12,14 @@ export async function fetchAvailableModels() {
     }
 }
 
-export async function sendToBackend(message) {
+export async function sendToBackend(message, extraData = null) {
     try {
         const payload = { message, model: state.currentModel };
         if (state.currentConversationId) {
             payload.conversation_id = state.currentConversationId;
+        }
+        if (extraData) {
+            payload.extra_data = extraData;
         }
         const response = await fetch(`${API_URL}/message`, {
             method: 'POST',

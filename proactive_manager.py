@@ -1,14 +1,14 @@
 import datetime
 import time
 import ctypes
-import winreg
 import threading
 import webbrowser
 from typing import List
 
 class ProactiveManager:
-    def __init__(self, calendar_manager, tts_manager=None, app_launcher=None):
+    def __init__(self, calendar_manager, system_control, tts_manager=None, app_launcher=None):
         self.calendar = calendar_manager
+        self.system_control = system_control
         self.tts = tts_manager
         self.app_launcher = app_launcher
         self.is_deep_work_active = False
@@ -148,35 +148,13 @@ class ProactiveManager:
         print("Activating Deep Work Mode...")
         self.is_deep_work_active = True
         self._speak("Focus Time detected. Activating Deep Work mode.")
-        self._set_dnd(True)
-        self._minimize_distractions()
+        self.system_control.set_dnd(True)
+        self.system_control.minimize_all_windows()
 
     def deactivate_deep_work(self):
         print("Deactivating Deep Work Mode...")
         self.is_deep_work_active = False
         self._speak("Focus Time ended. Deactivating Deep Work mode.")
-        self._set_dnd(False)
+        self.system_control.set_dnd(False)
 
-    def _set_dnd(self, enable: bool):
-        try:
-            key_path = r"Software\Microsoft\Windows\CurrentVersion\Notifications\Settings"
-            value = 0 if enable else 1
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_WRITE) as key:
-                winreg.SetValueEx(key, "NOC_GLOBAL_SETTING_TOASTS_ENABLED", 0, winreg.REG_DWORD, value)
-        except Exception as e:
-            print(f"Failed to toggle DND: {e}")
 
-    def _minimize_distractions(self):
-        user32 = ctypes.windll.user32
-        def enum_handler(hwnd, ctx):
-            if user32.IsWindowVisible(hwnd):
-                length = user32.GetWindowTextLengthW(hwnd)
-                buff = ctypes.create_unicode_buffer(length + 1)
-                user32.GetWindowTextW(hwnd, buff, length + 1)
-                title = buff.value
-                if not title or title == "Program Manager": return True
-                if "Aria" in title: return True
-                user32.ShowWindow(hwnd, 6) # SW_MINIMIZE
-            return True
-        WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_int, ctypes.c_long)
-        user32.EnumWindows(WNDENUMPROC(enum_handler), 0)

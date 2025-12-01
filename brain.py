@@ -511,7 +511,7 @@ class AriaBrain:
         
         Return ONLY a JSON object with the following fields:
         - to: The recipient's email address. If a name is given (e.g., "John"), try to infer or leave it as the name if no email is found.
-        - subject: A short subject line for the email.
+        - subject: A short subject line for the email. If the user does not specify a subject, GENERATE a relevant one based on the body content. Do NOT leave this empty.
         - body: The main content of the email.
         
         Example JSON:

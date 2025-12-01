@@ -10,6 +10,9 @@ gTTS>=2.3.0
 pyaudio>=0.2.11
 pygame>=2.5.0
 edge-tts>=6.1.0
+faster-whisper>=0.9.0
+torch>=2.0.0
+torchaudio>=2.0.0
 
 # Web Framework & API
 # ------------------------------------
@@ -40,9 +43,9 @@ google-auth-oauthlib>=1.1.0
 
 # Database & Knowledge Management
 # ------------------------------------
-pymongo>=4.5.0
 notion-client>=2.0.0
 chromadb>=0.4.0
+pymongo>=4.5.0
 
 # GUI & UI
 # ------------------------------------
@@ -58,23 +61,8 @@ psutil>=5.9.0
 
 # Utilities
 # ------------------------------------
-wikipedia>=1.4.0
 python-dotenv>=1.0.0
 pyperclip>=1.8.2
-
-# Local Speech Recognition & Streaming
-# ------------------------------------
-faster-whisper>=0.9.0
-torch>=2.0.0
-torchaudio>=2.0.0
-zstandard>=0.21.0
-
-# Additional Dependencies
-# ------------------------------------
-# For async support
-asyncio; python_version < '3.7'
-
-# For data processing
 python-dateutil>=2.8.2
 
 # Music Playback

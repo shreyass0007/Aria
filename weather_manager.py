@@ -1,11 +1,14 @@
 import os
 import requests
 import json
+import time
 
 class WeatherManager:
     def __init__(self):
         self.api_key = os.getenv("OPENWEATHER_API_KEY")
         self.base_url = "http://api.openweathermap.org/data/2.5/weather"
+        self._cache = {}
+        self._cache_expiry = 600  # 10 minutes in seconds
 
     def _get_weather_advice(self, weather_desc: str, temp: float) -> str:
         """
@@ -125,6 +128,14 @@ class WeatherManager:
         if not city_name:
             return "Please specify a city name."
 
+        # Check Cache
+        current_time = time.time()
+        if city_name in self._cache:
+            cached_data, timestamp = self._cache[city_name]
+            if current_time - timestamp < self._cache_expiry:
+                # print(f"DEBUG: Returning cached weather for {city_name}")
+                return cached_data
+
         try:
             params = {
                 "q": city_name,
@@ -149,9 +160,13 @@ class WeatherManager:
                 
                 # Combine message with advice
                 if advice:
-                    return f"{base_msg} {advice}"
+                    result = f"{base_msg} {advice}"
                 else:
-                    return base_msg
+                    result = base_msg
+                
+                # Update Cache
+                self._cache[city_name] = (result, current_time)
+                return result
                     
             elif response.status_code == 404:
                 return f"I couldn't find weather information for {city_name}. Please check the city name."
