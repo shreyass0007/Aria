@@ -3,19 +3,26 @@ import time
 import ctypes
 import threading
 import webbrowser
+import json
 from typing import List
 
 class ProactiveManager:
-    def __init__(self, calendar_manager, system_control, tts_manager=None, app_launcher=None):
+    def __init__(self, calendar_manager, system_control, tts_manager=None, app_launcher=None, brain=None, weather_manager=None):
         self.calendar = calendar_manager
         self.system_control = system_control
         self.tts = tts_manager
         self.app_launcher = app_launcher
+        self.brain = brain
+        self.weather = weather_manager
+        
         self.is_deep_work_active = False
         self.check_interval = 60  # Check every minute
         self.stop_event = threading.Event()
         self.thread = None
-        self.handled_events = set() # Track handled events to prevent double triggering
+        self.handled_events = set() # Track handled events
+        
+        # State for daily actions
+        self.last_weather_date = None
 
     def start_monitoring(self):
         """Starts the background monitoring thread."""
@@ -47,23 +54,54 @@ class ProactiveManager:
                 break
 
     def check_and_act(self):
-        """Checks calendar for upcoming events and triggers actions."""
-        # Get upcoming events (raw data for precision)
-        events = self.calendar.get_upcoming_events_raw(max_results=10)
+        """Checks calendar and time to trigger actions."""
+        now = datetime.datetime.now()
         
-        now = datetime.datetime.now(datetime.timezone.utc)
+        # 1. TIME RESTRICTION: Only run between 7 AM and 10 AM
+        if not (7 <= now.hour < 10):
+            # If it's outside the window, just return.
+            # We might want to clear the weather flag if it's a new day (handled below)
+            return
+
+        # 2. MORNING BRIEFING (Weather)
+        self._handle_morning_briefing(now)
+
+        # 3. CALENDAR CHECKS (Smart Analysis)
+        # Get upcoming events
+        events = self.calendar.get_upcoming_events_raw(max_results=5)
         
-        # 1. Check for Deep Work (Focus Time) - Active State
+        # Check for Deep Work (Focus Time)
         self._handle_deep_work_state(events, now)
 
-        # 2. Check for Upcoming Meetings/Actions (Triggers)
+        # Check for Upcoming Meetings/Actions
         self._handle_upcoming_triggers(events, now)
+
+    def _handle_morning_briefing(self, now):
+        """Announces weather once per morning."""
+        today_str = now.strftime("%Y-%m-%d")
+        
+        if self.last_weather_date != today_str:
+            # Haven't announced today yet
+            print("Triggering Morning Briefing...")
+            
+            if self.weather:
+                weather_info = self.weather.get_weather_summary()
+                greeting = f"Good morning. {weather_info}"
+                self._speak(greeting)
+            else:
+                self._speak("Good morning.")
+                
+            self.last_weather_date = today_str
 
     def _handle_deep_work_state(self, events, now):
         """Manages the continuous state of Deep Work (DND)."""
+        # Convert now to timezone-aware if needed, or rely on _is_happening_now logic
+        # For simplicity, we pass 'now' which is local naive, and _is_happening_now handles comparison
+        
         found_focus_time = False
         for event in events:
             summary = event.get('summary', '').lower()
+            # Still use keywords for Focus Time as it's a specific mode
             if any(phrase in summary for phrase in ["focus time", "deep work", "focus session"]):
                 if self._is_happening_now(event, now):
                     found_focus_time = True
@@ -75,7 +113,7 @@ class ProactiveManager:
             self.deactivate_deep_work()
 
     def _handle_upcoming_triggers(self, events, now):
-        """Checks for events starting soon (e.g., 5 mins) to trigger actions."""
+        """Checks for events starting soon and uses LLM to decide action."""
         for event in events:
             event_id = event.get('id')
             if event_id in self.handled_events:
@@ -85,50 +123,95 @@ class ProactiveManager:
             if not start_dt:
                 continue
 
-            # Check if event is starting within 5 minutes (and hasn't started yet)
-            time_until_start = (start_dt - now).total_seconds() / 60
+            # Check if event is starting within 5 minutes
+            # Ensure start_dt is timezone aware/naive compatible with now
+            if start_dt.tzinfo:
+                now_aware = datetime.datetime.now(start_dt.tzinfo)
+                time_until_start = (start_dt - now_aware).total_seconds() / 60
+            else:
+                time_until_start = (start_dt - now).total_seconds() / 60
             
             if 0 <= time_until_start <= 5:
-                self._trigger_action_for_event(event)
+                # SMART ANALYSIS
+                self._analyze_and_trigger(event)
                 self.handled_events.add(event_id)
 
-    def _trigger_action_for_event(self, event):
-        """Executes actions based on event keywords."""
-        summary = event.get('summary', '').lower()
-        print(f"Triggering action for: {summary}")
-
-        # Mapping: Keyword -> (Speech, Action)
-        # We can expand this easily
+    def _analyze_and_trigger(self, event):
+        """Uses LLM to analyze the event and decide on an action."""
+        summary = event.get('summary', '')
+        print(f"Analyzing event with LLM: {summary}")
         
-        if "zoom" in summary:
-            self._speak(f"You have a Zoom meeting in 5 minutes. Opening Zoom.")
+        if not self.brain:
+            print("No brain available for analysis.")
+            return
+
+        prompt = f"""
+        Analyze this calendar event: "{summary}"
+        Determine if I should open a specific application or perform an action.
+        
+        Available Actions:
+        - "open_zoom": For Zoom meetings.
+        - "open_teams": For Microsoft Teams meetings.
+        - "open_meet": For Google Meet.
+        - "open_discord": For Discord calls.
+        - "open_vscode": For coding, development, or project work.
+        - "none": No specific app needed.
+
+        Return ONLY a JSON object:
+        {{
+            "action": "action_name",
+            "reason": "short explanation"
+        }}
+        """
+        
+        try:
+            llm = self.brain.get_llm()
+            if llm:
+                response = llm.invoke(prompt).content.strip()
+                # Clean markdown if present
+                response = response.replace("```json", "").replace("```", "").strip()
+                
+                data = json.loads(response)
+                action = data.get("action", "none")
+                
+                if action != "none":
+                    self._execute_smart_action(action, summary)
+                    
+        except Exception as e:
+            print(f"LLM Analysis failed: {e}")
+
+    def _execute_smart_action(self, action, summary):
+        """Executes the action determined by the LLM."""
+        print(f"Executing Smart Action: {action}")
+        
+        if action == "open_zoom":
+            self._speak(f"You have a Zoom meeting: {summary}. Opening Zoom.")
             self.app_launcher.open_desktop_app("zoom")
             
-        elif "teams" in summary:
-            self._speak(f"You have a Teams meeting in 5 minutes. Opening Teams.")
+        elif action == "open_teams":
+            self._speak(f"You have a Teams meeting: {summary}. Opening Teams.")
             self.app_launcher.open_desktop_app("teams")
             
-        elif "meet" in summary or "google meet" in summary:
-            self._speak(f"You have a Google Meet in 5 minutes. Opening browser.")
-            # Extract link if possible, otherwise just open meet.google.com
+        elif action == "open_meet":
+            self._speak(f"You have a Google Meet: {summary}. Opening browser.")
             webbrowser.open("https://meet.google.com")
             
-        elif "discord" in summary:
-            self._speak(f"You have a Discord call soon. Opening Discord.")
+        elif action == "open_discord":
+            self._speak(f"You have a Discord call. Opening Discord.")
             self.app_launcher.open_desktop_app("discord")
             
-        elif "coding" in summary or "dev" in summary:
-            self._speak(f"Time to code. Opening VS Code.")
-            self.app_launcher.open_desktop_app("code") # Assuming 'code' is the key for VS Code
-            
-        elif "gym" in summary or "workout" in summary:
-            self._speak(f"Time for the gym! Get moving.")
-            # Could play music here
+        elif action == "open_vscode":
+            self._speak(f"Time to code: {summary}. Opening VS Code.")
+            self.app_launcher.open_desktop_app("code")
 
     def _is_happening_now(self, event, now):
         start = self._parse_dt(event['start'].get('dateTime'))
         end = self._parse_dt(event['end'].get('dateTime'))
+        
         if start and end:
+            # Handle timezone comparison
+            if start.tzinfo:
+                now = datetime.datetime.now(start.tzinfo)
             return start <= now <= end
         return False
 
@@ -143,7 +226,7 @@ class ProactiveManager:
         if self.tts:
             self.tts.speak(text)
 
-    # --- Deep Work Helpers (Same as before) ---
+    # --- Deep Work Helpers ---
     def activate_deep_work(self):
         print("Activating Deep Work Mode...")
         self.is_deep_work_active = True

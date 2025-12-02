@@ -239,30 +239,51 @@ async function handleToggleTTS() {
 }
 
 async function loadAvailableModels() {
+    console.log('DEBUG: loadAvailableModels started');
+    let models = [];
+
     try {
         const data = await fetchAvailableModels();
+        console.log('DEBUG: fetchAvailableModels response:', data);
+
         if (data.status === 'success') {
-            const modelDropdown = document.getElementById('modelDropdown');
-            if (modelDropdown) {
-                modelDropdown.innerHTML = '';
-                data.models.forEach(model => {
-                    const option = document.createElement('div');
-                    option.className = 'model-option';
-                    option.setAttribute('data-value', model.id);
-                    option.textContent = model.name;
-                    option.addEventListener('click', () => handleModelChange(model.id, model.name));
-                    modelDropdown.appendChild(option);
-                });
-                loadModelPreference();
-            }
+            models = data.models;
+        } else {
+            console.error('DEBUG: API returned error status:', data);
+            throw new Error('API Error');
         }
     } catch (error) {
-        console.warn('Error fetching models:', error);
+        console.warn('Error fetching models, using fallback:', error);
+        // Fallback models if backend is unreachable
+        models = [
+            { id: 'gpt-5-mini', name: 'GPT-5 Mini (Fallback)' },
+            { id: 'gpt-4o', name: 'GPT-4o (Fallback)' },
+            { id: 'claude-opus-4-1', name: 'Claude Opus 4.1 (Fallback)' }
+        ];
+    }
+
+    const modelDropdown = document.getElementById('modelDropdown');
+    console.log('DEBUG: modelDropdown element:', modelDropdown);
+
+    if (modelDropdown) {
+        modelDropdown.innerHTML = '';
+        models.forEach(model => {
+            const option = document.createElement('div');
+            option.className = 'model-option';
+            option.setAttribute('data-value', model.id);
+            option.textContent = model.name;
+            option.addEventListener('click', () => handleModelChange(model.id, model.name));
+            modelDropdown.appendChild(option);
+        });
+        console.log('DEBUG: Dropdown populated with', models.length, 'models');
+        loadModelPreference();
+    } else {
+        console.error('DEBUG: modelDropdown element NOT FOUND');
     }
 }
 
 function loadModelPreference() {
-    const savedModel = localStorage.getItem('selected_ai_model') || 'gpt-4o';
+    const savedModel = localStorage.getItem('selected_ai_model') || 'gpt-5-mini';
     state.currentModel = savedModel;
 
     // Find and get the model name

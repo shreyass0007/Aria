@@ -47,6 +47,28 @@ class AriaBrain:
                 except Exception as e:
                     print(f"GPT-5.1 not yet available: {e}")
                 
+                # GPT-5 (User Requested)
+                try:
+                    self.llm_gpt_5 = ChatOpenAI(
+                        model="gpt-5",
+                        api_key=self.api_key,
+                        temperature=0.7
+                    )
+                except Exception as e:
+                    print(f"GPT-5 not available: {e}")
+                    self.llm_gpt_5 = None
+
+                # GPT-5 Mini (User Requested)
+                try:
+                    self.llm_gpt_5_mini = ChatOpenAI(
+                        model="gpt-5-mini",
+                        api_key=self.api_key,
+                        temperature=0.7
+                    )
+                except Exception as e:
+                    print(f"GPT-5 Mini not available: {e}")
+                    self.llm_gpt_5_mini = None
+
                 # GPT-4o (default)
                 self.llm_gpt_4o = ChatOpenAI(
                     model="gpt-4o",
@@ -125,6 +147,8 @@ class AriaBrain:
         """Returns the requested LLM instance with fallback support."""
         # Model mapping
         model_map = {
+            "gpt-5": self.llm_gpt_5,
+            "gpt-5-mini": self.llm_gpt_5_mini,
             "gpt-5.1": self.llm_gpt_5_1,
             "gpt-4o": self.llm_gpt_4o,
             "gpt-4o-mini": self.llm_gpt_4o_mini,
@@ -165,16 +189,16 @@ class AriaBrain:
             print(f"Error reading system prompt: {e}")
             return "You are Aria, an advanced AI assistant. You are helpful, friendly, and conversational."
 
-    def ask(self, user_input: str, model_name: str = "gpt-4o", conversation_history: list = None, long_term_context: list = None) -> str:
+    def ask(self, user_input: str, model_name: str = "gpt-4o", conversation_history: list = None, long_term_context: list = None, search_context: str = None) -> str:
         """
         Passes the user's message to the selected model via LangChain.
         
         Args:
             user_input: The current user message
             model_name: The AI model to use
-            conversation_history: Optional list of previous messages in format:
-                [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]
-            long_term_context: Optional list of relevant past messages from other conversations
+            conversation_history: Optional list of previous messages
+            long_term_context: Optional list of relevant past messages
+            search_context: Optional string containing real-time search results
         """
         llm = self.get_llm(model_name)
         
@@ -201,6 +225,17 @@ class AriaBrain:
                     context_str += f"- [{timestamp}] {text}\n"
                 
                 messages.append(SystemMessage(content=context_str))
+            
+            # Add search context if provided (Real-time data)
+            if search_context:
+                search_prompt = f"""
+                Here is real-time information from a web search. 
+                Use this information to answer the user's question accurately and conversationally.
+                If the search results don't answer the question, say so.
+                
+                {search_context}
+                """
+                messages.append(SystemMessage(content=search_prompt))
             
             # Add conversation history if provided
             if conversation_history:
@@ -293,22 +328,29 @@ class AriaBrain:
         """Returns a list of available model names."""
         available = []
         
+        if self.llm_gpt_5:
+            available.append({"id": "gpt-5", "name": "GPT-5", "provider": "OpenAI"})
+        if self.llm_gpt_5_mini:
+            available.append({"id": "gpt-5-mini", "name": "GPT-5 Mini", "provider": "OpenAI"})
         if self.llm_gpt_5_1:
             available.append({"id": "gpt-5.1", "name": "GPT-5.1", "provider": "OpenAI"})
         if self.llm_gpt_4o:
             available.append({"id": "gpt-4o", "name": "GPT-4o", "provider": "OpenAI"})
         if self.llm_gpt_4o_mini:
             available.append({"id": "gpt-4o-mini", "name": "GPT-4o Mini", "provider": "OpenAI"})
-        if self.llm_gpt_35_turbo:
-            available.append({"id": "gpt-3.5-turbo", "name": "GPT-3.5 Turbo", "provider": "OpenAI"})
+        
+        # Claude Models
         if self.llm_claude_sonnet:
             available.append({"id": "claude-sonnet", "name": "Claude Sonnet 4.5", "provider": "Anthropic"})
         if self.llm_claude_haiku:
             available.append({"id": "claude-haiku", "name": "Claude Haiku 4.5", "provider": "Anthropic"})
         if self.llm_claude_opus_4_5:
             available.append({"id": "claude-opus-4-5", "name": "Claude Opus 4.5", "provider": "Anthropic"})
+        
+        # Always add Claude Opus 4.1 if requested, or check if initialized
         if self.llm_claude_opus_4_1:
             available.append({"id": "claude-opus-4-1", "name": "Claude Opus 4.1", "provider": "Anthropic"})
+        
         if self.llm_gemini:
             available.append({"id": "gemini-pro", "name": "Gemini Pro", "provider": "Google"})
         

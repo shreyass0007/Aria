@@ -15,6 +15,7 @@ from system_monitor import SystemMonitor
 from email_manager import EmailManager
 from proactive_manager import ProactiveManager
 from music_library import MusicManager
+from wake_word_listener import WakeWordListener
 
 # New Modules
 from tts_manager import TTSManager
@@ -55,7 +56,14 @@ class AriaCore:
             email_manager=self.email_manager,
             brain=self.brain
         )
-        self.proactive_manager = ProactiveManager(self.calendar, self.system_control, self.tts_manager, self.app_launcher)
+        self.proactive_manager = ProactiveManager(
+            calendar_manager=self.calendar, 
+            system_control=self.system_control, 
+            tts_manager=self.tts_manager, 
+            app_launcher=self.app_launcher,
+            brain=self.brain,
+            weather_manager=self.weather_manager
+        )
         self.proactive_manager.start_monitoring()
         
         self.command_processor = CommandProcessor(
@@ -76,7 +84,55 @@ class AriaCore:
             music_manager=self.music_manager
         )
 
+        # Initialize Wake Word Listener
+        self.wake_word_listener = WakeWordListener(on_wake_word_detected=self._on_wake_word)
+        self.wake_word_listener.start()
+
         self.check_microphones()
+
+    def _on_wake_word(self):
+        """Callback when wake word is detected."""
+        print("🔴 Wake Word Detected! Interrupting and Listening...")
+        
+        # 1. Interrupt TTS
+        self.tts_manager.stop()
+        
+        # 2. Play listening sound (optional, or just speak)
+        # self.tts_manager.speak("Yes?", print_text=False) 
+        
+        # 3. Trigger Listening (This needs to be handled carefully to not block main thread if called from callback)
+        # Since this is a callback from a thread, we can't block it too long.
+        # But aria.listen() is blocking.
+        # Ideally, we should signal the main loop or start a new thread for the interaction.
+        # For now, let's try running it in a separate thread to avoid blocking the detector loop.
+        import threading
+        threading.Thread(target=self._handle_voice_interaction, daemon=True).start()
+
+    def _handle_voice_interaction(self):
+        """Handles the voice interaction after wake word."""
+        # Visual cue could be added here if we had UI access
+        print("🎤 Listening for command...")
+        
+        # We need to ensure we don't conflict with other listen calls
+        # But for now, let's just call listen.
+        user_text = self.listen()
+        
+        if user_text:
+            print(f"User said: {user_text}")
+            # Process the command
+            # We need to route this back to the main processor.
+            # Since we are in the backend, we can call process_command directly.
+            # BUT, we might want to use the smart router logic in backend_fastapi.
+            # That logic is not easily accessible here.
+            # So we will use the internal command_processor which is the core logic.
+            
+            # Classify first
+            intent_data = self.command_classifier.classify_intent(user_text)
+            
+            # Process
+            self.process_command(user_text, intent_data=intent_data)
+
+    # --- Properties for Backward Compatibility ---
 
     # --- Properties for Backward Compatibility ---
 

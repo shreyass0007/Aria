@@ -28,9 +28,24 @@ class TTSManager:
         """Enable or disable TTS output."""
         self.tts_enabled = enabled
         if not enabled:
-            # Clear queue if disabled
-            with self.tts_queue.mutex:
-                self.tts_queue.queue.clear()
+            self.stop()
+
+    def stop(self):
+        """Stop current playback and clear queue (Interrupt)."""
+        # 1. Clear Queue
+        with self.tts_queue.mutex:
+            self.tts_queue.queue.clear()
+        
+        # 2. Stop Pygame Mixer
+        if pygame.mixer.get_init():
+            pygame.mixer.music.stop()
+            # Unload to release file lock
+            try:
+                pygame.mixer.music.unload()
+            except:
+                pass
+        
+        print("TTS Interrupted.")
 
     def _tts_worker(self):
         """Worker thread to handle TTS playback sequentially with Edge-TTS and gTTS fallback."""

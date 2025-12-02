@@ -6,6 +6,7 @@ import os
 import webbrowser
 from langchain_core.messages import HumanMessage, SystemMessage
 import random
+from search_manager import SearchManager
 
 class CommandProcessor:
     def __init__(self, tts_manager, app_launcher, brain, calendar, notion, automator, 
@@ -25,12 +26,15 @@ class CommandProcessor:
         self.system_monitor = system_monitor
         self.email_manager = email_manager
         self.greeting_service = greeting_service
+        self.greeting_service = greeting_service
         self.music_manager = music_manager
+        self.search_manager = SearchManager()
         
         self.wake_word = "aria"
         self.pending_email = None
         self.pending_notion_pages = None
         self.last_ui_action = None
+        self.last_search_context = None # Store search results for follow-up questions
         
         # Short-term memory for context awareness (last 10 turns)
         self.conversation_history = []
@@ -302,24 +306,7 @@ class CommandProcessor:
         
         # Dispatch based on intent
         
-        # --- WEB & APPS ---
-        if intent == "web_open":
-            url = parameters.get("url")
-            name = parameters.get("name", "site")
-            if url:
-                self.tts_manager.speak(self._get_random_response("web_open", name))
-                self.safe_open_url(url, "")
-            else:
-                # Fallback if URL not extracted
-                target = text.replace("open", "").strip()
-                if target:
-                    self.tts_manager.speak(self._get_random_response("web_open", target))
-                    self.safe_open_url(f"https://{target}.com", "")
-                else:
-                    self.tts_manager.speak("What website should I open?")
-            return
-
-        elif intent == "app_open":
+        if intent == "app_open":
             app_name = parameters.get("app_name")
             if app_name:
                 self.tts_manager.speak(self._get_random_response("app_open", app_name))
@@ -338,9 +325,38 @@ class CommandProcessor:
                 query = text.replace("google", "").replace("search", "").replace("for", "").strip()
             
             if query:
-                q = urllib.parse.quote_plus(query)
                 self.tts_manager.speak(f"Searching for {query}...")
-                self.safe_open_url(f"https://www.google.com/search?q={q}", "")
+                
+                # Resolve relative dates (yesterday, today, tomorrow) for better search accuracy
+                query = self._resolve_relative_dates(query)
+                print(f"DEBUG: Resolved query: {query}")
+
+                # 1. Perform Real-Time Search
+                search_results = self.search_manager.search(query)
+                try:
+                    print(f"DEBUG: Raw Search Results:\n{search_results.encode('utf-8', errors='ignore').decode('utf-8')}")
+                except Exception:
+                    print("DEBUG: Raw Search Results: [Content with unicode]")
+                
+                if search_results:
+                    # Store context for follow-up questions
+                    self.last_search_context = search_results
+                    
+                    # 2. Synthesize Answer using LLM
+                    self.tts_manager.speak("I found some results. Summarizing for you...")
+                    
+                    # Use the new search_context parameter in brain.ask
+                    answer = self.brain.ask(
+                        f"Based on the search results, answer this query: {query}", 
+                        search_context=search_results
+                    )
+                    
+                    self.tts_manager.speak(answer)
+                else:
+                    self.tts_manager.speak("I couldn't find any results for that.")
+                    # Fallback to browser
+                    q = urllib.parse.quote_plus(query)
+                    self.safe_open_url(f"https://www.google.com/search?q={q}", "")
             else:
                 self.tts_manager.speak("What should I search for?")
             return
@@ -410,37 +426,6 @@ class CommandProcessor:
         elif intent == "volume_up":
             self.system_control.increase_volume()
             self.tts_manager.speak(self._get_random_response("volume_up"))
-            return
-        elif intent == "volume_down":
-            self.system_control.decrease_volume()
-            self.tts_manager.speak(self._get_random_response("volume_down"))
-            return
-        elif intent == "volume_set":
-            level = parameters.get("level")
-            if level:
-                try:
-                    vol = int(level)
-                    self.system_control.set_volume(vol)
-                    self.tts_manager.speak(f"Volume set to {vol}.")
-                except ValueError:
-                    self.tts_manager.speak("Please specify a valid volume level.")
-            else:
-                self.tts_manager.speak("Set volume to what level?")
-            return
-        elif intent == "volume_mute":
-            self.system_control.mute_volume()
-            self.tts_manager.speak(self._get_random_response("volume_mute"))
-            return
-        elif intent == "volume_unmute":
-            self.system_control.unmute_volume()
-            self.tts_manager.speak(self._get_random_response("volume_unmute"))
-            return
-        elif intent == "volume_check":
-            # Not implemented in system_control yet, but good to have intent
-            self.tts_manager.speak("Volume check not yet implemented.")
-            return
-
-        # --- EMAIL ---
         elif intent == "email_send":
             # Extract details using brain if not already present
             email_details = self.brain.parse_email_intent(text)
@@ -785,9 +770,32 @@ class CommandProcessor:
         if len(self.conversation_history) > 10:
             self.conversation_history = self.conversation_history[-10:]
             
-        response = self.brain.ask(text, conversation_history=self.conversation_history)
+        # Pass last_search_context to allow follow-up questions about previous search
+        response = self.brain.ask(
+            text, 
+            conversation_history=self.conversation_history,
+            search_context=self.last_search_context
+        )
         
         # Add assistant response to history
         self.conversation_history.append({"role": "assistant", "content": response})
         
         self.tts_manager.speak(response)
+
+    def _resolve_relative_dates(self, text: str) -> str:
+        """Replaces relative date terms (today, yesterday, tomorrow) with actual dates."""
+        import datetime
+        import re
+        
+        today = datetime.date.today()
+        yesterday = today - datetime.timedelta(days=1)
+        tomorrow = today + datetime.timedelta(days=1)
+        
+        date_format = "%b %d, %Y" # e.g., Nov 30, 2025
+        
+        # Case-insensitive replacements
+        text = re.sub(r'\byesterday\b', yesterday.strftime(date_format), text, flags=re.IGNORECASE)
+        text = re.sub(r'\btoday\b', today.strftime(date_format), text, flags=re.IGNORECASE)
+        text = re.sub(r'\btomorrow\b', tomorrow.strftime(date_format), text, flags=re.IGNORECASE)
+        
+        return text

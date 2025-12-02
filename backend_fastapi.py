@@ -83,7 +83,7 @@ def greeting():
     return {"greeting": "Hello, I am Aria."}
 
 # Model management endpoints
-current_model = "gpt-4o"  # Default model
+current_model = "gpt-5-mini"  # Default model
 
 @app.get("/models/available")
 def get_available_models():
@@ -228,7 +228,7 @@ def process_message(request: MessageRequest):
             intent = "wake_word"
             intent_data = {"intent": "wake_word", "confidence": 1.0, "parameters": {}}
         else:
-            intent_data = aria.command_classifier.classify_intent(message)
+            intent_data = aria.command_classifier.classify_intent(message, conversation_history)
             intent = intent_data.get("intent")
         
         print(f"DEBUG: Smart Router classified as: {intent}")
