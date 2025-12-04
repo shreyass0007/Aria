@@ -139,7 +139,7 @@ function startPythonBackend() {
         ? path.join(__dirname, '..', '.venv', 'Scripts', 'python.exe')
         : path.join(__dirname, '..', '.venv', 'bin', 'python');
 
-    const backendScript = path.join(__dirname, '..', 'backend_fastapi.py');
+    const backendScript = path.join(__dirname, '..', 'backend', 'main.py');
 
     console.log('Starting Python backend...');
     pythonProcess = spawn(pythonExecutable, [backendScript], {

@@ -1,6 +1,6 @@
 import { state } from './state.js';
 
-const BASE_URL = 'http://localhost:5000';
+const BASE_URL = 'http://localhost:8000';
 
 /**
  * Format timestamp to readable format

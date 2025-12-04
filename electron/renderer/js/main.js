@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { fetchAvailableModels, sendToBackend, getTTSStatus, setTTSStatus, waitForBackend } from './api.js';
-import { createTitleBar, autoResizeTextarea, applyTheme, applyColorTheme } from './ui.js';
+import { createTitleBar, autoResizeTextarea, applyTheme, applyColorTheme, updateModeBadge } from './ui.js';
 import { addMessage, showThinkingIndicator, removeThinkingIndicator, animateSendButton } from './chat.js';
 import { handleToggleVoice } from './voice.js';
 import { loadConversationHistory } from './history.js';
@@ -34,15 +34,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(pollNotifications, 3000);
 });
 
+// Track the last notification ID we've seen to avoid duplicates
+let lastNotificationId = 0;
+
 async function pollNotifications() {
     try {
-        const response = await fetch('http://localhost:5000/notifications');
+        const response = await fetch('http://localhost:8000/notifications');
         const data = await response.json();
 
         if (data.status === 'success' && data.notifications && data.notifications.length > 0) {
             data.notifications.forEach(notification => {
-                if (notification.type === 'assistant_message') {
-                    addMessage(notification.content, 'aria');
+                // Only process new notifications
+                if (notification.id > lastNotificationId) {
+                    lastNotificationId = notification.id;
+
+                    // Map backend 'message' field to 'content'
+                    const content = notification.message || notification.content;
+                    const title = notification.title || "Notification";
+
+                    if (content) {
+                        // Format it nicely
+                        const formattedMsg = `🔔 **${title}**\n${content}`;
+                        addMessage(formattedMsg, 'aria');
+                        console.log('New notification displayed:', notification);
+                    }
                 }
             });
         }
@@ -153,6 +168,7 @@ async function handleSendMessage() {
 
     try {
         const data = await sendToBackend(message);
+        console.log('DEBUG: sendToBackend response:', data); // Added debug log
         removeThinkingIndicator();
 
         if (data.status === 'success') {
@@ -161,6 +177,11 @@ async function handleSendMessage() {
             }
             if (data.response) {
                 addMessage(data.response, 'aria', data.ui_action);
+            }
+
+            // Handle specific UI actions
+            if (data.ui_action && data.ui_action.type === 'mode_change') {
+                updateModeBadge(data.ui_action.data.mode);
             }
         } else {
             addMessage('Sorry, I encountered an error. Please make sure the backend is running.', 'aria');
@@ -539,7 +560,7 @@ async function displayWelcomeMessage() {
 
         // Try to get Morning Briefing first
         try {
-            const response = await fetch('http://localhost:5000/briefing');
+            const response = await fetch('http://localhost:8000/briefing');
             const data = await response.json();
 
             if (data.status === 'success' && data.briefing) {

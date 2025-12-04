@@ -222,7 +222,7 @@ class MusicPlayer {
     async pause() {
         try {
             console.log('[Music Player] Pause clicked, current state:', this.isPlaying);
-            const response = await fetch('http://localhost:5000/music/pause', {
+            const response = await fetch('http://localhost:8000/music/pause', {
                 method: 'POST'
             });
             if (response.ok) {
@@ -239,7 +239,7 @@ class MusicPlayer {
     async resume() {
         try {
             console.log('[Music Player] Resume clicked, current state:', this.isPlaying);
-            const response = await fetch('http://localhost:5000/music/resume', {
+            const response = await fetch('http://localhost:8000/music/resume', {
                 method: 'POST'
             });
             if (response.ok) {
@@ -279,7 +279,7 @@ class MusicPlayer {
         const volume = Math.round(percentage * 100);
 
         try {
-            const response = await fetch('http://localhost:5000/music/volume', {
+            const response = await fetch('http://localhost:8000/music/volume', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -342,7 +342,7 @@ class MusicPlayer {
             if (!this.isPlaying) return;
 
             try {
-                const response = await fetch('http://localhost:5000/music/status');
+                const response = await fetch('http://localhost:8000/music/status');
                 if (response.ok) {
                     const status = await response.json();
                     if (status.current_time) {

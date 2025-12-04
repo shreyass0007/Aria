@@ -80,3 +80,18 @@ export function applyColorTheme(theme) {
         selectedOption.classList.add('active');
     }
 }
+
+export function updateModeBadge(mode) {
+    const badge = document.getElementById('mode-badge');
+    if (!badge) return;
+
+    badge.textContent = mode.toUpperCase() + " MODE";
+    badge.className = 'mode-badge'; // Reset classes
+
+    if (mode === 'normal') {
+        badge.classList.add('hidden');
+    } else {
+        badge.classList.remove('hidden');
+        badge.classList.add(mode); // e.g., 'coder', 'study', 'jarvis'
+    }
+}

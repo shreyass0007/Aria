@@ -1,18 +1,17 @@
-
 import datetime
-from calendar_manager import CalendarManager
-from zoneinfo import ZoneInfo
+import sys
+import os
 
-def create_test_event():
-import datetime
-from calendar_manager import CalendarManager
-from zoneinfo import ZoneInfo
+# Ensure we can import from aria package
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from aria.calendar_manager import CalendarManager
 
 def create_test_event():
     cal = CalendarManager()
     
     # Target: Today at 1:20 PM IST
-    ist = ZoneInfo("Asia/Kolkata")
+    ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
     now = datetime.datetime.now(ist)
     
     # 1. Important Event
@@ -28,8 +27,7 @@ def create_test_event():
         summary=event_1_summary,
         start_time=start_time_1,
         end_time=end_time_1,
-        description=event_1_description,
-        location='Conference Room A'
+        description=event_1_description
     )
     print(result_1)
     
@@ -46,8 +44,7 @@ def create_test_event():
         summary=event_2_summary,
         start_time=start_time_2,
         end_time=end_time_2,
-        description=event_2_description,
-        location='Cafeteria'
+        description=event_2_description
     )
     print(result_2)
 

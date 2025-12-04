@@ -111,7 +111,7 @@ export class ModuleLoader {
         }
 
         try {
-            const response = await fetch(`http://localhost:5000${feature.backendEndpoint}`, {
+            const response = await fetch(`http://localhost:8000${feature.backendEndpoint}`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' }
             });
