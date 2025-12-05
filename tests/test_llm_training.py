@@ -5,8 +5,8 @@ Tests command classification accuracy using the training dataset
 
 import json
 from typing import Dict, List, Tuple
-from brain import AriaBrain
-from command_intent_classifier import CommandIntentClassifier
+from aria.brain import AriaBrain
+from aria.command_intent_classifier import CommandIntentClassifier
 
 
 def load_training_dataset(filepath: str = "llm_training_dataset.json") -> Dict:
@@ -104,7 +104,7 @@ def test_parameter_extraction(classifier: CommandIntentClassifier) -> None:
         expected = test["expected_params"]
         
         match = all(params.get(k) == v for k, v in expected.items())
-        status = "✓ PASS" if match else "✗ FAIL"
+        status = " PASS" if match else " FAIL"
         
         print(f"\nTest {i}: {status}")
         print(f"  Input: {test['input']}")
@@ -151,7 +151,7 @@ def test_edge_cases(classifier: CommandIntentClassifier) -> None:
         intent = result.get("intent", "")
         
         match = intent == test["expected"]
-        status = "✓ PASS" if match else "✗ FAIL"
+        status = " PASS" if match else " FAIL"
         
         print(f"\nTest {i}: {status}")
         print(f"  Description: {test['description']}")
@@ -238,13 +238,13 @@ def main():
     print(f"Intent Classification Accuracy: {accuracy:.2f}%")
     
     if accuracy >= 95:
-        print("✓ EXCELLENT: Training is highly effective!")
+        print(" EXCELLENT: Training is highly effective!")
     elif accuracy >= 85:
-        print("✓ GOOD: Training is effective, minor improvements possible")
+        print(" GOOD: Training is effective, minor improvements possible")
     elif accuracy >= 75:
-        print("⚠ FAIR: Consider reviewing failed cases and adding more training data")
+        print(" FAIR: Consider reviewing failed cases and adding more training data")
     else:
-        print("✗ NEEDS IMPROVEMENT: Significant training issues detected")
+        print(" NEEDS IMPROVEMENT: Significant training issues detected")
     
     print("\nTest complete!")
 

@@ -11,10 +11,10 @@ async def test_tts():
     await communicate.save(output_file)
     
     if os.path.exists(output_file):
-        print(f"✓ Success! Audio saved to {output_file}")
+        print(f" Success! Audio saved to {output_file}")
         print(f"File size: {os.path.getsize(output_file)} bytes")
     else:
-        print("✗ Failed to generate audio")
+        print(" Failed to generate audio")
 
 if __name__ == "__main__":
     asyncio.run(test_tts())

@@ -1,4 +1,4 @@
-from speech_engine import SpeechEngine
+from aria.speech_engine import SpeechEngine
 import os
 
 def test_speech():

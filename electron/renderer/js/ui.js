@@ -83,6 +83,15 @@ export function applyColorTheme(theme) {
 
 export function updateModeBadge(mode) {
     const badge = document.getElementById('mode-badge');
+
+    // Update Body Class for Global Styling (Header, etc.)
+    // Remove all existing mode classes first
+    document.body.classList.remove('mode-jarvis', 'mode-coder', 'mode-study');
+
+    if (mode !== 'normal') {
+        document.body.classList.add(`mode-${mode}`);
+    }
+
     if (!badge) return;
 
     badge.textContent = mode.toUpperCase() + " MODE";

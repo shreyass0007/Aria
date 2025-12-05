@@ -3,8 +3,8 @@ Test script to verify command intent classification
 Tests various natural language variations for system commands
 """
 
-from command_intent_classifier import CommandIntentClassifier
-from brain import AriaBrain
+from aria.command_intent_classifier import CommandIntentClassifier
+from aria.brain import AriaBrain
 
 
 def test_command_variations():
@@ -64,9 +64,9 @@ def test_command_variations():
     
     # Run tests
     for category, commands in test_cases.items():
-        print(f"\n{'─' * 70}")
-        print(f"📋 {category}")
-        print(f"{'─' * 70}")
+        print(f"\n{'' * 70}")
+        print(f" {category}")
+        print(f"{'' * 70}")
         
         for cmd in commands:
             result = classifier.classify_intent(cmd)
@@ -74,19 +74,19 @@ def test_command_variations():
             # Color coding based on confidence
             confidence = result['confidence']
             if confidence >= 0.8:
-                status = "✅ HIGH"
+                status = " HIGH"
             elif confidence >= 0.7:
-                status = "⚠️  GOOD"
+                status = "  GOOD"
             else:
-                status = "❌ LOW "
+                status = " LOW "
             
             print(f"\n  Command: \"{cmd}\"")
-            print(f"   └─ Intent:     {result['intent']:<20} {status} ({confidence:.2f})")
+            print(f"    Intent:     {result['intent']:<20} {status} ({confidence:.2f})")
             if result['parameters']:
-                print(f"   └─ Parameters: {result['parameters']}")
+                print(f"    Parameters: {result['parameters']}")
     
     print(f"\n{'=' * 70}")
-    print("✅ Testing Complete!")
+    print(" Testing Complete!")
     print(f"{'=' * 70}\n")
 
 

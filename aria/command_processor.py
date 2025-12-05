@@ -1,8 +1,6 @@
 import urllib.parse
 import datetime
 import difflib
-from . import music_library
-import os
 import webbrowser
 from langchain_core.messages import HumanMessage, SystemMessage
 import random
@@ -14,6 +12,7 @@ from .handlers.weather_handler import WeatherHandler
 from .handlers.file_handler import FileHandler
 from .handlers.notion_handler import NotionHandler
 from .handlers.calendar_handler import CalendarHandler
+from .intent_dispatcher import IntentDispatcher
 from .logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -36,7 +35,6 @@ class CommandProcessor:
         self.system_monitor = system_monitor
         self.email_manager = email_manager
         self.greeting_service = greeting_service
-        self.greeting_service = greeting_service
         self.music_manager = music_manager
         self.water_manager = water_manager
         self.search_manager = SearchManager()
@@ -58,6 +56,49 @@ class CommandProcessor:
         self.notion_handler = NotionHandler(self.tts_manager, self.notion, self.brain)
         self.calendar_handler = CalendarHandler(self.tts_manager, self.calendar, self.brain)
 
+        # Initialize Intent Dispatcher
+        self.dispatcher = IntentDispatcher()
+        self._register_intents()
+
+    def _register_intents(self):
+        """Registers all intents with the dispatcher."""
+        # Music
+        for intent in ["music_play", "music_pause", "music_resume", "music_stop", "music_volume"]:
+            self.dispatcher.register_handler(intent, self.music_handler.handle)
+        
+        # System
+        for intent in ["volume_up", "volume_down", "volume_mute", "volume_unmute", "lock", "sleep", 
+                       "shutdown", "restart", "cancel_shutdown", "recycle_bin_empty", "recycle_bin_check", 
+                       "screenshot_take", "clipboard_copy", "clipboard_read", "clipboard_clear", 
+                       "battery_check", "cpu_check", "ram_check", "system_stats",
+                       "time_check", "date_check"]:
+            self.dispatcher.register_handler(intent, self.system_handler.handle)
+            
+        # Email
+        for intent in ["email_send", "email_check"]:
+            self.dispatcher.register_handler(intent, self.email_handler.handle)
+            
+        # Weather
+        self.dispatcher.register_handler("weather_check", self.weather_handler.handle)
+        
+        # File
+        for intent in ["file_create", "file_read", "file_info", "file_append", "file_replace", 
+                       "file_delete", "file_rename", "file_move", "file_copy", "file_search", 
+                       "organize_downloads", "organize_desktop"]:
+            self.dispatcher.register_handler(intent, self.file_handler.handle)
+            
+        # Calendar
+        for intent in ["calendar_query", "calendar_create"]:
+            self.dispatcher.register_handler(intent, self.calendar_handler.handle)
+            
+        # Notion
+        for intent in ["notion_query", "notion_create"]:
+            self.dispatcher.register_handler(intent, self.notion_handler.handle)
+
+        # Local Handlers (App & Web)
+        self.dispatcher.register_handler("app_open", self.handle_app_open)
+        self.dispatcher.register_handler("web_search", self.handle_web_search)
+        self.dispatcher.register_handler("web_open", self.handle_web_open)
 
     def is_similar(self, a, b, threshold=0.8):
         return difflib.SequenceMatcher(None, a, b).ratio() >= threshold
@@ -117,27 +158,6 @@ class CommandProcessor:
     def _get_random_response(self, intent: str, context: str = "") -> str:
         """Returns a randomized response for simple intents."""
         responses = {
-            "volume_up": [
-                "Turning it up.", "Volume increased.", "Got it, louder.", "Boosting the volume."
-            ],
-            "volume_down": [
-                "Turning it down.", "Volume decreased.", "Got it, quieter.", "Lowering the volume."
-            ],
-            "volume_mute": [
-                "Muting audio.", "Silence.", "Sound off.", "Muted."
-            ],
-            "volume_unmute": [
-                "Unmuting.", "Sound back on.", "Audio restored.", "Unmuted."
-            ],
-            "lock": [
-                "Locking the screen.", "Securing the system.", "Locking up.", "Screen locked."
-            ],
-            "sleep": [
-                "Going to sleep.", "Entering sleep mode.", "Goodnight.", "Sleeping now."
-            ],
-            "media_play": [
-                f"Playing {context}.", f"Starting {context}.", f"Here is {context}.", f"Queuing up {context}."
-            ],
             "app_open": [
                 f"Opening {context}.", f"Launching {context}.", f"Starting {context} for you."
             ],
@@ -151,14 +171,77 @@ class CommandProcessor:
             return random.choice(options)
         return f"Executing {intent}."
 
+    def handle_app_open(self, text: str, intent: str, parameters: dict) -> str:
+        app_name = parameters.get("app_name")
+        if app_name:
+            self.tts_manager.speak(self._get_random_response("app_open", app_name))
+            self.app_launcher.open_desktop_app(app_name)
+        else:
+            # Fallback
+            target = text.replace("open", "").strip()
+            self.tts_manager.speak(self._get_random_response("app_open", target))
+            self.app_launcher.open_desktop_app(target)
+            return f"Opening {target}."
+        return f"Opening {app_name}."
+
+    def handle_web_search(self, text: str, intent: str, parameters: dict) -> str:
+        query = parameters.get("query")
+        if not query:
+            # Fallback extraction
+            query = text.replace("google", "").replace("search", "").replace("for", "").strip()
+        
+        if query:
+            self.tts_manager.speak(f"Searching for {query}...")
+            
+            # Resolve relative dates (yesterday, today, tomorrow) for better search accuracy
+            query = self._resolve_relative_dates(query)
+            logger.debug(f"Resolved query: {query}")
+
+            # 1. Perform Real-Time Search
+            search_results = self.search_manager.search(query)
+            try:
+                logger.debug(f"Raw Search Results:\n{search_results.encode('utf-8', errors='ignore').decode('utf-8')}")
+            except Exception:
+                logger.debug("Raw Search Results: [Content with unicode]")
+            
+            if search_results:
+                # Store context for follow-up questions
+                self.last_search_context = search_results
+                
+                # 2. Synthesize Answer using LLM
+                self.tts_manager.speak("I found some results. Summarizing for you...")
+                
+                # Use the new search_context parameter in brain.ask
+                answer = self.brain.ask(
+                    f"Based on the search results, answer this query: {query}", 
+                    search_context=search_results
+                )
+                
+                self.tts_manager.speak(answer)
+            else:
+                self.tts_manager.speak("I couldn't find any results for that.")
+                # Fallback to browser
+                q = urllib.parse.quote_plus(query)
+                self.safe_open_url(f"https://www.google.com/search?q={q}", "")
+        else:
+            self.tts_manager.speak("What should I search for?")
+            return "Please specify what to search for."
+        return f"Searching for {query}."
+
+    def handle_web_open(self, text: str, intent: str, parameters: dict) -> str:
+        url = parameters.get("url")
+        name = parameters.get("name", url)
+        if url:
+            self.tts_manager.speak(self._get_random_response("web_open", name))
+            self.safe_open_url(url)
+            return f"Opening {name}."
+        return "No URL provided."
+
     def process_command(self, text: str, model_name: str = "openai", intent_data: dict = None, extra_data: dict = None, conversation_history: list = None, long_term_memory: list = None):
         text = text.lower().strip()
         if not text:
             return
 
-        # PRIORITY: Check if user is responding to a Notion page selection prompt
-        # This needs to be FIRST, before any other logic
-        
         # PRIORITY: Check if user is responding to a Notion page selection prompt
         # This needs to be FIRST, before any other logic
         
@@ -323,130 +406,34 @@ class CommandProcessor:
         
         logger.info(f"Intent: {intent}, Confidence: {confidence}, Params: {parameters}")
         
-        # Dispatch based on intent
+        # Dispatch using IntentDispatcher
+        result = self.dispatcher.dispatch(intent, text, parameters)
         
-        if intent == "app_open":
-            app_name = parameters.get("app_name")
-            if app_name:
-                self.tts_manager.speak(self._get_random_response("app_open", app_name))
-                self.app_launcher.open_desktop_app(app_name)
-            else:
-                # Fallback
-                target = text.replace("open", "").strip()
-                self.tts_manager.speak(self._get_random_response("app_open", target))
-                self.app_launcher.open_desktop_app(target)
-                return f"Opening {target}."
-            return f"Opening {app_name}."
-
-        elif intent == "web_search":
-            query = parameters.get("query")
-            if not query:
-                # Fallback extraction
-                query = text.replace("google", "").replace("search", "").replace("for", "").strip()
-            
-            if query:
-                self.tts_manager.speak(f"Searching for {query}...")
-                
-                # Resolve relative dates (yesterday, today, tomorrow) for better search accuracy
-                query = self._resolve_relative_dates(query)
-                logger.debug(f"Resolved query: {query}")
-
-                # 1. Perform Real-Time Search
-                search_results = self.search_manager.search(query)
-                try:
-                    logger.debug(f"Raw Search Results:\n{search_results.encode('utf-8', errors='ignore').decode('utf-8')}")
-                except Exception:
-                    logger.debug("Raw Search Results: [Content with unicode]")
-                
-                if search_results:
-                    # Store context for follow-up questions
-                    self.last_search_context = search_results
-                    
-                    # 2. Synthesize Answer using LLM
-                    self.tts_manager.speak("I found some results. Summarizing for you...")
-                    
-                    # Use the new search_context parameter in brain.ask
-                    answer = self.brain.ask(
-                        f"Based on the search results, answer this query: {query}", 
-                        search_context=search_results
-                    )
-                    
-                    self.tts_manager.speak(answer)
-                else:
-                    self.tts_manager.speak("I couldn't find any results for that.")
-                    # Fallback to browser
-                    q = urllib.parse.quote_plus(query)
-                    self.safe_open_url(f"https://www.google.com/search?q={q}", "")
-            else:
-                self.tts_manager.speak("What should I search for?")
-                return "Please specify what to search for."
-            return f"Searching for {query}."
-
-        # --- MEDIA ---
-        if self.music_handler.should_handle(intent):
-            result = self.music_handler.handle(text, intent, parameters)
-            if result:
-                if intent == "music_play":
-                     # Set UI action to show music player
-                    track_info = self.music_manager.current_track_info
+        if result:
+            # Handle UI Actions based on intent (Post-processing)
+            if intent == "music_play":
+                track_info = self.music_manager.current_track_info
+                self.last_ui_action = {
+                    "type": "music_playing",
+                    "data": {
+                        "track_info": track_info
+                    }
+                }
+            elif intent == "email_send":
+                pending = self.email_handler.pending_email
+                if pending:
                     self.last_ui_action = {
-                        "type": "music_playing",
+                        "type": "email_confirmation",
                         "data": {
-                            "track_info": track_info
+                            "to": pending["to"],
+                            "subject": pending["subject"],
+                            "body": pending["body"]
                         }
                     }
-                return result
-
-        # --- SYSTEM CONTROL ---
-        if self.system_handler.should_handle(intent):
-            result = self.system_handler.handle(text, intent, parameters)
-            if result:
-                return result
-        # --- EMAIL ---
-        if self.email_handler.should_handle(intent):
-            result = self.email_handler.handle(text, intent, parameters)
-            if result:
-                if intent == "email_send":
-                    # Set UI action for frontend buttons
-                    # We need to access pending_email from handler
-                    pending = self.email_handler.pending_email
-                    if pending:
-                        self.last_ui_action = {
-                            "type": "email_confirmation",
-                            "data": {
-                                "to": pending["to"],
-                                "subject": pending["subject"],
-                                "body": pending["body"]
-                            }
-                        }
-                return result
-
-        # --- WEATHER ---
-        if self.weather_handler.should_handle(intent):
-            result = self.weather_handler.handle(text, intent, parameters)
-            if result:
-                return result
-
-        # --- FILE AUTOMATION & OPERATIONS ---
-        if self.file_handler.should_handle(intent):
-            result = self.file_handler.handle(text, intent, parameters)
-            if result:
-                return result
-
-        # --- CALENDAR ---
-        if self.calendar_handler.should_handle(intent):
-            result = self.calendar_handler.handle(text, intent, parameters)
-            if result:
-                return result
-
-        # --- NOTION ---
-        if self.notion_handler.should_handle(intent):
-            result = self.notion_handler.handle(text, intent, parameters)
-            if result:
-                return result
+            return result
 
         # --- FALLBACK ---
-        # If no specific intent matched, use LLM for general chat
+        # If no specific intent matched (or dispatcher returned None), use LLM for general chat
         # Use ask() instead of query_llm() to leverage the new system prompt AND conversation history
         
         # Use passed history if available, else use internal
@@ -474,7 +461,7 @@ class CommandProcessor:
             self.tts_manager.speak(response)
             return response
         except Exception as e:
-            print(f"Error in general_chat: {e}")
+            logger.error(f"Error in general_chat: {e}")
             return "I'm having trouble thinking right now. Please try again."
 
     def _resolve_relative_dates(self, text: str) -> str:
@@ -489,9 +476,9 @@ class CommandProcessor:
         date_format = "%b %d, %Y" # e.g., Nov 30, 2025
         
         # Case-insensitive replacements
-        text = re.sub(r'\byesterday\b', yesterday.strftime(date_format), text, flags=re.IGNORECASE)
-        text = re.sub(r'\btoday\b', today.strftime(date_format), text, flags=re.IGNORECASE)
-        text = re.sub(r'\btomorrow\b', tomorrow.strftime(date_format), text, flags=re.IGNORECASE)
+        text = re.sub(r'\\byesterday\\b', yesterday.strftime(date_format), text, flags=re.IGNORECASE)
+        text = re.sub(r'\\btoday\\b', today.strftime(date_format), text, flags=re.IGNORECASE)
+        text = re.sub(r'\\btomorrow\\b', tomorrow.strftime(date_format), text, flags=re.IGNORECASE)
         
         return text
 
@@ -510,3 +497,4 @@ class CommandProcessor:
     @pending_notion_pages.setter
     def pending_notion_pages(self, value):
         self.notion_handler.pending_notion_pages = value
+

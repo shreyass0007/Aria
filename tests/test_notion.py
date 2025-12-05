@@ -1,4 +1,4 @@
-from notion_manager import NotionManager
+from aria.notion_manager import NotionManager
 import json
 
 def test_notion_search():

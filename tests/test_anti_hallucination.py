@@ -6,8 +6,8 @@ import os
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from system_control import SystemControl
-from command_intent_classifier import CommandIntentClassifier
+from aria.system_control import SystemControl
+from aria.command_intent_classifier import CommandIntentClassifier
 
 class TestAntiHallucination(unittest.TestCase):
     def setUp(self):

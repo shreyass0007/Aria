@@ -2,7 +2,7 @@
 Test script for clipboard and screenshot functionality
 """
 
-from clipboard_screenshot import ClipboardScreenshot
+from aria.clipboard_screenshot import ClipboardScreenshot
 import time
 
 def test_clipboard_and_screenshot():
@@ -19,7 +19,7 @@ def test_clipboard_and_screenshot():
     test_text = "Hello from Aria! This is a test message."
     result = handler.copy_to_clipboard(test_text)
     print(f"Result: {result}")
-    print("✓ PASSED" if "Copied to clipboard" in result else "✗ FAILED")
+    print(" PASSED" if "Copied to clipboard" in result else " FAILED")
     time.sleep(0.5)
     
     # Test 2: Clipboard Read
@@ -27,7 +27,7 @@ def test_clipboard_and_screenshot():
     print("-" * 70)
     result = handler.read_clipboard()
     print(f"Result: {result}")
-    print("✓ PASSED" if test_text in result else "✗ FAILED")
+    print(" PASSED" if test_text in result else " FAILED")
     time.sleep(0.5)
     
     # Test 3: Clipboard Clear
@@ -35,7 +35,7 @@ def test_clipboard_and_screenshot():
     print("-" * 70)
     result = handler.clear_clipboard()
     print(f"Result: {result}")
-    print("✓ PASSED" if "cleared" in result.lower() else "✗ FAILED")
+    print(" PASSED" if "cleared" in result.lower() else " FAILED")
     time.sleep(0.5)
     
     # Test 4: Verify Clipboard is Empty
@@ -43,7 +43,7 @@ def test_clipboard_and_screenshot():
     print("-" * 70)
     result = handler.read_clipboard()
     print(f"Result: {result}")
-    print("✓ PASSED" if "empty" in result.lower() else "✗ FAILED")
+    print(" PASSED" if "empty" in result.lower() else " FAILED")
     time.sleep(0.5)
     
     # Test 5: Screenshot (Auto-named)
@@ -51,7 +51,7 @@ def test_clipboard_and_screenshot():
     print("-" * 70)
     result = handler.take_screenshot()
     print(f"Result: {result}")
-    print("✓ PASSED" if "Screenshot saved" in result else "✗ FAILED")
+    print(" PASSED" if "Screenshot saved" in result else " FAILED")
     time.sleep(0.5)
     
     # Test 6: Screenshot (Custom name)
@@ -59,7 +59,7 @@ def test_clipboard_and_screenshot():
     print("-" * 70)
     result = handler.take_screenshot("aria_test_screenshot")
     print(f"Result: {result}")
-    print("✓ PASSED" if "aria_test_screenshot.png" in result else "✗ FAILED")
+    print(" PASSED" if "aria_test_screenshot.png" in result else " FAILED")
     time.sleep(0.5)
     
     # Test 7: Copy multiline text
@@ -68,7 +68,7 @@ def test_clipboard_and_screenshot():
     multiline = "Line 1\nLine 2\nLine 3"
     result = handler.copy_to_clipboard(multiline)
     print(f"Result: {result}")
-    print("✓ PASSED" if "Copied to clipboard" in result else "✗ FAILED")
+    print(" PASSED" if "Copied to clipboard" in result else " FAILED")
     
     # Final Summary
     print("\n" + "=" * 70)
@@ -86,6 +86,6 @@ if __name__ == "__main__":
     try:
         test_clipboard_and_screenshot()
     except Exception as e:
-        print(f"\n✗ ERROR: {e}")
+        print(f"\n ERROR: {e}")
         import traceback
         traceback.print_exc()

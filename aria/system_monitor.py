@@ -1,5 +1,8 @@
 import psutil
 import time
+from .logger import setup_logger
+
+logger = setup_logger(__name__)
 
 class SystemMonitor:
     def __init__(self):
@@ -22,7 +25,7 @@ class SystemMonitor:
                 }
             return None
         except Exception as e:
-            print(f"Error reading battery: {e}")
+            logger.error(f"Error reading battery: {e}")
             return None
 
     def get_cpu_usage(self):
@@ -32,7 +35,7 @@ class SystemMonitor:
         try:
             return psutil.cpu_percent(interval=1)
         except Exception as e:
-            print(f"Error reading CPU: {e}")
+            logger.error(f"Error reading CPU: {e}")
             return 0
 
     def check_health(self):
@@ -70,7 +73,7 @@ class SystemMonitor:
         try:
             return psutil.virtual_memory().percent
         except Exception as e:
-            print(f"Error reading RAM: {e}")
+            logger.error(f"Error reading RAM: {e}")
             return 0
 
     def get_all_stats(self):

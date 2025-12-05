@@ -1,81 +1,22 @@
-
-# ========================================
-# ARIA - AI Desktop Assistant
-# Python Dependencies
-# ========================================
-
-# Speech Recognition & Text-to-Speech
-# ------------------------------------
-SpeechRecognition>=3.10.0
-gTTS>=2.3.0
-pyaudio>=0.2.11
-pygame>=2.5.0
-edge-tts>=6.1.0
-faster-whisper>=0.9.0
-torch>=2.0.0
-torchaudio>=2.0.0
-pvporcupine>=3.0.0
-
-# Web Framework & API
-# ------------------------------------
-fastapi>=0.100.0
-uvicorn[standard]>=0.23.0
-requests>=2.31.0
-pydantic>=2.0.0
-
-# AI & Machine Learning - LangChain
-# ------------------------------------
-langchain>=0.1.0
-langchain-openai>=0.0.5
-langchain-core>=0.1.0
-langchain-google-genai>=0.0.6
-langchain-anthropic>=0.1.0
-
-# AI & Machine Learning - Direct API Clients
-# ------------------------------------
-openai>=1.0.0
-google-generativeai>=0.3.0
-anthropic>=0.18.0
-
-# Google APIs (Calendar & Gmail)
-# ------------------------------------
-google-api-python-client>=2.100.0
-google-auth-httplib2>=0.1.1
-google-auth-oauthlib>=1.1.0
-
-# Database & Knowledge Management
-# ------------------------------------
-notion-client>=2.0.0
-chromadb>=0.4.0
-pymongo>=4.5.0
-
-# GUI & UI
-# ------------------------------------
-customtkinter>=5.2.0
-Pillow>=10.0.0
-
-# System Control (Windows)
-# ------------------------------------
-pycaw>=20230407
-comtypes>=1.2.0
-winshell>=0.6
-psutil>=5.9.0
-
-# Utilities
-# ------------------------------------
-python-dotenv>=1.0.0
-pyperclip>=1.8.2
-python-dateutil>=2.8.2
-
-# Music Playback
-# ------------------------------------
-yt-dlp>=2023.0.0
-python-vlc>=3.0.0
-
-# Web Search
-# ------------------------------------# Search
-tavily-python>=0.3.0
-
-# Testing
-# ------------------------------------
-pytest>=7.0.0
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+python-dotenv
+requests
+google-auth-oauthlib
+google-auth-httplib2
+google-api-python-client
+langchain
+langchain-openai
+langchain-community
+openai
+psutil
+pyttsx3
+pygame
+edge-tts
+beautifulsoup4
+lxml
+yt-dlp
+winshell
+pywin32

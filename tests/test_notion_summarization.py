@@ -16,8 +16,8 @@ def test_notion_summarization():
     print("=" * 60)
     
     # Import components
-    from notion_manager import NotionManager
-    from brain import AriaBrain
+    from aria.notion_manager import NotionManager
+    from aria.brain import AriaBrain
     
     # Initialize
     print("\n1. Initializing components...")
@@ -26,14 +26,14 @@ def test_notion_summarization():
     
     # Check if initialized
     if not notion.client:
-        print("❌ ERROR: Notion client not initialized. Check your NOTION_API_KEY.")
+        print(" ERROR: Notion client not initialized. Check your NOTION_API_KEY.")
         return False
     
     if not brain.llm:
-        print("❌ ERROR: LLM not initialized. Check your OPEN_AI_API_KEY.")
+        print(" ERROR: LLM not initialized. Check your OPEN_AI_API_KEY.")
         return False
     
-    print("✓ Components initialized successfully")
+    print(" Components initialized successfully")
     
     # Test 1: Search for a page
     print("\n2. Testing page search...")
@@ -48,7 +48,7 @@ def test_notion_summarization():
             ).get("results", [])
             
             if results:
-                print(f"✓ Found {len(results)} page(s):")
+                print(f" Found {len(results)} page(s):")
                 for i, page in enumerate(results, 1):
                     # Extract title
                     title = "Untitled"
@@ -67,18 +67,18 @@ def test_notion_summarization():
                 # Use the first result for testing
                 test_page_id = results[0]["id"]
             else:
-                print(f"❌ No pages found matching '{search_query}'")
+                print(f" No pages found matching '{search_query}'")
                 test_page_id = input("Enter a page ID manually to continue testing: ").strip()
                 if not test_page_id:
                     return False
         except Exception as e:
-            print(f"❌ Error searching: {e}")
+            print(f" Error searching: {e}")
             return False
     else:
         # Manual page ID input
         test_page_id = input("Enter a Notion page ID to test with: ").strip()
         if not test_page_id:
-            print("❌ No page ID provided. Aborting test.")
+            print(" No page ID provided. Aborting test.")
             return False
     
     # Test 2: Fetch page content
@@ -89,16 +89,16 @@ def test_notion_summarization():
         page_data = notion.get_page_content(test_page_id)
         
         if page_data.get("status") == "error":
-            print(f"❌ Error: {page_data.get('error')}")
+            print(f" Error: {page_data.get('error')}")
             return False
         
-        print(f"✓ Page fetched successfully:")
+        print(f" Page fetched successfully:")
         print(f"  Title: {page_data.get('title')}")
         print(f"  Word Count: {page_data.get('word_count')}")
         print(f"  Content Preview: {page_data.get('content', '')[:200]}...")
         
     except Exception as e:
-        print(f"❌ Error fetching page: {e}")
+        print(f" Error fetching page: {e}")
         return False
     
     # Test 3: Summarize content
@@ -107,14 +107,14 @@ def test_notion_summarization():
     try:
         content = page_data.get("content", "")
         if len(content) < 50:
-            print("⚠️  Content is too short for meaningful summarization")
+            print("  Content is too short for meaningful summarization")
             print(f"   Content: {content}")
         else:
             summary = brain.summarize_text(content, max_sentences=5)
-            print(f"✓ Summary generated:")
+            print(f" Summary generated:")
             print(f"\n{summary}\n")
     except Exception as e:
-        print(f"❌ Error summarizing: {e}")
+        print(f" Error summarizing: {e}")
         return False
     
     # Test 4: Test page ID extraction
@@ -132,10 +132,10 @@ def test_notion_summarization():
             print(f"  Command: '{cmd}'")
             print(f"  Result: {result}")
         except Exception as e:
-            print(f"  ❌ Error: {e}")
+            print(f"   Error: {e}")
     
     print("\n" + "=" * 60)
-    print("✓ All tests completed!")
+    print(" All tests completed!")
     print("=" * 60)
     return True
 
@@ -147,7 +147,7 @@ if __name__ == "__main__":
         print("\n\nTest interrupted by user.")
         sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Unexpected error: {e}")
+        print(f"\n Unexpected error: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)

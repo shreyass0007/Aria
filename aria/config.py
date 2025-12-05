@@ -1,41 +1,71 @@
 import os
 import datetime
 from pathlib import Path
-from dotenv import load_dotenv
+from typing import List
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 
-# Load environment variables
-load_dotenv()
+class Settings(BaseSettings):
+    # Base Paths
+    BASE_DIR: Path = Path(__file__).resolve().parent
+    ROOT_DIR: Path = Field(default_factory=lambda: Path(__file__).resolve().parent.parent)
 
-# Base Paths
-# This file is in aria/config.py, so parent is aria/, parent.parent is root
-BASE_DIR = Path(__file__).resolve().parent
-ROOT_DIR = BASE_DIR.parent
+    # Timezone
+    ARIA_TIMEZONE: str = "Asia/Kolkata"
+    
+    @property
+    def TIMEZONE(self) -> datetime.timezone:
+        # Simple fixed offset for IST (UTC+5:30) to avoid pytz dependency for now
+        # In a real app, use zoneinfo
+        if self.ARIA_TIMEZONE == "Asia/Kolkata":
+            return datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+        return datetime.timezone.utc
 
-# Timezone Configuration
-# Default to Indian Standard Time (IST) as per user preference
-TIMEZONE_STR = os.getenv("ARIA_TIMEZONE", "Asia/Kolkata")
-try:
-    # Create a timezone object. 
-    # Note: In Python 3.9+, zoneinfo is preferred, but for compatibility we can use simple offset or rely on libraries.
-    # For now, we'll define a fixed offset for IST if not using a library like pytz/zoneinfo in this simple config.
-    # However, calendar_manager uses: datetime.timezone(datetime.timedelta(hours=5, minutes=30))
-    # Let's standardize on that for now.
-    IST_OFFSET = datetime.timedelta(hours=5, minutes=30)
-    TIMEZONE = datetime.timezone(IST_OFFSET)
-except Exception:
-    TIMEZONE = datetime.timezone.utc
+    # Google API
+    GOOGLE_CREDENTIALS_FILE: Path = Field(default_factory=lambda: Path("credentials.json"))
+    GOOGLE_TOKEN_FILE: Path = Field(default_factory=lambda: Path("token.pickle"))
+    GOOGLE_SCOPES: List[str] = ['https://www.googleapis.com/auth/calendar']
 
-# Google API Configuration
-GOOGLE_CREDENTIALS_FILE = ROOT_DIR / "credentials.json"
-GOOGLE_TOKEN_FILE = ROOT_DIR / "token.pickle"
-GOOGLE_SCOPES = ['https://www.googleapis.com/auth/calendar']
+    # Application Settings
+    USER_NAME: str = "User"
+    WAKE_WORD: str = "aria"
+    
+    # Logging
+    LOG_LEVEL: str = "INFO"
+    LOG_DIR_NAME: str = "logs"
+    LOG_FILE_NAME: str = "aria.log"
 
-# Application Settings
-USER_NAME = os.getenv("USER_NAME", "User")
-WAKE_WORD = os.getenv("WAKE_WORD", "aria")
+    @property
+    def LOG_DIR(self) -> Path:
+        path = self.ROOT_DIR / self.LOG_DIR_NAME
+        path.mkdir(exist_ok=True)
+        return path
 
-# Logging Configuration
-LOG_DIR = ROOT_DIR / "logs"
-LOG_DIR.mkdir(exist_ok=True)
-LOG_FILE_PATH = LOG_DIR / "aria.log"
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+    @property
+    def LOG_FILE_PATH(self) -> Path:
+        return self.LOG_DIR / self.LOG_FILE_NAME
+
+    # Environment loading
+    model_config = SettingsConfigDict(
+        env_file=".env", 
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
+
+# Instantiate settings
+settings = Settings()
+
+# Export variables for backward compatibility
+BASE_DIR = settings.BASE_DIR
+ROOT_DIR = settings.ROOT_DIR
+TIMEZONE = settings.TIMEZONE
+GOOGLE_CREDENTIALS_FILE = settings.ROOT_DIR / settings.GOOGLE_CREDENTIALS_FILE
+GOOGLE_TOKEN_FILE = settings.ROOT_DIR / settings.GOOGLE_TOKEN_FILE
+GOOGLE_SCOPES = settings.GOOGLE_SCOPES
+USER_NAME = settings.USER_NAME
+WAKE_WORD = settings.WAKE_WORD
+LOG_DIR = settings.LOG_DIR
+LOG_FILE_PATH = settings.LOG_FILE_PATH
+LOG_LEVEL = settings.LOG_LEVEL
+TIMEZONE_STR = settings.ARIA_TIMEZONE
+

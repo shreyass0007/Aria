@@ -1,4 +1,4 @@
-from search_manager import SearchManager
+from aria.search_manager import SearchManager
 
 def test_search():
     print("Testing SearchManager...")

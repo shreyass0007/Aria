@@ -10,6 +10,9 @@ import winreg
 from pycaw.pycaw import AudioUtilities
 import winshell
 from pathlib import Path
+from .logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 class SystemControl:
@@ -31,9 +34,9 @@ class SystemControl:
             # Get the default audio device and access EndpointVolume directly
             devices = AudioUtilities.GetSpeakers()
             self.volume_interface = devices.EndpointVolume
-            print("[OK] Audio interface initialized successfully")
+            logger.info("Audio interface initialized successfully")
         except Exception as e:
-            print(f"[WARNING] Could not initialize audio interface: {e}")
+            logger.warning(f"Could not initialize audio interface: {e}")
             self.volume_interface = None
     
     # ==================== VOLUME CONTROL ====================
@@ -46,7 +49,7 @@ class SystemControl:
             current_volume = self.volume_interface.GetMasterVolumeLevelScalar()
             return int(current_volume * 100)
         except Exception as e:
-            print(f"Error getting volume: {e}")
+            logger.error(f"Error getting volume: {e}")
             return None
     
     def set_volume(self, level: int):
@@ -205,7 +208,7 @@ class SystemControl:
                     
             except Exception as e:
                 # Fallback to just count
-                print(f"Could not calculate size: {e}")
+                logger.warning(f"Could not calculate size: {e}")
                 return f"Recycle bin contains {item_count} items"
                 
         except Exception as e:

@@ -1,4 +1,5 @@
 import warnings
+import threading
 # Suppress pkg_resources deprecation warning from pygame and others
 warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated.*")
 
@@ -119,7 +120,7 @@ class AriaCore:
         # But aria.listen() is blocking.
         # Ideally, we should signal the main loop or start a new thread for the interaction.
         # For now, let's try running it in a separate thread to avoid blocking the detector loop.
-        import threading
+        # For now, let's try running it in a separate thread to avoid blocking the detector loop.
         threading.Thread(target=self._handle_voice_interaction, daemon=True).start()
 
     def _handle_voice_interaction(self):

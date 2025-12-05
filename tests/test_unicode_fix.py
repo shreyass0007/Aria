@@ -29,14 +29,14 @@ print("1. Testing normal text...")
 safe_print("Hello World")
 
 print("\n2. Testing text with emojis...")
-safe_print("🔍 Found 5 pages matching 'happiness'")
+safe_print(" Found 5 pages matching 'happiness'")
 
 print("\n3. Testing structured output...")
 structured_output = """
-📄 NOTION PAGE SUMMARY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📌 Page: The Pursuit of Happiness
+ NOTION PAGE SUMMARY
+
+ Page: The Pursuit of Happiness
 """
 safe_print(structured_output)
 
-print("\n✅ Test completed!")
+print("\n Test completed!")

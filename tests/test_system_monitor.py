@@ -2,7 +2,7 @@
 Test script for system monitoring functionality
 """
 
-from system_monitor import SystemMonitor
+from aria.system_monitor import SystemMonitor
 import time
 
 def test_system_monitoring():
@@ -18,7 +18,7 @@ def test_system_monitoring():
     print("-" * 70)
     result = monitor.get_battery_status()
     print(result)
-    print("✓ PASSED" if "Battery" in result or "No battery" in result else "✗ FAILED")
+    print(" PASSED" if "Battery" in result or "No battery" in result else " FAILED")
     time.sleep(1)
     
     # Test 2: CPU Usage
@@ -26,7 +26,7 @@ def test_system_monitoring():
     print("-" * 70)
     result = monitor.get_cpu_usage()
     print(result)
-    print("✓ PASSED" if "CPU" in result else "✗ FAILED")
+    print(" PASSED" if "CPU" in result else " FAILED")
     time.sleep(1)
     
     # Test 3: RAM Usage
@@ -34,7 +34,7 @@ def test_system_monitoring():
     print("-" * 70)
     result = monitor.get_ram_usage()
     print(result)
-    print("✓ PASSED" if "RAM" in result else "✗ FAILED")
+    print(" PASSED" if "RAM" in result else " FAILED")
     time.sleep(1)
     
     # Test 4: All System Stats
@@ -42,7 +42,7 @@ def test_system_monitoring():
     print("-" * 70)
     result = monitor.get_all_stats()
     print(result)
-    print("✓ PASSED" if "SYSTEM STATISTICS" in result else "✗ FAILED")
+    print(" PASSED" if "SYSTEM STATISTICS" in result else " FAILED")
     
     # Final Summary
     print("\n" + "=" * 70)
@@ -61,6 +61,6 @@ if __name__ == "__main__":
     try:
         test_system_monitoring()
     except Exception as e:
-        print(f"\n✗ ERROR: {e}")
+        print(f"\n ERROR: {e}")
         import traceback
         traceback.print_exc()

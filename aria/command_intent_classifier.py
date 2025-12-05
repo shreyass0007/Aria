@@ -7,6 +7,9 @@ from typing import Dict, Any
 import json
 import re
 from .brain import AriaBrain
+from .logger import setup_logger
+
+logger = setup_logger(__name__)
 
 class CommandIntentClassifier:
     """Classifies user commands into intents using the LLM.
@@ -98,6 +101,9 @@ class CommandIntentClassifier:
         "mute": "volume_mute",
         "silence": "volume_mute",
         "unmute": "volume_unmute",
+        "set volume": "volume_set",
+        "change volume": "volume_set",
+        "vset volume": "volume_set", # Handle user typo
         "shutdown": "shutdown",
         "restart": "restart",
         "lock screen": "lock",
@@ -138,11 +144,33 @@ class CommandIntentClassifier:
         clean_text = re.sub(r'[^\w\s]', '', clean_text)
         
         if clean_text in self.FAST_PATH_INTENTS:
-            print(f"⚡ FAST PATH TRIGGERED: {clean_text} -> {self.FAST_PATH_INTENTS[clean_text]}")
+            logger.info(f"FAST PATH TRIGGERED: {clean_text} -> {self.FAST_PATH_INTENTS[clean_text]}")
             return {
                 "intent": self.FAST_PATH_INTENTS[clean_text],
                 "confidence": 1.0,
                 "parameters": {}
+            }
+
+        # 2. REGEX FAST PATH: Check for patterns (e.g. "set volume to 50")
+        # Volume Set
+        vol_match = re.search(r'(?:set|change|turn|vset) (?:the )?volume (?:to )?(\d+)', clean_text)
+        if vol_match:
+            level = int(vol_match.group(1))
+            logger.info(f"REGEX PATH TRIGGERED: volume_set -> {level}")
+            return {
+                "intent": "volume_set",
+                "confidence": 1.0,
+                "parameters": {"level": level}
+            }
+        
+        # Volume Set (Alternative: "volume 50")
+        if re.match(r'^volume \d+$', clean_text):
+             level = int(re.findall(r'\d+', clean_text)[0])
+             logger.info(f"REGEX PATH TRIGGERED: volume_set -> {level}")
+             return {
+                "intent": "volume_set",
+                "confidence": 1.0,
+                "parameters": {"level": level}
             }
 
         if not self.brain.is_available():
@@ -152,7 +180,7 @@ class CommandIntentClassifier:
         try:
             llm = self.brain.get_llm()
             if not llm:
-                print("Error: No LLM available")
+                logger.error("Error: No LLM available")
                 return {"intent": "general_chat", "confidence": 0.0, "parameters": {}}
                 
             response = llm.invoke(prompt)
@@ -165,14 +193,14 @@ class CommandIntentClassifier:
                 cleaned = json_match.group(0)
                 result = json.loads(cleaned)
             else:
-                print("No JSON found in response")
+                logger.warning("No JSON found in response")
                 result = {}
         except Exception as e:
-            print(f"Error classifying intent: {e}")
+            logger.error(f"Error classifying intent: {e}")
             try:
-                print(f"Raw response was: {content[:100].encode('utf-8', errors='ignore').decode('utf-8') if 'content' in locals() else 'No response'}")
+                logger.debug(f"Raw response was: {content[:100].encode('utf-8', errors='ignore').decode('utf-8') if 'content' in locals() else 'No response'}")
             except Exception:
-                print("Raw response was: [Content with unicode]")
+                logger.debug("Raw response was: [Content with unicode]")
             return {"intent": "general_chat", "confidence": 0.0, "parameters": {}}
 
         intent = result.get("intent", "general_chat")
@@ -280,6 +308,7 @@ EXAMPLES:
 - "open spotify" -> intent: "app_open", parameters: {{"app_name": "Spotify"}}
 - "open youtube" -> intent: "web_open", parameters: {{"url": "https://youtube.com", "name": "YouTube"}}
 - "play some jazz" -> intent: "music_play", parameters: {{"song": "jazz"}}
+- "set volume to 50" -> intent: "volume_set", parameters: {{"level": 50}}
 - "change my wallpaper" -> intent: "general_chat", parameters: {{}}
 - "write a python script to sort a list" -> intent: "general_chat", parameters: {{}}
 - "how do I center a div" -> intent: "general_chat", parameters: {{}}

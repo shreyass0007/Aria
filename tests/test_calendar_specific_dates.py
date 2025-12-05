@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
-from command_processor import CommandProcessor
-from calendar_manager import CalendarManager
+from aria.command_processor import CommandProcessor
+from aria.calendar_manager import CalendarManager
 
 class TestCalendarSpecificity(unittest.TestCase):
     def setUp(self):

@@ -8,7 +8,7 @@ import sys
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from greeting_service import GreetingService
+from aria.greeting_service import GreetingService
 
 class TestGreetingLogicV2(unittest.TestCase):
     def setUp(self):

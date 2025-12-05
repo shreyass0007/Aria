@@ -14,9 +14,9 @@ def test_music_controls():
     print("\n1. Checking backend health...")
     try:
         response = requests.get(f"{BASE_URL}/health")
-        print(f"   ✓ Backend is running: {response.json()}")
+        print(f"    Backend is running: {response.json()}")
     except Exception as e:
-        print(f"   ✗ Backend error: {e}")
+        print(f"    Backend error: {e}")
         return
     
     # Test 2: Get music status
@@ -29,7 +29,7 @@ def test_music_controls():
         print(f"   Is Playing: {status.get('is_playing')}")
         print(f"   Current Track: {status.get('track')}")
     except Exception as e:
-        print(f"   ✗ Error: {e}")
+        print(f"    Error: {e}")
     
     # Test 3: Try to pause
     print("\n3. Testing PAUSE endpoint...")
@@ -41,11 +41,11 @@ def test_music_controls():
         
         # Check if response has is_playing field
         if 'is_playing' in result:
-            print(f"   ✓ Response includes 'is_playing': {result['is_playing']}")
+            print(f"    Response includes 'is_playing': {result['is_playing']}")
         else:
-            print(f"   ✗ Response missing 'is_playing' field!")
+            print(f"    Response missing 'is_playing' field!")
     except Exception as e:
-        print(f"   ✗ Error: {e}")
+        print(f"    Error: {e}")
     
     # Test 4: Try to resume
     print("\n4. Testing RESUME endpoint...")
@@ -57,11 +57,11 @@ def test_music_controls():
         
         # Check if response has is_playing field
         if 'is_playing' in result:
-            print(f"   ✓ Response includes 'is_playing': {result['is_playing']}")
+            print(f"    Response includes 'is_playing': {result['is_playing']}")
         else:
-            print(f"   ✗ Response missing 'is_playing' field!")
+            print(f"    Response missing 'is_playing' field!")
     except Exception as e:
-        print(f"   ✗ Error: {e}")
+        print(f"    Error: {e}")
     
     print("\n" + "=" * 50)
     print("Test Complete!")

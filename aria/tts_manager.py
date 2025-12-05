@@ -10,6 +10,9 @@ import queue
 import re
 import asyncio
 import edge_tts
+from .logger import setup_logger
+
+logger = setup_logger(__name__)
 
 class TTSManager:
     def __init__(self, on_speak=None):
@@ -45,7 +48,7 @@ class TTSManager:
             except:
                 pass
         
-        print("TTS Interrupted.")
+        logger.info("TTS Interrupted.")
 
     def _tts_worker(self):
         """Worker thread to handle TTS playback sequentially with Edge-TTS and gTTS fallback."""
@@ -53,16 +56,16 @@ class TTSManager:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
-        print("TTS Worker started")
+        logger.info("TTS Worker started")
         
         while True:
             text = self.tts_queue.get()
-            # print(f"TTS Worker: Dequeued text: {text}") # Verbose
+            # logger.debug(f"TTS Worker: Dequeued text: {text}") # Verbose
             if text is None:
                 break
             
             try:
-                # print(f"TTS Worker: Processing text: '{text[:50]}...'")
+                # logger.debug(f"TTS Worker: Processing text: '{text[:50]}...'")
                 pass
             except UnicodeEncodeError:
                 pass
@@ -74,31 +77,46 @@ class TTSManager:
             filename = os.path.join(voice_folder, f"her_voice_{int(time.time())}_{id(text)}.mp3")
             
             edge_tts_success = False
-            try:
-                # print("TTS Worker: Trying Edge-TTS...")
-                # Try Edge TTS first with timeout
-                communicate = edge_tts.Communicate(text, "en-US-AriaNeural")
-                # Use wait_for to add a 3-second timeout
-                loop.run_until_complete(
-                    asyncio.wait_for(communicate.save(filename), timeout=3.0)
-                )
-                # print(f"TTS Worker: Edge-TTS saved to {filename}")
-                edge_tts_success = True
+            max_retries = 3
+            
+            for attempt in range(max_retries):
+                try:
+                    # logger.debug(f"TTS Worker: Trying Edge-TTS (Attempt {attempt+1}/{max_retries})...")
+                    communicate = edge_tts.Communicate(text, "en-US-AriaNeural")
+                    
+                    # Increased timeout to 10 seconds and added retries
+                    loop.run_until_complete(
+                        asyncio.wait_for(communicate.save(filename), timeout=10.0)
+                    )
+                    
+                    # Verify file was actually created and has content
+                    if os.path.exists(filename) and os.path.getsize(filename) > 0:
+                        edge_tts_success = True
+                        break
+                    else:
+                        logger.warning(f"Edge-TTS attempt {attempt+1} failed: File empty or not created")
+                        
+                except asyncio.TimeoutError:
+                    logger.warning(f"Edge-TTS attempt {attempt+1} timed out (>10s)")
+                except Exception as e:
+                    logger.warning(f"Edge-TTS attempt {attempt+1} error: {e}")
                 
-            except asyncio.TimeoutError:
-                print("Edge-TTS timeout (>3s), falling back to gTTS")
-            except Exception as e:
-                print(f"Edge-TTS error, falling back to gTTS: {e}")
+                # Small delay before retry
+                if attempt < max_retries - 1:
+                    time.sleep(0.5)
+            
+            if not edge_tts_success:
+                logger.warning("All Edge-TTS attempts failed, falling back to gTTS")
             
             if not edge_tts_success:
                 try:
                     # Fallback to gTTS
-                    print("TTS Worker: Using gTTS fallback...")
+                    logger.info("TTS Worker: Using gTTS fallback...")
                     tts = gTTS(text=text, lang="en", slow=False)
                     tts.save(filename)
-                    print(f"TTS Worker: gTTS saved to {filename}")
+                    logger.debug(f"TTS Worker: gTTS saved to {filename}")
                 except Exception as e2:
-                    print(f"gTTS error: {e2}")
+                    logger.error(f"gTTS error: {e2}")
                     self.tts_queue.task_done()
                     continue
             
@@ -112,7 +130,7 @@ class TTSManager:
                         try:
                             pygame.mixer.init()
                         except Exception as e:
-                            print(f"TTS Worker ERROR: Failed to initialize mixer: {e}")
+                            logger.error(f"TTS Worker ERROR: Failed to initialize mixer: {e}")
                             self.tts_queue.task_done()
                             continue
 
@@ -130,19 +148,19 @@ class TTSManager:
                             try:
                                 pygame.mixer.music.unload()
                             except Exception as e:
-                                print(f"TTS Worker WARNING: Failed to unload audio: {e}")
+                                logger.warning(f"TTS Worker WARNING: Failed to unload audio: {e}")
                         
                         # Small delay to ensure OS releases the handle
                         time.sleep(0.1)
                         
                         os.remove(filename)
-                        # print(f"TTS Worker: Deleted {filename}")
+                        # logger.debug(f"TTS Worker: Deleted {filename}")
                     except Exception as e:
-                        print(f"TTS Worker WARNING: Failed to delete {filename}: {e}")
+                        logger.warning(f"TTS Worker WARNING: Failed to delete {filename}: {e}")
                 else:
-                    print(f"TTS Worker ERROR: Audio file {filename} does not exist!")
+                    logger.error(f"TTS Worker ERROR: Audio file {filename} does not exist!")
             except Exception as e:
-                print(f"Audio playback error: {e}")
+                logger.error(f"Audio playback error: {e}")
             finally:
                 self.tts_queue.task_done()
 
@@ -171,9 +189,9 @@ class TTSManager:
                 self.on_speak(text)
             
             try:
-                print(f"Aria said: {text}")
+                logger.info(f"Aria said: {text}")
             except UnicodeEncodeError:
-                print(f"Aria said: {text.encode('ascii', 'replace').decode()}")
+                logger.info(f"Aria said: {text.encode('ascii', 'replace').decode()}")
         
         # Clean text for audio
         clean_text = self._clean_text_for_audio(text)

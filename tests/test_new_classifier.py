@@ -4,8 +4,8 @@ import os
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from brain import AriaBrain
-from command_intent_classifier import CommandIntentClassifier
+from aria.brain import AriaBrain
+from aria.command_intent_classifier import CommandIntentClassifier
 
 def test_classifier():
     print("Initializing Brain...")

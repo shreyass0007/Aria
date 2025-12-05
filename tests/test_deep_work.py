@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 import datetime
-from deep_work_manager import DeepWorkManager
+from aria.deep_work_manager import DeepWorkManager
 
 class TestDeepWorkManager(unittest.TestCase):
     def setUp(self):

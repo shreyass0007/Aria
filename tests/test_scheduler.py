@@ -56,18 +56,18 @@ async def test_scheduler_logic():
         print(f"Event: {summary}, Starts in: {time_diff:.2f} mins")
         
         if 0 < time_diff <= 30 and event_id not in reminded_events:
-            print("✅ Condition Met: Event is within 30 mins!")
+            print(" Condition Met: Event is within 30 mins!")
             
             # Simulate LLM call
             prompt = f"Event '{summary}' starts in {int(time_diff)} minutes."
             response = aria.brain.get_llm().invoke(prompt)
             reminder = response.content
             
-            print(f"🗣️ Aria would say: '{reminder}'")
+            print(f" Aria would say: '{reminder}'")
             aria.speak(reminder)
             reminded_events.add(event_id)
         else:
-            print("❌ Condition Failed")
+            print(" Condition Failed")
 
 if __name__ == "__main__":
     asyncio.run(test_scheduler_logic())

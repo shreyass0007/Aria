@@ -7,8 +7,8 @@ This script tests:
 """
 
 import datetime
-from calendar_manager import CalendarManager
-from brain import AriaBrain
+from aria.calendar_manager import CalendarManager
+from aria.brain import AriaBrain
 
 def test_calendar_authentication():
     """Test if calendar authentication works."""
@@ -19,15 +19,15 @@ def test_calendar_authentication():
     try:
         calendar = CalendarManager()
         if calendar.service:
-            print("✅ SUCCESS: Calendar service authenticated!")
+            print(" SUCCESS: Calendar service authenticated!")
             print(f"   Service object: {calendar.service}")
             return calendar
         else:
-            print("❌ FAILED: Calendar service not initialized")
+            print(" FAILED: Calendar service not initialized")
             print("   This might mean credentials.json is missing or authentication failed.")
             return None
     except Exception as e:
-        print(f"❌ ERROR: {e}")
+        print(f" ERROR: {e}")
         return None
 
 def test_event_retrieval(calendar):
@@ -37,15 +37,15 @@ def test_event_retrieval(calendar):
     print("=" * 60)
     
     if not calendar:
-        print("⚠️  SKIPPED: No calendar service available")
+        print("  SKIPPED: No calendar service available")
         return
     
     try:
         result = calendar.get_upcoming_events(max_results=5)
-        print("✅ SUCCESS: Retrieved events")
+        print(" SUCCESS: Retrieved events")
         print(f"\n{result}")
     except Exception as e:
-        print(f"❌ ERROR: {e}")
+        print(f" ERROR: {e}")
 
 def test_event_creation(calendar):
     """Test creating a calendar event."""
@@ -54,7 +54,7 @@ def test_event_creation(calendar):
     print("=" * 60)
     
     if not calendar:
-        print("⚠️  SKIPPED: No calendar service available")
+        print("  SKIPPED: No calendar service available")
         return
     
     try:
@@ -67,10 +67,10 @@ def test_event_creation(calendar):
             start_time=start_time,
             description="This is a test event created by Aria to verify calendar integration."
         )
-        print("✅ SUCCESS: Event created")
+        print(" SUCCESS: Event created")
         print(f"\n{result}")
     except Exception as e:
-        print(f"❌ ERROR: {e}")
+        print(f" ERROR: {e}")
 
 def test_natural_language_parsing():
     """Test AI-powered natural language parsing for calendar events."""
@@ -88,25 +88,25 @@ def test_natural_language_parsing():
         ]
         
         for command in test_commands:
-            print(f"\n📝 Testing: \"{command}\"")
+            print(f"\n Testing: \"{command}\"")
             result = brain.parse_calendar_intent(command)
             
             if result and result.get("summary"):
-                print(f"   ✅ Parsed successfully:")
+                print(f"    Parsed successfully:")
                 print(f"      Title: {result.get('summary')}")
                 print(f"      Start: {result.get('start_time')}")
                 if result.get('end_time'):
                     print(f"      End: {result.get('end_time')}")
             else:
-                print(f"   ❌ Failed to parse")
+                print(f"    Failed to parse")
                 
     except Exception as e:
-        print(f"❌ ERROR: {e}")
+        print(f" ERROR: {e}")
 
 def main():
-    print("\n" + "🗓️ " * 20)
+    print("\n" + " " * 20)
     print("GOOGLE CALENDAR INTEGRATION TEST")
-    print("🗓️ " * 20 + "\n")
+    print(" " * 20 + "\n")
     
     # Test 1: Authentication
     calendar = test_calendar_authentication()
@@ -123,8 +123,8 @@ def main():
     print("\n" + "=" * 60)
     print("TESTING COMPLETE")
     print("=" * 60)
-    print("\n💡 TIP: Check your Google Calendar to verify the test event was created.")
-    print("💡 TIP: If authentication opened a browser, make sure to grant permissions.\n")
+    print("\n TIP: Check your Google Calendar to verify the test event was created.")
+    print(" TIP: If authentication opened a browser, make sure to grant permissions.\n")
 
 if __name__ == "__main__":
     main()

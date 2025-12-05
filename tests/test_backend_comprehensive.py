@@ -51,7 +51,7 @@ class BackendTester:
             
             # Check status code
             if response.status_code != expected_status:
-                self.log(f"✗ {name}: Expected status {expected_status}, got {response.status_code}", "FAIL")
+                self.log(f" {name}: Expected status {expected_status}, got {response.status_code}", "FAIL")
                 self.log(f"  Response: {response.text[:200]}", "FAIL")
                 self.results["failed"].append(name)
                 return False
@@ -61,7 +61,7 @@ class BackendTester:
                 response_data = response.json()
             except:
                 if expected_status == 200:
-                    self.log(f"✗ {name}: Could not parse JSON response", "FAIL")
+                    self.log(f" {name}: Could not parse JSON response", "FAIL")
                     self.results["failed"].append(name)
                     return False
                 response_data = {}
@@ -70,20 +70,20 @@ class BackendTester:
             if check_fields:
                 for field in check_fields:
                     if field not in response_data:
-                        self.log(f"✗ {name}: Missing field '{field}' in response", "FAIL")
+                        self.log(f" {name}: Missing field '{field}' in response", "FAIL")
                         self.results["failed"].append(name)
                         return False
             
-            self.log(f"✓ {name}", "PASS")
+            self.log(f" {name}", "PASS")
             self.results["passed"].append(name)
             return response_data
             
         except requests.exceptions.ConnectionError:
-            self.log(f"✗ {name}: Could not connect to backend (is it running?)", "FAIL")
+            self.log(f" {name}: Could not connect to backend (is it running?)", "FAIL")
             self.results["failed"].append(name)
             return False
         except Exception as e:
-            self.log(f"✗ {name}: {str(e)}", "FAIL")
+            self.log(f" {name}: {str(e)}", "FAIL")
             self.results["failed"].append(name)
             return False
     
@@ -251,7 +251,7 @@ class BackendTester:
         if features_response and "features" in features_response:
             self.log(f"  Available Features:", "INFO")
             for feature, available in features_response["features"].items():
-                status = "✓" if available else "✗"
+                status = "" if available else ""
                 self.log(f"    {status} {feature}: {available}", "INFO")
         
         # Test individual feature status
@@ -360,8 +360,8 @@ class BackendTester:
         self.log("\n" + "=" * 60, "INFO")
 
 if __name__ == "__main__":
-    print("\n🚀 Starting Backend FastAPI Comprehensive Test...\n")
-    print("⚠️  NOTE: Make sure the backend is running on http://localhost:5000")
+    print("\n Starting Backend FastAPI Comprehensive Test...\n")
+    print("  NOTE: Make sure the backend is running on http://localhost:5000")
     print("    Run: python backend_fastapi.py\n")
     
     time.sleep(2)
@@ -369,4 +369,4 @@ if __name__ == "__main__":
     tester = BackendTester()
     tester.run_all_tests()
     
-    print("\n✨ Test Complete!\n")
+    print("\n Test Complete!\n")

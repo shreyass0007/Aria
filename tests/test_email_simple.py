@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from email_manager import EmailManager
+from aria.email_manager import EmailManager
 
 class TestEmailSimple(unittest.TestCase):
     def test_email_manager_mock(self):

@@ -1,5 +1,5 @@
 import time
-from aria_core import AriaCore
+from aria.aria_core import AriaCore
 
 def main():
     print("Initializing AriaCore...")

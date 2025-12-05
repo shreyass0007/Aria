@@ -3,7 +3,7 @@ Test script for System Control Module
 Tests volume control and recycle bin features safely (no power management tests)
 """
 
-from system_control import SystemControl
+from aria.system_control import SystemControl
 import time
 
 
@@ -99,7 +99,7 @@ def test_power_info():
 
 
 if __name__ == "__main__":
-    print("\n🔧 SYSTEM CONTROL MODULE TEST SUITE")
+    print("\n SYSTEM CONTROL MODULE TEST SUITE")
     print("Testing system control features safely...\n")
     
     try:
@@ -113,10 +113,10 @@ if __name__ == "__main__":
         test_power_info()
         
         print("\n" + "=" * 50)
-        print("✅ ALL TESTS COMPLETED SUCCESSFULLY")
+        print(" ALL TESTS COMPLETED SUCCESSFULLY")
         print("=" * 50)
         
     except Exception as e:
-        print(f"\n❌ ERROR: {e}")
+        print(f"\n ERROR: {e}")
         import traceback
         traceback.print_exc()

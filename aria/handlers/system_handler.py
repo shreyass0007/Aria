@@ -1,5 +1,6 @@
 import random
 import re
+import datetime
 from typing import Dict, Any, Optional
 from .base_handler import BaseHandler
 from ..logger import setup_logger
@@ -21,7 +22,9 @@ class SystemHandler(BaseHandler):
             "shutdown", "restart", "sleep", "cancel_shutdown",
             "recycle_bin_empty", "recycle_bin_check",
             "battery_check", "cpu_check", "ram_check", "system_stats",
-            "clipboard_copy", "clipboard_read", "clipboard_clear"
+            "battery_check", "cpu_check", "ram_check", "system_stats",
+            "clipboard_copy", "clipboard_read", "clipboard_clear",
+            "time_check", "date_check"
         ]
         return intent in system_intents
 
@@ -80,19 +83,23 @@ class SystemHandler(BaseHandler):
             level = parameters.get("level")
             if level:
                 try:
-                    vol = int(level)
-                    msg = self.system_control.set_volume(vol)
-                    self.tts_manager.speak(msg)
-                    return msg
+                    # Remove non-numeric characters (e.g. "50%" -> "50")
+                    clean_level = re.sub(r'[^\d]', '', str(level))
+                    if clean_level:
+                        vol = int(clean_level)
+                        msg = self.system_control.set_volume(vol)
+                        self.tts_manager.speak(msg)
+                        return msg
                 except ValueError:
-                    self.tts_manager.speak("Invalid volume level.")
-            else:
-                nums = re.findall(r'\d+', text)
-                if nums:
-                    vol = int(nums[-1])
-                    msg = self.system_control.set_volume(vol)
-                    self.tts_manager.speak(msg)
-                    return msg
+                    pass # Fallthrough to regex extraction from full text
+            
+            # Fallback: Extract from full text
+            nums = re.findall(r'\d+', text)
+            if nums:
+                vol = int(nums[-1])
+                msg = self.system_control.set_volume(vol)
+                self.tts_manager.speak(msg)
+                return msg
             
             self.tts_manager.speak("What volume level?")
             return "Please specify volume level."
@@ -181,6 +188,21 @@ class SystemHandler(BaseHandler):
             response += f"- CPU Usage: {stats.get('cpu')}%\n"
             response += f"- RAM Usage: {stats.get('ram')}%\n"
             self.tts_manager.speak("Here is your system status.")
+            return response
+
+        # --- TIME & DATE ---
+        elif intent == "time_check":
+            now = datetime.datetime.now()
+            time_str = now.strftime("%I:%M %p")
+            response = f"It is currently {time_str}."
+            self.tts_manager.speak(response)
+            return response
+
+        elif intent == "date_check":
+            now = datetime.datetime.now()
+            date_str = now.strftime("%A, %B %d, %Y")
+            response = f"Today is {date_str}."
+            self.tts_manager.speak(response)
             return response
 
         return None

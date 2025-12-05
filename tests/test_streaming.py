@@ -1,4 +1,4 @@
-from brain import AriaBrain
+from aria.brain import AriaBrain
 import time
 
 def test_streaming():

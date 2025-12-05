@@ -47,7 +47,7 @@ def test_music_endpoints():
     except Exception as e:
         print(f"Error: {e}")
     
-    print("\n✓ All endpoint tests completed!")
+    print("\n All endpoint tests completed!")
 
 if __name__ == "__main__":
     # Wait a bit for backend to start if needed
@@ -57,10 +57,10 @@ if __name__ == "__main__":
     try:
         health = requests.get(f"{BASE_URL}/health")
         if health.status_code == 200:
-            print("✓ Backend is ready!")
+            print(" Backend is ready!")
             test_music_endpoints()
         else:
-            print("✗ Backend not responding properly")
+            print(" Backend not responding properly")
     except Exception as e:
-        print(f"✗ Backend not accessible: {e}")
+        print(f" Backend not accessible: {e}")
         print("\nPlease ensure the backend is running with: python backend_fastapi.py")

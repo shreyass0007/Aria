@@ -5,6 +5,9 @@ import os
 import threading
 import time
 from dotenv import load_dotenv
+from .logger import setup_logger
+
+logger = setup_logger(__name__)
 
 load_dotenv()
 
@@ -17,7 +20,7 @@ class WakeWordListener:
         self.access_key = access_key or os.getenv("PICOVOICE_ACCESS_KEY")
         
         if not self.access_key:
-            print("[ERROR] Error: PICOVOICE_ACCESS_KEY not found in environment variables.")
+            logger.error("Error: PICOVOICE_ACCESS_KEY not found in environment variables.")
             self.porcupine = None
             return
 
@@ -29,9 +32,9 @@ class WakeWordListener:
                 access_key=self.access_key,
                 keywords=['jarvis', 'computer', 'alexa'] 
             )
-            print(f"[OK] Wake Word Listener initialized. Keywords: Jarvis, Computer")
+            logger.info(f"Wake Word Listener initialized. Keywords: Jarvis, Computer")
         except Exception as e:
-            print(f"[ERROR] Failed to initialize Porcupine: {e}")
+            logger.error(f"Failed to initialize Porcupine: {e}")
             self.porcupine = None
 
         self.pa = pyaudio.PyAudio()
@@ -50,14 +53,14 @@ class WakeWordListener:
         self.is_listening = True
         self.thread = threading.Thread(target=self._listen_loop, daemon=True)
         self.thread.start()
-        print("[LISTENING] Wake Word Listener started...")
+        logger.info("Wake Word Listener started...")
 
     def stop(self):
         """Stop listening."""
         self.is_listening = False
         if self.thread:
             self.thread.join(timeout=1.0)
-        print("Wake Word Listener stopped.")
+        logger.info("Wake Word Listener stopped.")
 
     def _listen_loop(self):
         try:
@@ -76,14 +79,14 @@ class WakeWordListener:
                 keyword_index = self.porcupine.process(pcm)
 
                 if keyword_index >= 0:
-                    print(f"[DETECTED] Wake Word Detected! (Index: {keyword_index})")
+                    logger.info(f"Wake Word Detected! (Index: {keyword_index})")
                     if self.on_wake_word_detected:
                         self.on_wake_word_detected()
                         # Optional: Sleep briefly to avoid double trigger
                         time.sleep(0.5)
 
         except Exception as e:
-            print(f"Error in Wake Word loop: {e}")
+            logger.error(f"Error in Wake Word loop: {e}")
         finally:
             if self.audio_stream:
                 self.audio_stream.close()

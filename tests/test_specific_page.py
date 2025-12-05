@@ -2,8 +2,8 @@
 Quick test for a specific Notion page - saves output to file
 """
 
-from notion_manager import NotionManager
-from brain import AriaBrain
+from aria.notion_manager import NotionManager
+from aria.brain import AriaBrain
 from dotenv import load_dotenv
 import sys
 

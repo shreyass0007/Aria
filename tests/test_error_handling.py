@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from email_manager import EmailManager
-from calendar_manager import CalendarManager
-from notion_manager import NotionManager
+from aria.email_manager import EmailManager
+from aria.calendar_manager import CalendarManager
+from aria.notion_manager import NotionManager
 
 class TestErrorHandling(unittest.TestCase):
 

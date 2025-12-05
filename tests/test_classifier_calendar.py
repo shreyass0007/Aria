@@ -1,6 +1,6 @@
 
-from command_intent_classifier import CommandIntentClassifier
-from brain import AriaBrain
+from aria.command_intent_classifier import CommandIntentClassifier
+from aria.brain import AriaBrain
 
 def test_classifier():
     brain = AriaBrain()

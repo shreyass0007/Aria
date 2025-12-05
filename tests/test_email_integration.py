@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from email_manager import EmailManager
-from brain import AriaBrain
-from command_intent_classifier import CommandIntentClassifier
+from aria.email_manager import EmailManager
+from aria.brain import AriaBrain
+from aria.command_intent_classifier import CommandIntentClassifier
 
 class TestEmailIntegration(unittest.TestCase):
     def setUp(self):

@@ -244,6 +244,13 @@ class AriaBrain:
             
             # Add system message for context
             system_prompt = self._get_system_prompt()
+            
+            # Inject current date and time
+            now = datetime.datetime.now()
+            current_time_str = now.strftime("%Y-%m-%d %H:%M:%S")
+            day_of_week = now.strftime("%A")
+            system_prompt += f"\n\nCurrent Date and Time: {current_time_str} ({day_of_week})"
+            
             # Append mode-specific instruction
             system_prompt += self._get_mode_instruction()
             messages.append(SystemMessage(content=system_prompt))
@@ -313,6 +320,13 @@ class AriaBrain:
             
             # Add system message for context
             system_prompt = self._get_system_prompt()
+            
+            # Inject current date and time
+            now = datetime.datetime.now()
+            current_time_str = now.strftime("%Y-%m-%d %H:%M:%S")
+            day_of_week = now.strftime("%A")
+            system_prompt += f"\n\nCurrent Date and Time: {current_time_str} ({day_of_week})"
+            
             # Append mode-specific instruction
             system_prompt += self._get_mode_instruction()
             messages.append(SystemMessage(content=system_prompt))

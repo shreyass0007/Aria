@@ -3,8 +3,8 @@ Difficult Command Test Suite for ARIA LLM Training
 Tests edge cases, ambiguity, and complex scenarios
 """
 
-from command_intent_classifier import CommandIntentClassifier
-from brain import AriaBrain
+from aria.command_intent_classifier import CommandIntentClassifier
+from aria.brain import AriaBrain
 
 
 class DifficultCommandTester:
@@ -28,7 +28,7 @@ class DifficultCommandTester:
         confidence = result.get("confidence", 0)
         parameters = result.get("parameters", {})
         
-        status = "✓ PASS" if intent == expected_intent else "✗ FAIL"
+        status = " PASS" if intent == expected_intent else " FAIL"
         
         print(f"\nResult:")
         print(f"  Intent: {intent}")
@@ -99,7 +99,7 @@ class DifficultCommandTester:
             {
                 "command": "create a file named meeting_notes.txt in the download section",
                 "expected": "file_create",
-                "description": "File creation with location mapping (download section → downloads)"
+                "description": "File creation with location mapping (download section  downloads)"
             },
             {
                 "command": "set my system volume to seventy five percent",
@@ -285,13 +285,13 @@ class DifficultCommandTester:
         print(f"Failed: {failed} ({failed/len(tests)*100:.1f}%)")
         
         if failed == 0:
-            print("\n🎉 ALL TESTS PASSED! LLM training is excellent!")
+            print("\n ALL TESTS PASSED! LLM training is excellent!")
         elif passed / len(tests) >= 0.95:
-            print("\n✓ EXCELLENT: 95%+ accuracy on difficult commands")
+            print("\n EXCELLENT: 95%+ accuracy on difficult commands")
         elif passed / len(tests) >= 0.85:
-            print("\n✓ GOOD: 85%+ accuracy, some edge cases need work")
+            print("\n GOOD: 85%+ accuracy, some edge cases need work")
         else:
-            print("\n⚠ NEEDS IMPROVEMENT: Consider adding failed cases to training data")
+            print("\n NEEDS IMPROVEMENT: Consider adding failed cases to training data")
         
         return passed, failed
 
