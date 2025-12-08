@@ -17,7 +17,8 @@
 8. [System Control](#-system-control)
 9. [Clipboard & Screenshots](#-clipboard--screenshots)
 10. [System Monitoring](#-system-monitoring)
-11. [Weather Information](#%EF%B8%8F-weather-information)
+11. [Water Reminder](#-water-reminder)
+12. [Weather Information](#%EF%B8%8F-weather-information)
 12. [Calendar Management](#-calendar-management)
 13. [Notion Integration](#-notion-integration)
 14. [File Automation](#-file-automation)
@@ -670,6 +671,44 @@ The folder is created automatically if it doesn't exist.
 - Quick system overview
 
 ---
+
+## 🚰 Water Reminder
+
+Aria can help you stay hydrated by reminding you to drink water at regular intervals.
+
+### Default Behavior
+- **Interval**: Every 90 minutes
+- **Notification**: Voice announcement + System notification
+- **Reset**: Timer resets when you confirm you drank water
+
+### Tutorial: Managing Water Reminders
+
+**Start/Stop Reminders:**
+```
+"Aria, start water reminder"
+"Aria, remind me to drink water"
+→ "Water reminder started. I'll remind you every 90 minutes."
+
+"Aria, stop water reminder"
+→ "Water reminder stopped."
+```
+
+**Custom Interval:**
+```
+"Aria, set water reminder to 45 minutes"
+"Aria, remind me to drink water every hour"
+→ "Water reminder interval set to 45 minutes."
+```
+
+**Confirming Hydration:**
+```
+"Aria, I drank water"
+"Aria, I had some water"
+→ "Great! Reseting the timer."
+```
+
+---
+
 
 ## ☁️ Weather Information
 
