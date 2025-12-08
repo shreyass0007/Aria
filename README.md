@@ -40,6 +40,8 @@
 - 🏗️ **Modular Architecture** – Refactored codebase with specialized managers for scalability
 - 🎵 **Media Control** – Quick access to music libraries and web media
 - 🤖 **Intent Classification** – LLM-based natural language command understanding
+- 👁️ **Computer Vision** – Screen analysis for object detection and OCR (YOLOv8 + PaddleOCR)
+- 💧 **Water Reminder** – Smart hydration alerts adapted to your activity and DND status
 
 ---
 
@@ -154,6 +156,7 @@
 | **OpenWeatherMap API** | Optional, requires `OPENWEATHER_API_KEY` for weather features |
 | **CUDA** | Optional, for GPU acceleration of Faster-Whisper (CPU fallback available) |
 | **PyTorch** | Required for Faster-Whisper (installed via requirements.txt) |
+| **Computer Vision** | Optional, requires `paddlepaddle` & `paddleocr` (installed via requirements.txt) |
 
 ---
 
@@ -536,6 +539,20 @@ Starts FastAPI server at `http://localhost:5000` for API testing or custom front
 - Conversation titles based on first message
 - Works without MongoDB (in-memory mode)
 
+### 👁️ Computer Vision
+
+- **Screen Awareness**: Analyzes screen content to understand what you're looking at
+- **Object Detection**: Identifies UI elements using YOLOv8
+- **Text Recognition**: Reads text from screen using PaddleOCR
+- **Layout Analysis**: Understands structure of the active window
+- **Privacy First**: Processing happens locally, no screenshots sent to cloud
+
+### 💧 Water Manager
+
+- **Smart Reminders**: Reminds you to hydrate every 90 minutes (configurable)
+- **DND Adaptation**: Respects "Do Not Disturb" mode (silent notifications)
+- **Reset Capability**: "I drank water" resets the timer
+
 ---
 
 ## 📁 Project Structure
@@ -594,6 +611,31 @@ ARIA/
 ├── SYSTEM_CONTROL_GUIDE.md      # System control guide
 └── verify_*.py                   # Verification/test scripts
 ```
+
+---
+
+
+## 🧠 Fine-Tuning & Customization
+
+Aria supports fine-tuning command classification to your specific needs.
+
+### 1. Generate Training Data
+```powershell
+python generate_fine_tuning_data.py
+```
+Uses `llm_training_dataset.json` templates to create thousands of synthetic training examples for command classification.
+
+### 2. Run Fine-Tuning
+```powershell
+python start_finetuning.py
+```
+Uses the generated data to fine-tune a model (e.g., GPT-4o-mini) on your specific command patterns.
+
+### 3. Verification
+```powershell
+python check_finetune_status.py
+```
+Monitors the status of your fine-tuning job.
 
 ---
 
