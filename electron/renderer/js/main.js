@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     loadModelPreference();
-    loadModelPreference();
     displayWelcomeMessage();
 
     // Initialize music player
@@ -79,7 +78,7 @@ function setupEventListeners() {
     const sendBtn = document.getElementById('sendBtn');
     const messageInput = document.getElementById('messageInput');
     const voiceBtn = document.getElementById('voiceBtn');
-    const settingsBtn = document.getElementById('settingsBtn');
+    // settingsBtn removed, replaced by dropdown
     const settingsModal = document.getElementById('settingsModal');
     const closeModalBtn = document.getElementById('closeModalBtn');
     const clearChatBtn = document.getElementById('clearChatBtn');
@@ -90,7 +89,12 @@ function setupEventListeners() {
     const closeHistoryBtn = document.getElementById('closeHistoryBtn');
     const ttsToggle = document.getElementById('ttsToggle');
     const darkModeToggle = document.getElementById('darkModeToggle');
-    const modelSelector = document.getElementById('modelSelector');
+
+    // Header Toolbar Buttons
+    const visionBtn = document.getElementById('visionBtn');
+    const settingsDropdownBtn = document.getElementById('settingsDropdownBtn');
+    const settingsDropdown = document.getElementById('settingsDropdown');
+    const openSettingsModalBtn = document.getElementById('openSettingsModalBtn');
 
     if (sendBtn) sendBtn.addEventListener('click', handleSendMessage);
     if (messageInput) {
@@ -104,7 +108,6 @@ function setupEventListeners() {
     }
 
     if (voiceBtn) voiceBtn.addEventListener('click', handleToggleVoice);
-    if (settingsBtn) settingsBtn.addEventListener('click', openModal);
     if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
     if (clearChatBtn) clearChatBtn.addEventListener('click', handleClearChat);
     if (toggleThemeBtn) toggleThemeBtn.addEventListener('click', handleToggleTheme);
@@ -112,6 +115,31 @@ function setupEventListeners() {
     if (newChatBtn) newChatBtn.addEventListener('click', handleNewChat);
     if (historyBtn) historyBtn.addEventListener('click', toggleHistory);
     if (closeHistoryBtn) closeHistoryBtn.addEventListener('click', toggleHistory);
+
+    if (visionBtn) visionBtn.addEventListener('click', handleVisionAnalyze);
+
+    // Settings Dropdown Toggle
+    if (settingsDropdownBtn && settingsDropdown) {
+        settingsDropdownBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            settingsDropdown.classList.toggle('active');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!settingsDropdownBtn.contains(e.target) && !settingsDropdown.contains(e.target)) {
+                settingsDropdown.classList.remove('active');
+            }
+        });
+    }
+
+    // Open Settings Modal from Dropdown
+    if (openSettingsModalBtn) {
+        openSettingsModalBtn.addEventListener('click', () => {
+            openModal();
+            if (settingsDropdown) settingsDropdown.classList.remove('active');
+        });
+    }
 
     if (ttsToggle) {
         ttsToggle.addEventListener('change', handleToggleTTS);
@@ -411,27 +439,6 @@ function getTimeBasedGreeting() {
             "Let's make things happen.",
             "Your productivity suite is ready.",
             "Time to turn ideas into reality.",
-            "The early bird gets the worm.",
-            "Rise and shine! Let's get to work.",
-            "Another day, another opportunity.",
-            "Ready to make today count?",
-            "Let's start with a winning strategy.",
-            "Your digital workspace is prepared.",
-            "Coffee's ready. What's first?",
-            "Let's make magic happen today.",
-            "The sun is up, and so are we.",
-            "Your morning briefing is available.",
-            "Time to seize the day.",
-            "What masterpiece shall we create today?",
-            "All systems fully charged and ready.",
-            "Let's turn those dreams into plans.",
-            "The future starts now.",
-            "Your potential awaits activation.",
-            "Ready to break new ground?",
-            "Let's set the tone for an amazing day.",
-            "What brilliant idea will spark today?",
-            "Morning glory awaits.",
-            "Let's build something incredible."
         ],
         afternoon: [
             "How is your day going?",
@@ -442,33 +449,7 @@ function getTimeBasedGreeting() {
             "Let's keep the momentum going.",
             "Time to check off that to-do list.",
             "How can I assist this afternoon?",
-            "Still going strong?",
-            "Let's finish what we started.",
-            "Halfway through the day already.",
-            "Need anything to stay on track?",
-            "Keeping things efficient, as always.",
-            "What's next on your list?",
-            "Shall we continue?",
-            "Your afternoon update is ready.",
-            "Let's maintain that energy.",
-            "Working hard, I see.",
-            "Let's power through.",
-            "At your service, as always.",
-            "The day is yours to command.",
-            "Peak performance hours are here.",
-            "Let's capitalize on this momentum.",
-            "What shall we accomplish next?",
-            "Cruising through the day nicely.",
-            "Your afternoon checkpoint is ready.",
-            "Time to double down on success.",
-            "How can I optimize your workflow?",
-            "Let's keep this winning streak alive.",
-            "Productivity levels looking excellent.",
-            "The hustle continues.",
-            "Let's make the most of these hours.",
-            "Your focus is impressive today.",
-            "Ready to crush some more goals?",
-            "The afternoon grind awaits."
+            "Still going strong? Let's finish what we started."
         ],
         evening: [
             "Welcome back. How can I help?",
@@ -476,78 +457,19 @@ function getTimeBasedGreeting() {
             "What do you need?",
             "At your service.",
             "Time to unwind or keep going?",
-            "Let's review what you've accomplished.",
-            "How was your day?",
-            "Plans for the evening?",
-            "Shall we tie up loose ends?",
-            "Time to relax or power through?",
-            "Today's work is nearly done.",
-            "Let's finish strong.",
-            "Anything left on your plate?",
-            "Evening briefing ready.",
-            "Time to reflect and recharge.",
-            "You've earned a break.",
-            "Let's close out the day properly.",
-            "Standing by for evening tasks.",
-            "Here to help you wind down.",
-            "What can I do for you tonight?",
-            "The golden hour approaches.",
-            "Time to shift into evening mode.",
-            "Let's recap today's victories.",
-            "Sunset productivity activated.",
-            "Evening operations standing by.",
-            "Ready for whatever comes next?",
-            "The day's final act begins.",
-            "Time for reflection or action?",
-            "Let's make this evening count.",
-            "Winding down or ramping up?",
-            "Your evening companion is here.",
-            "Shall we celebrate today's wins?",
-            "The twilight hours are yours.",
-            "Ready for some evening magic?",
-            "Let's end this day on a high note."
+            "Let's review what you've accomplished."
         ],
         night: [
             "Burning the midnight oil?",
             "Still working? Let me help.",
             "How can I assist you tonight?",
             "Ready whenever you are.",
-            "Late night session?",
-            "The night is young.",
-            "Inspiration strikes at odd hours.",
-            "Night owl mode activated.",
-            "Here for you, no matter the hour.",
-            "Let's make the most of this quiet time.",
-            "The stars are out, and so are we.",
-            "Darkness brings clarity sometimes.",
-            "Working late again, I see.",
-            "Your dedication is admirable.",
-            "Let me help you through the night.",
-            "Sleep is overrated anyway.",
-            "The night shift begins.",
-            "When do you sleep, exactly?",
-            "Silent productivity mode enabled.",
-            "Let's turn night into opportunity.",
-            "The world sleeps, but we create.",
-            "Midnight breakthrough incoming?",
-            "The nocturnal genius awakens.",
-            "Coffee or code? Both?",
-            "These quiet hours are golden.",
-            "Night mode: fully operational.",
-            "The best ideas come after dark.",
-            "Burning bright in the darkness.",
-            "Let's own these midnight hours.",
-            "Your nocturnal assistant reporting.",
-            "The moon is our only witness.",
-            "Late night brilliance in progress.",
-            "The witching hour of productivity.",
-            "Sleep later, create now.",
-            "Darkness fuels innovation."
+            "Late night session?"
         ]
     };
 
     // Pick a random context message
-    const messages = contextMessages[timeOfDay];
+    const messages = contextMessages[timeOfDay] || contextMessages['morning'];
     const contextMsg = messages[Math.floor(Math.random() * messages.length)];
 
     return greeting + contextMsg;
@@ -565,11 +487,6 @@ async function displayWelcomeMessage() {
 
             if (data.status === 'success' && data.briefing) {
                 addMessage(data.briefing, 'aria');
-                // Also speak it? The backend doesn't auto-speak this one, so we might want to trigger TTS here if needed.
-                // But for now, let's just display it. The user can click to speak if they want, or we can send a TTS command.
-                // Actually, let's make it speak automatically for that "Jarvis" feel.
-                // We can do this by sending a hidden command or just letting the user read it.
-                // Let's stick to text for now to be safe, or use the existing TTS toggle state.
             } else {
                 // Fallback to generic
                 const greeting = getTimeBasedGreeting();
@@ -583,50 +500,39 @@ async function displayWelcomeMessage() {
     }
 }
 
-// DISABLED: Module loader system was removed
-// Uncomment and restore module-loader.js and feature-config.js to re-enable
-/*
-async function loadOptionalModules() {
-    console.log('🔌 Loading optional modules...');
+async function handleVisionAnalyze() {
+    addMessage("Analyzing screen...", 'aria');
+    showThinkingIndicator();
 
     try {
-        // Check backend feature availability
-        const featureStatus = await checkAllFeaturesStatus();
+        const response = await fetch('http://localhost:8000/system/vision/analyze?save_debug=true', {
+            method: 'POST'
+        });
+        const data = await response.json();
+        removeThinkingIndicator();
 
-        if (featureStatus.status !== 'success') {
-            console.warn('⚠️ Could not check feature status, modules will not load');
-            return;
-        }
+        if (data.error) {
+            addMessage(`Error: ${data.error}`, 'aria');
+        } else {
+            let msg = `**Screen Analysis Complete**\n`;
+            msg += `- Objects Detected: ${data.objects.length}\n`;
+            msg += `- Text Elements: ${data.texts.length}\n`;
+            if (data.latency) msg += `- Latency: ${(data.latency * 1000).toFixed(2)}ms\n\n`;
 
-        const availableFeatures = featureStatus.features;
-        console.log('Available features:', availableFeatures);
-
-        // Module definitions
-        const modules = [
-            // Phase 2: Email Module
-            {
-                name: 'email',
-                init: async () => {
-                    const { initEmailModule } = await import('./modules/email.js');
-                    return await initEmailModule();
-                },
-                options: { showErrorToUser: false }
+            if (data.objects.length > 0) {
+                msg += `**Objects:** ${data.objects.map(o => o.label).join(', ')}\n`;
+            }
+            if (data.texts.length > 0) {
+                // Limit text output
+                const textContent = data.texts.map(t => t.text).join(' ');
+                msg += `**Text:** ${textContent.substring(0, 100)}${textContent.length > 100 ? '...' : ''}`;
             }
 
-            // More modules will be added in future phases
-        ];
-
-        // Load all modules in parallel
-        if (modules.length > 0) {
-            const results = await moduleLoader.loadModules(modules);
-            console.log(`✅ Loaded ${results.loaded}/${results.total} optional modules`);
-        } else {
-            console.log('ℹ️ No optional modules configured yet');
+            addMessage(msg, 'aria');
         }
-
     } catch (error) {
-        console.error('Error loading optional modules:', error);
-        // App continues normally even if module loading fails
+        console.error('Vision Error:', error);
+        removeThinkingIndicator();
+        addMessage("Failed to analyze screen. Is the backend running?", 'aria');
     }
 }
-*/

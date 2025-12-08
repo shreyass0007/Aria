@@ -26,7 +26,7 @@ class MessageResponse(BaseModel):
     response: str
     conversation_id: str
     audio_url: Optional[str] = None
-    action_result: Optional[Dict[str, Any]] = None
+    action_result: Optional[Any] = None
     ui_action: Optional[Dict[str, Any]] = None
 
 
@@ -90,7 +90,11 @@ async def process_message(
         else:
             intent_data = aria.command_classifier.classify_intent(message, conversation_history)
             
-        intent = intent_data.get("intent")
+        if isinstance(intent_data, list):
+            intent = intent_data[0].get("intent") if intent_data else "none"
+        else:
+            intent = intent_data.get("intent")
+            
         print(f"DEBUG: Router classified as: {intent}")
         
         # 6. Execute Command

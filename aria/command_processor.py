@@ -12,6 +12,7 @@ from .handlers.weather_handler import WeatherHandler
 from .handlers.file_handler import FileHandler
 from .handlers.notion_handler import NotionHandler
 from .handlers.calendar_handler import CalendarHandler
+from .handlers.vision_handler import VisionHandler
 from .intent_dispatcher import IntentDispatcher
 from .logger import setup_logger
 
@@ -20,7 +21,8 @@ logger = setup_logger(__name__)
 class CommandProcessor:
     def __init__(self, tts_manager, app_launcher, brain, calendar, notion, automator, 
                  system_control, command_classifier, file_manager, weather_manager, 
-                 clipboard_screenshot, system_monitor, email_manager, greeting_service, music_manager, water_manager=None):
+                 clipboard_screenshot, system_monitor, email_manager, greeting_service, music_manager, water_manager=None, vision_pipeline_factory=None):
+
         self.tts_manager = tts_manager
         self.app_launcher = app_launcher
         self.brain = brain
@@ -55,6 +57,7 @@ class CommandProcessor:
         self.file_handler = FileHandler(self.tts_manager, self.file_manager, self.automator, self.brain)
         self.notion_handler = NotionHandler(self.tts_manager, self.notion, self.brain)
         self.calendar_handler = CalendarHandler(self.tts_manager, self.calendar, self.brain)
+        self.vision_handler = VisionHandler(self.tts_manager, self.brain, vision_pipeline_factory)
 
         # Initialize Intent Dispatcher
         self.dispatcher = IntentDispatcher()
@@ -94,6 +97,9 @@ class CommandProcessor:
         # Notion
         for intent in ["notion_query", "notion_create"]:
             self.dispatcher.register_handler(intent, self.notion_handler.handle)
+
+        # Vision
+        self.dispatcher.register_handler("screen_analysis", self.vision_handler.handle)
 
         # Local Handlers (App & Web)
         self.dispatcher.register_handler("app_open", self.handle_app_open)
@@ -317,9 +323,14 @@ class CommandProcessor:
         # Daily Briefing Trigger
         if any(x in text for x in ["good morning", "morning briefing", "daily briefing", "brief me"]):
             self.tts_manager.speak("Good morning! Gathering your briefing...")
-            briefing = self.greeting_service.get_morning_briefing()
-            self.tts_manager.speak(briefing)
-            return briefing
+            briefing = self.greeting_service.get_morning_briefing(force=True)
+            if briefing:
+                self.tts_manager.speak(briefing)
+                return briefing
+            else:
+                fallback = "Good morning! I couldn't generate the full briefing, but I'm ready to help."
+                self.tts_manager.speak(fallback)
+                return fallback
 
         # Water Reminder Trigger
         if self.water_manager:
@@ -395,42 +406,62 @@ class CommandProcessor:
         # ---------------------------------------------------------
         
         # Classify the user's intent using the LLM (or use provided data)
+        # Classify the user's intent using the LLM (or use provided data)
         if intent_data:
-            intent_result = intent_data
+            intent_results = intent_data
         else:
-            intent_result = self.command_classifier.classify_intent(text)
+            intent_results = self.command_classifier.classify_intent(text)
             
-        intent = intent_result.get("intent")
-        confidence = intent_result.get("confidence", 0.0)
-        parameters = intent_result.get("parameters", {})
+        # Ensure it's a list
+        if isinstance(intent_results, dict):
+            intent_results = [intent_results]
+            
+        execution_responses = []
+        handled_any = False
         
-        logger.info(f"Intent: {intent}, Confidence: {confidence}, Params: {parameters}")
-        
-        # Dispatch using IntentDispatcher
-        result = self.dispatcher.dispatch(intent, text, parameters)
-        
-        if result:
-            # Handle UI Actions based on intent (Post-processing)
-            if intent == "music_play":
-                track_info = self.music_manager.current_track_info
-                self.last_ui_action = {
-                    "type": "music_playing",
-                    "data": {
-                        "track_info": track_info
-                    }
-                }
-            elif intent == "email_send":
-                pending = self.email_handler.pending_email
-                if pending:
+        for intent_item in intent_results:
+            intent = intent_item.get("intent")
+            confidence = intent_item.get("confidence", 0.0)
+            parameters = intent_item.get("parameters", {})
+            
+            logger.info(f"Processing Intent: {intent}, Confidence: {confidence}, Params: {parameters}")
+            
+            if intent == "general_chat" or intent == "none":
+                continue
+
+            # Dispatch using IntentDispatcher
+            result = self.dispatcher.dispatch(intent, text, parameters)
+            
+            if result:
+                handled_any = True
+                execution_responses.append(result)
+                
+                # Handle UI Actions based on intent (Post-processing)
+                if intent == "music_play":
+                    track_info = self.music_manager.current_track_info
                     self.last_ui_action = {
-                        "type": "email_confirmation",
+                        "type": "music_playing",
                         "data": {
-                            "to": pending["to"],
-                            "subject": pending["subject"],
-                            "body": pending["body"]
+                            "track_info": track_info
                         }
                     }
-            return result
+                elif intent == "email_send":
+                    pending = self.email_handler.pending_email
+                    if pending:
+                        self.last_ui_action = {
+                            "type": "email_confirmation",
+                            "data": {
+                                "to": pending["to"],
+                                "subject": pending["subject"],
+                                "body": pending["body"]
+                            }
+                        }
+        
+        if handled_any:
+            final_response = " ".join(execution_responses)
+            # If we have multiple responses, maybe we don't want to speak them all if they are repetitive?
+            # But for now, let's just join them.
+            return final_response
 
         # --- FALLBACK ---
         # If no specific intent matched (or dispatcher returned None), use LLM for general chat

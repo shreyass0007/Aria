@@ -1,5 +1,13 @@
-import pvporcupine
-import pyaudio
+try:
+    import pvporcupine
+except ImportError:
+    pvporcupine = None
+
+try:
+    import pyaudio
+except ImportError:
+    pyaudio = None
+
 import struct
 import os
 import threading
@@ -24,6 +32,11 @@ class WakeWordListener:
             self.porcupine = None
             return
 
+        if pvporcupine is None:
+            logger.error("pvporcupine module not found. Wake word listener disabled.")
+            self.porcupine = None
+            return
+
         try:
             # Use default keywords (Jarvis, Computer, etc.)
             # We can also use 'picovoice', 'bumblebee', etc.
@@ -37,7 +50,12 @@ class WakeWordListener:
             logger.error(f"Failed to initialize Porcupine: {e}")
             self.porcupine = None
 
-        self.pa = pyaudio.PyAudio()
+        if pyaudio is None:
+            logger.error("pyaudio module not found. Wake word listener disabled.")
+            self.pa = None
+        else:
+            self.pa = pyaudio.PyAudio()
+
         self.audio_stream = None
         self.is_listening = False
         self.thread = None
@@ -63,6 +81,9 @@ class WakeWordListener:
         logger.info("Wake Word Listener stopped.")
 
     def _listen_loop(self):
+        if not self.pa:
+            return
+
         try:
             self.audio_stream = self.pa.open(
                 rate=self.porcupine.sample_rate,

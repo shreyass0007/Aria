@@ -1,6 +1,10 @@
 import os
-import chromadb
-from chromadb.config import Settings
+try:
+    import chromadb
+    from chromadb.config import Settings
+except ImportError:
+    chromadb = None
+
 from datetime import datetime
 from dotenv import load_dotenv
 import openai
@@ -33,6 +37,12 @@ class MemoryManager:
         
         # Initialize ChromaDB
         db_path = os.getenv("CHROMADB_PATH", "./vector_db")
+        if chromadb is None:
+            print("[WARNING] ChromaDB module not found. Long-term memory disabled.")
+            self.client = None
+            self.collection = None
+            return
+
         try:
             self.client = chromadb.PersistentClient(path=db_path)
             

@@ -78,10 +78,11 @@ class CommandIntentClassifier:
         "calendar_create": "Create a calendar event",
         "notion_query": "Search or summarize Notion pages",
         "notion_create": "Add item/page to Notion",
-        # Info
+        # INFO
         "time_check": "Get current time",
         "date_check": "Get current date",
         "weather_check": "Check weather for a specific location",
+        "screen_analysis": "Analyze/Describe what is on the screen (vision)",
         # Email
         "email_send": "Send an email",
         "email_check": "Check unread emails or inbox",
@@ -134,9 +135,9 @@ class CommandIntentClassifier:
         """Initialize with an AriaBrain instance."""
         self.brain = brain
 
-    def classify_intent(self, user_text: str, conversation_history: list = None) -> Dict[str, Any]:
-        """Classify the user's command into an intent.
-        Returns a dict with keys: intent, confidence, parameters.
+    def classify_intent(self, user_text: str, conversation_history: list = None) -> list:
+        """Classify the user's command into one or more intents.
+        Returns a list of dicts, each with keys: intent, confidence, parameters.
         """
         # 1. FAST PATH: Check for exact keyword matches
         clean_text = user_text.lower().strip().replace("please", "").strip()
@@ -145,11 +146,11 @@ class CommandIntentClassifier:
         
         if clean_text in self.FAST_PATH_INTENTS:
             logger.info(f"FAST PATH TRIGGERED: {clean_text} -> {self.FAST_PATH_INTENTS[clean_text]}")
-            return {
+            return [{
                 "intent": self.FAST_PATH_INTENTS[clean_text],
                 "confidence": 1.0,
                 "parameters": {}
-            }
+            }]
 
         # 2. REGEX FAST PATH: Check for patterns (e.g. "set volume to 50")
         # Volume Set
@@ -157,88 +158,105 @@ class CommandIntentClassifier:
         if vol_match:
             level = int(vol_match.group(1))
             logger.info(f"REGEX PATH TRIGGERED: volume_set -> {level}")
-            return {
+            return [{
                 "intent": "volume_set",
                 "confidence": 1.0,
                 "parameters": {"level": level}
-            }
+            }]
         
         # Volume Set (Alternative: "volume 50")
         if re.match(r'^volume \d+$', clean_text):
              level = int(re.findall(r'\d+', clean_text)[0])
              logger.info(f"REGEX PATH TRIGGERED: volume_set -> {level}")
-             return {
+             return [{
                 "intent": "volume_set",
                 "confidence": 1.0,
                 "parameters": {"level": level}
-            }
+            }]
 
         if not self.brain.is_available():
-            return {"intent": "none", "confidence": 0.0, "parameters": {}}
+            return [{"intent": "none", "confidence": 0.0, "parameters": {}}]
 
         prompt = self._build_classification_prompt(user_text, conversation_history)
         try:
             llm = self.brain.get_llm()
             if not llm:
                 logger.error("Error: No LLM available")
-                return {"intent": "general_chat", "confidence": 0.0, "parameters": {}}
+                return [{"intent": "general_chat", "confidence": 0.0, "parameters": {}}]
                 
             response = llm.invoke(prompt)
             content = response.content.strip()
             # print(f"CLASSIFIER DEBUG - Raw response: {content[:200]}...")
             
-            # Use regex to find JSON object
-            json_match = re.search(r"\{.*\}", content, re.DOTALL)
+            # Use regex to find JSON object or list
+            json_match = re.search(r"(\[.*\]|\{.*\})", content, re.DOTALL)
             if json_match:
                 cleaned = json_match.group(0)
-                result = json.loads(cleaned)
+                parsed_result = json.loads(cleaned)
+                
+                # Normalize to list
+                if isinstance(parsed_result, dict):
+                    results = [parsed_result]
+                elif isinstance(parsed_result, list):
+                    results = parsed_result
+                else:
+                    results = []
             else:
                 logger.warning("No JSON found in response")
-                result = {}
+                results = []
         except Exception as e:
             logger.error(f"Error classifying intent: {e}")
             try:
                 logger.debug(f"Raw response was: {content[:100].encode('utf-8', errors='ignore').decode('utf-8') if 'content' in locals() else 'No response'}")
             except Exception:
                 logger.debug("Raw response was: [Content with unicode]")
-            return {"intent": "general_chat", "confidence": 0.0, "parameters": {}}
+            return [{"intent": "general_chat", "confidence": 0.0, "parameters": {}}]
 
-        intent = result.get("intent", "general_chat")
-        if intent not in self.COMMAND_INTENTS:
-            intent = "general_chat"
-        parameters = result.get("parameters", {})
+        final_intents = []
+        
+        # If no results or empty list, default to general_chat
+        if not results:
+             results = [{"intent": "general_chat", "confidence": 0.0, "parameters": {}}]
 
-        # Fallback extraction for weather_check if city missing
-        if intent == "weather_check" and not parameters.get("city"):
-            match = re.search(r"weather in ([a-zA-Z ]+)", user_text, re.IGNORECASE)
-            if match:
-                parameters["city"] = match.group(1).strip()
+        for result in results:
+            intent = result.get("intent", "general_chat")
+            if intent not in self.COMMAND_INTENTS:
+                intent = "general_chat"
+            parameters = result.get("parameters", {})
 
-        # Normalize location parameters for file operations
-        if intent.startswith("file_") and "location" in parameters:
-            location = parameters.get("location", "").lower()
-            # Map various location phrases to standard shortcuts
-            location_mapping = {
-                "download": "downloads",
-                "download section": "downloads",
-                "downloads folder": "downloads",
-                "downloads area": "downloads",
-                "desktop": "desktop", 
-                "document": "documents",
-                "documents folder": "documents",
-                "picture": "pictures",
-                "pictures folder": "pictures",
-                "music": "music",
-                "music folder": "music",
-                "video": "videos",
-                "videos folder": "videos"
-            }
-            for key, value in location_mapping.items():
-                if key in location:
-                    parameters["location"] = value
-                    break
+            # Fallback extraction for weather_check if city missing
+            if intent == "weather_check" and not parameters.get("city"):
+                match = re.search(r"weather in ([a-zA-Z ]+)", user_text, re.IGNORECASE)
+                if match:
+                    parameters["city"] = match.group(1).strip()
 
-        return {"intent": intent, "confidence": result.get("confidence", 0.0), "parameters": parameters}
+            # Normalize location parameters for file operations
+            if intent.startswith("file_") and "location" in parameters:
+                location = parameters.get("location", "").lower()
+                # Map various location phrases to standard shortcuts
+                location_mapping = {
+                    "download": "downloads",
+                    "download section": "downloads",
+                    "downloads folder": "downloads",
+                    "downloads area": "downloads",
+                    "desktop": "desktop", 
+                    "document": "documents",
+                    "documents folder": "documents",
+                    "picture": "pictures",
+                    "pictures folder": "pictures",
+                    "music": "music",
+                    "music folder": "music",
+                    "video": "videos",
+                    "videos folder": "videos"
+                }
+                for key, value in location_mapping.items():
+                    if key in location:
+                        parameters["location"] = value
+                        break
+            
+            final_intents.append({"intent": intent, "confidence": result.get("confidence", 0.0), "parameters": parameters})
+
+        return final_intents
 
     def _build_classification_prompt(self, user_text: str, conversation_history: list = None) -> str:
         """Construct the prompt for the LLM to classify the command."""
@@ -276,7 +294,7 @@ NEGATIVE CONSTRAINTS (CRITICAL):
 3. Do NOT assume you can perform actions like "change settings", "update system", "install software", "change wallpaper", "change theme", "order food", or "book flights".
 4. If the user asks for "change wallpaper", "dark mode", or "system settings", use "general_chat".
 5. If the user asks for "download X" (where X is a file/video from web), use "general_chat" (unless it matches a specific file automation intent).
-6. If the user asks "can you see this?" or "what is on my screen?", use "general_chat" (unless "screenshot_take" is explicitly requested).
+6. If the user asks "can you see this?" or "what is on my screen?", use "screen_analysis".
 
 CLASSIFICATION RULES:
 1. Choose the MOST SPECIFIC intent that matches the user's command.
@@ -313,12 +331,17 @@ EXAMPLES:
 - "write a python script to sort a list" -> intent: "general_chat", parameters: {{}}
 - "how do I center a div" -> intent: "general_chat", parameters: {{}}
 - "summarize this notion page" -> intent: "notion_query", parameters: {{"query": "summarize this page"}}
+- "what is on my screen" -> intent: "screen_analysis", parameters: {{}}
 
-Return ONLY a JSON object with this exact structure:
-{{{{
-    "intent": "the_intent_name",
-    "confidence": 0.95,
-    "parameters": {{}}
-}}}}
+Return ONLY a JSON LIST of objects with this exact structure:
+[
+    {{
+        "intent": "the_intent_name",
+        "confidence": 0.95,
+        "parameters": {{}}
+    }}
+]
+
+If there are multiple distinct actions (e.g., "play music and set volume"), return multiple objects in the list in the order they should be executed.
 """
         return prompt

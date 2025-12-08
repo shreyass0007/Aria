@@ -1,6 +1,10 @@
 import os
 import torch
-from faster_whisper import WhisperModel
+try:
+    from faster_whisper import WhisperModel
+except ImportError:
+    WhisperModel = None
+
 
 class SpeechEngine:
     def __init__(self, model_size="base", device=None, compute_type="int8"):
@@ -15,6 +19,11 @@ class SpeechEngine:
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         
+        if WhisperModel is None:
+            print("SpeechEngine: faster-whisper not installed. Speech recognition disabled.")
+            self.model = None
+            return
+
         print(f"Initializing SpeechEngine with model='{model_size}', device='{device}'...")
         
         try:

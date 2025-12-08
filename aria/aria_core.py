@@ -96,7 +96,8 @@ class AriaCore:
             email_manager=self.email_manager,
             greeting_service=self.greeting_service,
             music_manager=self.music_manager,
-            water_manager=self.water_manager
+            water_manager=self.water_manager,
+            vision_pipeline_factory=self.get_vision_pipeline
         )
 
         # Initialize Wake Word Listener
@@ -104,6 +105,22 @@ class AriaCore:
         self.wake_word_listener.start()
 
         self.check_microphones()
+        
+        # Vision Pipeline (Lazy Loaded)
+        self.vision_pipeline = None
+
+    def get_vision_pipeline(self):
+        """Lazy load the vision pipeline."""
+        if self.vision_pipeline is None:
+            logger.info("Initializing Vision Pipeline...")
+            from aria.vision.pipeline import VisionPipeline
+            self.vision_pipeline = VisionPipeline()
+        return self.vision_pipeline
+
+    def analyze_screen(self, save_debug: bool = False):
+        """Analyze the current screen."""
+        pipeline = self.get_vision_pipeline()
+        return pipeline.analyze_screen(save_debug=save_debug)
 
     def _on_wake_word(self):
         """Callback when wake word is detected."""

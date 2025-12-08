@@ -2,6 +2,7 @@ import os
 import requests
 import json
 import time
+from .config import settings
 
 class WeatherManager:
     def __init__(self):
@@ -176,3 +177,10 @@ class WeatherManager:
         except Exception as e:
             print(f"Weather API Error: {e}")
             return "Sorry, I'm having trouble connecting to the weather service right now."
+
+    def get_weather_summary(self) -> str:
+        """
+        Returns a summary of the weather for the default city.
+        Used for morning briefings.
+        """
+        return self.get_weather(settings.DEFAULT_CITY)

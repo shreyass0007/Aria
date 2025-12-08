@@ -1,4 +1,8 @@
-import speech_recognition as sr
+try:
+    import speech_recognition as sr
+except ImportError:
+    sr = None
+
 import os
 import time
 import threading
@@ -8,11 +12,19 @@ from pathlib import Path
 class SpeechInput:
     def __init__(self, tts_manager):
         self.tts_manager = tts_manager
-        self.recognizer = sr.Recognizer()
+        if sr:
+            self.recognizer = sr.Recognizer()
+        else:
+            self.recognizer = None
+
         self.lock = threading.Lock()
         self.speech_engine = None
 
     def check_microphones(self):
+        if sr is None:
+            print("SpeechInput: speech_recognition module not found.")
+            return
+
         try:
             mics = sr.Microphone.list_microphone_names()
             print(f"Available Microphones: {mics}")
@@ -24,6 +36,10 @@ class SpeechInput:
     def listen(self):
         # Acquire lock to ensure only one thread listens at a time
         with self.lock:
+
+            if sr is None:
+                return ""
+
             try:
                 with sr.Microphone() as source:
                     print("Listening...")

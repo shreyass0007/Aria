@@ -33,13 +33,15 @@ class GreetingService:
             
         return f"{greeting}. How can I help you?"
 
-    def check_and_update_briefing_status(self):
+    def check_and_update_briefing_status(self, force=False):
         """
         Checks if the morning briefing should be shown.
         Returns True if:
         1. It is between 5 AM and 10 AM.
         2. Briefing has NOT been shown today.
-        Updates the state file if returning True.
+        OR
+        3. force is True.
+        Updates the state file if returning True (and not forced, or maybe update anyway? Let's not update state if forced to avoid messing with auto-logic, or do we? Safest is to return True immediately).
         """
         import json
         import os
@@ -49,6 +51,10 @@ class GreetingService:
         hour = now.hour
         today_str = now.strftime("%Y-%m-%d")
         
+        # 0. Force Check
+        if force:
+            return True
+
         # 1. Check Time Window (5 AM - 10 AM)
         if not (5 <= hour < 10):
             return False
@@ -79,13 +85,13 @@ class GreetingService:
             print(f"Error writing briefing state: {e}")
             return True # Default to showing it if we can't write state (fail open)
 
-    def get_morning_briefing(self):
+    def get_morning_briefing(self, force=False):
         """
         Generates a smart briefing ONLY if check_and_update_briefing_status() returns True.
         Otherwise returns None (signaling to use normal greeting).
         """
         # Check if we should show the briefing
-        if not self.check_and_update_briefing_status():
+        if not self.check_and_update_briefing_status(force=force):
             return None
 
         ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))

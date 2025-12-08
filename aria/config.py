@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     # Timezone
     ARIA_TIMEZONE: str = "Asia/Kolkata"
+    DEFAULT_CITY: str = "PUNE"
     
     @property
     def TIMEZONE(self) -> datetime.timezone:
