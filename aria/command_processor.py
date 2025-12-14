@@ -21,7 +21,7 @@ logger = setup_logger(__name__)
 class CommandProcessor:
     def __init__(self, tts_manager, app_launcher, brain, calendar, notion, automator, 
                  system_control, command_classifier, file_manager, weather_manager, 
-                 clipboard_screenshot, system_monitor, email_manager, greeting_service, music_manager, water_manager=None, vision_pipeline_factory=None):
+                 clipboard_screenshot, system_monitor, email_manager, greeting_service, music_manager, memory_manager, water_manager=None, vision_pipeline_factory=None):
 
         self.tts_manager = tts_manager
         self.app_launcher = app_launcher
@@ -38,6 +38,7 @@ class CommandProcessor:
         self.email_manager = email_manager
         self.greeting_service = greeting_service
         self.music_manager = music_manager
+        self.memory_manager = memory_manager
         self.water_manager = water_manager
         self.search_manager = SearchManager()
         
@@ -470,6 +471,13 @@ class CommandProcessor:
         # Use passed history if available, else use internal
         history_to_use = conversation_history if conversation_history is not None else self.conversation_history
         
+        # --- LONG TERM MEMORY RETRIEVAL ---
+        if long_term_memory is None and self.memory_manager:
+            # Search for relevant past context based on user text
+            logger.info("Searching long-term memory...")
+            long_term_memory = self.memory_manager.search_relevant_context(text)
+
+        
         # Add user message to internal history if not using external
         if conversation_history is None:
             self.conversation_history.append({"role": "user", "content": text})
@@ -490,6 +498,15 @@ class CommandProcessor:
                 self.conversation_history.append({"role": "assistant", "content": response})
             
             self.tts_manager.speak(response)
+            
+            # --- SAVE TO LONG TERM MEMORY ---
+            if self.memory_manager:
+                # We need a conversation ID. For now, we use a default or generate one.
+                # Ideally, we should have a session ID.
+                conversation_id = "default_session" 
+                self.memory_manager.add_message(conversation_id, text, "user")
+                self.memory_manager.add_message(conversation_id, response, "assistant")
+            
             return response
         except Exception as e:
             logger.error(f"Error in general_chat: {e}")

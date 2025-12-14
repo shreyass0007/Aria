@@ -24,7 +24,9 @@ class SystemHandler(BaseHandler):
             "battery_check", "cpu_check", "ram_check", "system_stats",
             "battery_check", "cpu_check", "ram_check", "system_stats",
             "clipboard_copy", "clipboard_read", "clipboard_clear",
-            "time_check", "date_check"
+            "clipboard_copy", "clipboard_read", "clipboard_clear",
+            "time_check", "date_check",
+            "brightness_up", "brightness_down", "brightness_set", "brightness_check"
         ]
         return intent in system_intents
 
@@ -131,6 +133,48 @@ class SystemHandler(BaseHandler):
             return msg
         elif intent == "recycle_bin_check":
             msg = self.system_control.get_recycle_bin_size()
+            self.tts_manager.speak(msg)
+            return msg
+
+        # --- BRIGHTNESS CONTROL ---
+        elif intent == "brightness_up":
+            msg = self.system_control.increase_brightness()
+            self.tts_manager.speak(msg)
+            return msg
+        elif intent == "brightness_down":
+            msg = self.system_control.decrease_brightness()
+            self.tts_manager.speak(msg)
+            return msg
+        elif intent == "brightness_set":
+            level = parameters.get("level")
+            if level:
+                try:
+                    clean_level = re.sub(r'[^\d]', '', str(level))
+                    if clean_level:
+                        val = int(clean_level)
+                        msg = self.system_control.set_brightness(val)
+                        self.tts_manager.speak(msg)
+                        return msg
+                except ValueError:
+                    pass
+            
+            # Fallback
+            nums = re.findall(r'\d+', text)
+            if nums:
+                val = int(nums[-1])
+                msg = self.system_control.set_brightness(val)
+                self.tts_manager.speak(msg)
+                return msg
+                
+            self.tts_manager.speak("What brightness level?")
+            return "Please specify brightness level."
+
+        elif intent == "brightness_check":
+            level = self.system_control.get_brightness()
+            if level is not None:
+                msg = f"Current brightness is {level}%."
+            else:
+                msg = "I couldn't check the brightness."
             self.tts_manager.speak(msg)
             return msg
 

@@ -133,14 +133,17 @@ async def process_message(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/models/available")
-def get_available_models():
+def get_available_models(aria: AriaCore = Depends(get_aria_core)):
     """Returns a list of available LLM models."""
-    return {
-        "status": "success",
-        "models": [
-            {"id": "gpt-4o", "name": "GPT-4o"},
-            {"id": "gpt-4o-mini", "name": "GPT-4o Mini"},
-            {"id": "claude-sonnet", "name": "Claude 3.5 Sonnet"},
-            {"id": "gemini-pro", "name": "Gemini Pro"}
-        ]
-    }
+    try:
+        models = aria.brain.get_available_models()
+        return {
+            "status": "success",
+            "models": models
+        }
+    except Exception as e:
+        print(f"Error fetching models: {e}")
+        return {
+            "status": "error", 
+            "models": []
+        }

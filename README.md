@@ -23,7 +23,7 @@
 
 - 🎯 **Unified Interface** – Electron sidebar, CustomTkinter window, and CLI modes
 - 🎨 **Premium UX** – Arc-style glassmorphism, light/dark themes, smooth animations
-- 🧠 **Multi-Model AI** – Support for GPT-5.1, GPT-4o, GPT-4o-mini, GPT-3.5 Turbo, Claude Sonnet 4.5, Claude Haiku 4.5, Claude Opus 4.5, Claude Opus 4.1, and Gemini Pro via LangChain
+- 🧠 **Multi-Model AI** – Support for GPT-4o, GPT-4o-mini, GPT-3.5 Turbo, Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku, and Gemini Pro via LangChain
 - 🎙️ **Advanced Voice Control** – Wake word detection, local Faster-Whisper transcription, Google/Edge TTS, and natural speech responses
 - 📧 **Email Management** – Gmail integration for sending emails via voice/text commands
 - 🗓️ **Calendar Integration** – Google Calendar OAuth for scheduling and event management
@@ -344,14 +344,12 @@ Starts FastAPI server at `http://localhost:5000` for API testing or custom front
 ```
 
 **Available Models:**
-- `gpt-5.1` - OpenAI GPT-5.1 (future-proof)
 - `gpt-4o` - OpenAI GPT-4o (default)
 - `gpt-4o-mini` - OpenAI GPT-4o Mini
 - `gpt-3.5-turbo` - OpenAI GPT-3.5 Turbo
-- `claude-sonnet` - Anthropic Claude Sonnet 4.5
-- `claude-haiku` - Anthropic Claude Haiku 4.5
-- `claude-opus-4-5` - Anthropic Claude Opus 4.5
-- `claude-opus-4-1` - Anthropic Claude Opus 4.1
+- `claude-sonnet` - Anthropic Claude 3.5 Sonnet
+- `claude-haiku` - Anthropic Claude 3 Haiku
+- `claude-opus-4-5` - Anthropic Claude 3 Opus
 - `gemini-pro` - Google Gemini Pro
 
 ---

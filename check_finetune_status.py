@@ -74,7 +74,8 @@ def check_status():
             
         elif job.status == "failed":
             print(f"\n❌ Fine-tuning failed.")
-            print(f"Error: {job.error}")
+            import json
+            print(f"Error Details: {json.dumps(job.error, default=str, indent=2)}")
             
         else:
             print(f"Message: {job.object}")

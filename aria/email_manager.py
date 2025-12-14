@@ -55,8 +55,19 @@ class EmailManager:
                     logger.warning(f"{credentials_path} not found. Email features will be disabled.")
                     return
 
+        if not self.creds:
+            logger.warning("No credentials found. Skipping Gmail service build.")
+            return
+
         try:
-            self.service = build('gmail', 'v1', credentials=self.creds)
+            import httplib2
+            import certifi
+            from google_auth_httplib2 import AuthorizedHttp
+            
+            http = httplib2.Http(ca_certs=certifi.where())
+            authorized_http = AuthorizedHttp(self.creds, http=http)
+            self.service = build('gmail', 'v1', http=authorized_http)
+            logger.info("Gmail service built successfully with custom SSL context.")
         except Exception as e:
             logger.error(f"Error building Gmail service: {e}")
             self.service = None

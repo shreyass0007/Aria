@@ -34,7 +34,13 @@ class CommandIntentClassifier:
         "volume_set": "Set volume to specific level",
         "volume_mute": "Mute system audio",
         "volume_unmute": "Unmute system audio",
+        "volume_unmute": "Unmute system audio",
         "volume_check": "Check current volume level",
+        # Brightness Control
+        "brightness_up": "Increase screen brightness",
+        "brightness_down": "Decrease screen brightness",
+        "brightness_set": "Set screen brightness to level",
+        "brightness_check": "Check status of screen brightness",
         # System Maintenance
         "recycle_bin_empty": "Empty the recycle bin",
         "recycle_bin_check": "Check recycle bin status",
@@ -86,6 +92,10 @@ class CommandIntentClassifier:
         # Email
         "email_send": "Send an email",
         "email_check": "Check unread emails or inbox",
+        # Water Reminder
+        "water_reminder_start": "Start the water drinking reminder",
+        "water_reminder_stop": "Stop the water drinking reminder",
+        "water_reminder_interval": "Set water reminder frequency",
         # General
         "general_chat": "General conversation/questions (fallback)"
     }
@@ -104,7 +114,15 @@ class CommandIntentClassifier:
         "unmute": "volume_unmute",
         "set volume": "volume_set",
         "change volume": "volume_set",
+        "change volume": "volume_set",
         "vset volume": "volume_set", # Handle user typo
+        "brightness up": "brightness_up",
+        "increase brightness": "brightness_up",
+        "brighter": "brightness_up",
+        "brightness down": "brightness_down",
+        "decrease brightness": "brightness_down",
+        "dimmer": "brightness_down",
+        "check brightness": "brightness_check",
         "shutdown": "shutdown",
         "restart": "restart",
         "lock screen": "lock",
@@ -128,7 +146,33 @@ class CommandIntentClassifier:
         "check ram": "ram_check",
         "ram usage": "ram_check",
         "memory usage": "ram_check",
-        "check memory": "ram_check"
+        "check memory": "ram_check",
+    
+        # Focus Mode Fast Paths
+        "focus mode on": "focus_mode_on",
+        "turn on focus mode": "focus_mode_on",
+        "enable focus mode": "focus_mode_on",
+        "start focus": "focus_mode_on",
+        "activate focus mode": "focus_mode_on",
+        "focus mode": "focus_mode_on",
+        "focus mode off": "focus_mode_off",
+        "turn off focus mode": "focus_mode_off",
+        "disable focus mode": "focus_mode_off",
+        "stop focus": "focus_mode_off",
+        "deactivate focus mode": "focus_mode_off",
+
+        # Brightness Fast Paths
+        "max brightness": "brightness_set",
+        "min brightness": "brightness_set",
+        "brightness 100": "brightness_set",
+        "brightness 0": "brightness_set",
+        "brightness 50": "brightness_set",
+
+        # Volume Fast Paths
+        "max volume": "volume_set",
+        "volume 100": "volume_set",
+        "mute system": "volume_mute",
+        "unmute system": "volume_unmute"
     }
 
     def __init__(self, brain: AriaBrain):
@@ -170,6 +214,17 @@ class CommandIntentClassifier:
              logger.info(f"REGEX PATH TRIGGERED: volume_set -> {level}")
              return [{
                 "intent": "volume_set",
+                "confidence": 1.0,
+                "parameters": {"level": level}
+            }]
+
+        # Brightness Set
+        bright_match = re.search(r'(?:set|change|turn) (?:the )?brightness (?:to )?(\d+)', clean_text)
+        if bright_match:
+            level = int(bright_match.group(1))
+            logger.info(f"REGEX PATH TRIGGERED: brightness_set -> {level}")
+            return [{
+                "intent": "brightness_set",
                 "confidence": 1.0,
                 "parameters": {"level": level}
             }]

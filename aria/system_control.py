@@ -28,17 +28,68 @@ class SystemControl:
         self.volume_interface = None
         self._init_audio_interface()
     
+    # ==================== INITIALIZATION ====================
+
     def _init_audio_interface(self):
         """Initialize the audio volume control interface."""
         try:
-            # Get the default audio device and access EndpointVolume directly
+            # Proper initialization using pycaw and comtypes
+            from comtypes import CLSCTX_ALL
+            from pycaw.pycaw import IAudioEndpointVolume
+            
             devices = AudioUtilities.GetSpeakers()
-            self.volume_interface = devices.EndpointVolume
+            interface = devices.Activate(
+                IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            self.volume_interface = ctypes.cast(interface, ctypes.POINTER(IAudioEndpointVolume))
             logger.info("Audio interface initialized successfully")
         except Exception as e:
             logger.warning(f"Could not initialize audio interface: {e}")
             self.volume_interface = None
-    
+
+    # ==================== BRIGHTNESS CONTROL ====================
+
+    def get_brightness(self):
+        """Get current screen brightness (0-100)."""
+        try:
+            cmd = "powershell -Command \"(Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightness).CurrentBrightness\""
+            result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+            if result.returncode == 0 and result.stdout.strip().isdigit():
+                return int(result.stdout.strip())
+            return None
+        except Exception as e:
+            logger.error(f"Error getting brightness: {e}")
+            return None
+
+    def set_brightness(self, level: int):
+        """Set screen brightness (0-100)."""
+        try:
+            level = max(0, min(100, level))
+            # WmiSetBrightness(Timeout, Brightness)
+            cmd = f"powershell -Command \"(Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {level})\""
+            result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+            if result.returncode == 0:
+                return f"Brightness set to {level}%"
+            else:
+                return "Failed to set brightness. This feature works best on laptops."
+        except Exception as e:
+            return f"Error setting brightness: {str(e)}"
+
+    def increase_brightness(self, increment: int = 10):
+        """Increase screen brightness."""
+        current = self.get_brightness()
+        if current is None:
+            return "Brightness control not available."
+        new_level = min(100, current + increment)
+        return self.set_brightness(new_level)
+
+    def decrease_brightness(self, decrement: int = 10):
+        """Decrease screen brightness."""
+        current = self.get_brightness()
+        if current is None:
+            return "Brightness control not available."
+        new_level = max(0, current - decrement)
+        return self.set_brightness(new_level)
+
     # ==================== VOLUME CONTROL ====================
     
     def get_volume(self):
@@ -87,7 +138,7 @@ class SystemControl:
         if not self.volume_interface:
             return "Volume control is not available on this system."
         try:
-            self.volume_interface.SetMute(True, None)
+            self.volume_interface.SetMute(1, None) # 1 for True
             return "System muted"
         except Exception as e:
             return f"Error muting system: {str(e)}"
@@ -97,7 +148,7 @@ class SystemControl:
         if not self.volume_interface:
             return "Volume control is not available on this system."
         try:
-            self.volume_interface.SetMute(False, None)
+            self.volume_interface.SetMute(0, None) # 0 for False
             current = self.get_volume()
             return f"System unmuted (Volume: {current}%)"
         except Exception as e:

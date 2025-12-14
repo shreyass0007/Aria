@@ -305,9 +305,9 @@ async function loadAvailableModels() {
         console.warn('Error fetching models, using fallback:', error);
         // Fallback models if backend is unreachable
         models = [
-            { id: 'gpt-5-mini', name: 'GPT-5 Mini (Fallback)' },
             { id: 'gpt-4o', name: 'GPT-4o (Fallback)' },
-            { id: 'claude-opus-4-1', name: 'Claude Opus 4.1 (Fallback)' }
+            { id: 'claude-sonnet', name: 'Claude 3.5 Sonnet (Fallback)' },
+            { id: 'gemini-pro', name: 'Gemini Pro (Fallback)' }
         ];
     }
 

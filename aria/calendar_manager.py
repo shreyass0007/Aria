@@ -55,8 +55,19 @@ class CalendarManager:
                     print(f"credentials.json not found at {creds_path}. Calendar features will be disabled.")
                     return
 
+        if not self.creds:
+            print("❌ DEBUG: No credentials found. Skipping service build.")
+            return
+
         try:
-            self.service = build('calendar', 'v3', credentials=self.creds)
+            import httplib2
+            import certifi
+            from google_auth_httplib2 import AuthorizedHttp
+            
+            http = httplib2.Http(ca_certs=certifi.where())
+            authorized_http = AuthorizedHttp(self.creds, http=http)
+            self.service = build('calendar', 'v3', http=authorized_http)
+            print("✅ Calendar service built successfully with custom SSL context.")
         except Exception as e:
             print(f"Error building calendar service: {e}")
             self.service = None

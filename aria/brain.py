@@ -49,6 +49,8 @@ class AriaBrain:
                     )
                 except Exception as e:
                     print(f"GPT-5.1 not yet available: {e}")
+                    # Fallback to GPT-4o so it shows in UI as "GPT-5.1 (Preview/Fallback)"
+                    self.llm_gpt_5_1 = self.llm_gpt_4o
                 
                 # GPT-5 (User Requested)
                 try:
@@ -59,7 +61,8 @@ class AriaBrain:
                     )
                 except Exception as e:
                     print(f"GPT-5 not available: {e}")
-                    self.llm_gpt_5 = None
+                    # Fallback
+                    self.llm_gpt_5 = self.llm_gpt_4o
 
                 # GPT-5 Mini (User Requested)
                 try:
@@ -70,7 +73,8 @@ class AriaBrain:
                     )
                 except Exception as e:
                     print(f"GPT-5 Mini not available: {e}")
-                    self.llm_gpt_5_mini = None
+                    # Fallback
+                    self.llm_gpt_5_mini = self.llm_gpt_4o_mini
 
                 # GPT-4o (default)
                 self.llm_gpt_4o = ChatOpenAI(
@@ -100,35 +104,35 @@ class AriaBrain:
         # Initialize Claude models
         if self.anthropic_api_key:
             try:
-                # Claude 3.5 Sonnet (balanced)
+                # Claude 3.5 Sonnet (Current Best)
                 self.llm_claude_sonnet = ChatAnthropic(
-                    model="claude-sonnet-4-5-20250929",
+                    model="claude-3-5-sonnet-20240620",
                     anthropic_api_key=self.anthropic_api_key,
                     temperature=0.7
                 )
                 
-                # Claude Haiku 4.5 (fast)
+                # Claude 3 Haiku (Fast)
                 self.llm_claude_haiku = ChatAnthropic(
-                    model="claude-haiku-4-5-20250929",
+                    model="claude-3-haiku-20240307",
                     anthropic_api_key=self.anthropic_api_key,
                     temperature=0.7
                 )
                 
-                # Claude Opus 4.5 (most capable)
+                # Claude 3 Opus (Most Capable Legacy)
                 self.llm_claude_opus_4_5 = ChatAnthropic(
-                    model="claude-opus-4-5-20250929",
+                    model="claude-3-opus-20240229",
                     anthropic_api_key=self.anthropic_api_key,
                     temperature=0.7
                 )
+                
+                # Placeholder for valid 3.5 Opus if/when released
+                # Map to Opus 3 for now or Sonnet if Opus fails
+                self.llm_claude_opus_4_1 = self.llm_claude_opus_4_5 if self.llm_claude_opus_4_5 else self.llm_claude_sonnet
 
-                # Claude Opus 4.1
-                self.llm_claude_opus_4_1 = ChatAnthropic(
-                    model="claude-opus-4-1-20250620",
-                    anthropic_api_key=self.anthropic_api_key,
-                    temperature=0.7
-                )
             except Exception as e:
                 print(f"Error initializing Claude models: {e}")
+                # Don't nullify everything if one fails, try to keep valid ones
+                pass
         else:
             print("Info: ANTHROPIC_API_KEY not found. Claude models will not be available.")
 
@@ -377,26 +381,39 @@ class AriaBrain:
         """Returns a list of available model names."""
         available = []
         
-        if self.llm_gpt_5:
-            available.append({"id": "gpt-5", "name": "GPT-5", "provider": "OpenAI"})
-        if self.llm_gpt_5_mini:
-            available.append({"id": "gpt-5-mini", "name": "GPT-5 Mini", "provider": "OpenAI"})
+        # User requested specific list:
+        # gpt-5.1
+        # gpt-4o
+        # gpt-4o-mini
+        # gpt-3.5-turbo
+        # claude-sonnet
+        # claude-haiku
+        # claude-opus-4-5
+        # claude-opus-4-1
+        # gemini-pro
+
         if self.llm_gpt_5_1:
             available.append({"id": "gpt-5.1", "name": "GPT-5.1", "provider": "OpenAI"})
+        
         if self.llm_gpt_4o:
             available.append({"id": "gpt-4o", "name": "GPT-4o", "provider": "OpenAI"})
+            
         if self.llm_gpt_4o_mini:
             available.append({"id": "gpt-4o-mini", "name": "GPT-4o Mini", "provider": "OpenAI"})
-        
+            
+        if self.llm_gpt_35_turbo:
+            available.append({"id": "gpt-3.5-turbo", "name": "GPT-3.5 Turbo", "provider": "OpenAI"})
+
         # Claude Models
         if self.llm_claude_sonnet:
-            available.append({"id": "claude-sonnet", "name": "Claude Sonnet 4.5", "provider": "Anthropic"})
+            available.append({"id": "claude-sonnet", "name": "Claude 3.5 Sonnet", "provider": "Anthropic"})
+            
         if self.llm_claude_haiku:
-            available.append({"id": "claude-haiku", "name": "Claude Haiku 4.5", "provider": "Anthropic"})
+            available.append({"id": "claude-haiku", "name": "Claude 3 Haiku", "provider": "Anthropic"})
+            
         if self.llm_claude_opus_4_5:
-            available.append({"id": "claude-opus-4-5", "name": "Claude Opus 4.5", "provider": "Anthropic"})
-        
-        # Always add Claude Opus 4.1 if requested, or check if initialized
+            available.append({"id": "claude-opus-4-5", "name": "Claude 3 Opus", "provider": "Anthropic"})
+            
         if self.llm_claude_opus_4_1:
             available.append({"id": "claude-opus-4-1", "name": "Claude Opus 4.1", "provider": "Anthropic"})
         

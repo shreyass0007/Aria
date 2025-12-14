@@ -15,6 +15,7 @@ from .clipboard_screenshot import ClipboardScreenshot
 from .system_monitor import SystemMonitor
 from .email_manager import EmailManager
 from .proactive_manager import ProactiveManager
+from .memory_manager import MemoryManager
 from .music_library import MusicManager
 from .wake_word_listener import WakeWordListener
 from .water_manager import WaterManager
@@ -47,6 +48,7 @@ class AriaCore:
         self.system_monitor = SystemMonitor()
         self.email_manager = EmailManager()
         self.music_manager = MusicManager()
+        self.memory_manager = MemoryManager() # Initialize Long-Term Memory
         
         # Alias for backward compatibility
         self.email = self.email_manager
@@ -96,6 +98,7 @@ class AriaCore:
             email_manager=self.email_manager,
             greeting_service=self.greeting_service,
             music_manager=self.music_manager,
+            memory_manager=self.memory_manager, # Pass Memory Manager
             water_manager=self.water_manager,
             vision_pipeline_factory=self.get_vision_pipeline
         )
