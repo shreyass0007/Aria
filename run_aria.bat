@@ -3,7 +3,7 @@ echo Starting Aria...
 
 :: Start Backend
 echo Starting Backend Server...
-start "Aria Backend" cmd /k "python backend_fastapi.py"
+start "Aria Backend" cmd /k ".venv\Scripts\python -m backend.main"
 
 :: Wait a moment for backend to initialize
 timeout /t 5 /nobreak >nul

@@ -46,6 +46,7 @@ class CommandProcessor:
         self.last_ui_action = None
         self.last_search_context = None # Store search results for follow-up questions
         self.pending_music_suggestion = False # Track if we offered to play music
+        self.stop_processing_flag = False # Flag to interrupt streaming/processing
         
         # Short-term memory for context awareness (last 10 turns)
         self.conversation_history = []
@@ -63,6 +64,11 @@ class CommandProcessor:
         # Initialize Intent Dispatcher
         self.dispatcher = IntentDispatcher()
         self._register_intents()
+
+    def stop_current_processing(self):
+        """Signals the processor to stop generating/speaking the current response."""
+        self.stop_processing_flag = True
+        self.tts_manager.stop()
 
     def _register_intents(self):
         """Registers all intents with the dispatcher."""
@@ -131,16 +137,15 @@ class CommandProcessor:
         try:
             current_time = datetime.datetime.now().strftime("%I:%M %p")
             prompt = f"""
-            You are Aria, a helpful AI assistant.
+            You are Aria, a close friend and assistant.
             The current time is {current_time}.
             
-            Your task is to present the following SYSTEM DATA to the user.
+            Your task is to present the following SYSTEM DATA to your friend.
             
             RULES:
-            1. You MUST include the specific numbers, percentages, and details from the Raw Data.
-            2. Do NOT be vague (e.g., avoid saying "It's running smoothly" without giving the % usage).
-            3. Be friendly and conversational, but prioritize ACCURACY and DATA.
-            4. If the data is a list of events, summarize them but include times and titles.
+            1. You MUST include the specific numbers/details from the Raw Data.
+            2. Be casual and chatty. Use "Looks like", "We're running", "Check this out".
+            3. Don't be robotic.
             
             Raw Data:
             {data_text}
@@ -148,7 +153,7 @@ class CommandProcessor:
             llm = self.brain.get_llm()
             if llm:
                 response = llm.invoke([
-                    SystemMessage(content="You are Aria. Be friendly and concise."),
+                    SystemMessage(content="You are Aria. Be friendly and casual."),
                     HumanMessage(content=prompt)
                 ])
                 result = response.content.strip()
@@ -166,10 +171,10 @@ class CommandProcessor:
         """Returns a randomized response for simple intents."""
         responses = {
             "app_open": [
-                f"Opening {context}.", f"Launching {context}.", f"Starting {context} for you."
+                f"Opening {context} for you.", f"Launching {context}.", f"Starting {context}.", f"Here comes {context}.", f"Got it, opening {context}."
             ],
             "web_open": [
-                f"Opening {context}.", f"Navigating to {context}.", f"Here's {context}."
+                f"Opening {context}.", f"Navigating to {context}.", f"Here's {context}.", f"Loading {context} now."
             ]
         }
         
@@ -486,30 +491,59 @@ class CommandProcessor:
             
         # Pass last_search_context to allow follow-up questions about previous search
         try:
-            response = self.brain.ask(
+            logger.info("Starting Streaming Response with GPT-4o-mini...")
+            # Use 'gpt-4o-mini' for general chat to improve speed (or make it configurable)
+            # Streaming Logic
+            full_response = ""
+            sentence_buffer = ""
+            
+            # Use stream_ask
+            stream = self.brain.stream_ask(
                 text, 
+                model_name="gpt-4o-mini", # FAST MODEL
                 conversation_history=history_to_use,
                 long_term_context=long_term_memory,
                 search_context=self.last_search_context
             )
             
+            import re
+            
+            # Reset flag before starting
+            self.stop_processing_flag = False
+            
+            for token in stream:
+                # CHECK INTERRUPTION
+                if self.stop_processing_flag:
+                    logger.info("Command processing interrupted by new wake word.")
+                    return "Interrupted."
+
+                full_response += token
+                sentence_buffer += token
+                
+                # Check for sentence delimiters
+                if re.search(r'[.!?\n]\s*$', sentence_buffer):
+                    chunk_to_speak = sentence_buffer.strip()
+                    if chunk_to_speak:
+                        self.tts_manager.speak(chunk_to_speak)
+                        sentence_buffer = ""
+            
+            # Speak any remaining text
+            if sentence_buffer.strip() and not self.stop_processing_flag:
+                self.tts_manager.speak(sentence_buffer.strip())
+            
             # Add assistant response to internal history if not using external
             if conversation_history is None:
-                self.conversation_history.append({"role": "assistant", "content": response})
-            
-            self.tts_manager.speak(response)
+                self.conversation_history.append({"role": "assistant", "content": full_response})
             
             # --- SAVE TO LONG TERM MEMORY ---
             if self.memory_manager:
-                # We need a conversation ID. For now, we use a default or generate one.
-                # Ideally, we should have a session ID.
                 conversation_id = "default_session" 
                 self.memory_manager.add_message(conversation_id, text, "user")
-                self.memory_manager.add_message(conversation_id, response, "assistant")
+                self.memory_manager.add_message(conversation_id, full_response, "assistant")
             
-            return response
+            return full_response
         except Exception as e:
-            logger.error(f"Error in general_chat: {e}")
+            logger.error(f"Error in general_chat (streaming): {e}")
             return "I'm having trouble thinking right now. Please try again."
 
     def _resolve_relative_dates(self, text: str) -> str:

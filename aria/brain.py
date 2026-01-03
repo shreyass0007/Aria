@@ -2,10 +2,10 @@ import os
 import json
 import datetime
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_anthropic import ChatAnthropic
+
+from dotenv import load_dotenv
 from langchain_core.prompts import PromptTemplate
+
 
 load_dotenv()
 
@@ -37,9 +37,11 @@ class AriaBrain:
         # Active Mode (normal, coder, study, jarvis)
         self.active_mode = "normal"
         
+
         # Initialize OpenAI models
         if self.api_key:
             try:
+                from langchain_openai import ChatOpenAI
                 # GPT-5.1 (future-proof)
                 try:
                     self.llm_gpt_5_1 = ChatOpenAI(
@@ -101,9 +103,11 @@ class AriaBrain:
         else:
             print("Warning: OPEN_AI_API_KEY not found.")
 
+
         # Initialize Claude models
         if self.anthropic_api_key:
             try:
+                from langchain_anthropic import ChatAnthropic
                 # Claude 3.5 Sonnet (Current Best)
                 self.llm_claude_sonnet = ChatAnthropic(
                     model="claude-3-5-sonnet-20240620",
@@ -136,9 +140,11 @@ class AriaBrain:
         else:
             print("Info: ANTHROPIC_API_KEY not found. Claude models will not be available.")
 
+
         # Initialize Gemini
         if self.google_api_key:
             try:
+                from langchain_google_genai import ChatGoogleGenerativeAI
                 self.llm_gemini = ChatGoogleGenerativeAI(
                     model="gemini-pro",
                     google_api_key=self.google_api_key,
@@ -181,6 +187,19 @@ class AriaBrain:
                     return fallback_llm
         
         return llm
+
+    def get_fast_llm(self):
+        """Returns the fastest available LLM for low-latency tasks (e.g., Intent Classification)."""
+        # Prioritize GPT-4o-mini, then GPT-3.5, then Haiku
+        if self.llm_gpt_4o_mini:
+            return self.llm_gpt_4o_mini
+        if self.llm_gpt_35_turbo:
+            return self.llm_gpt_35_turbo
+        if self.llm_claude_haiku:
+            return self.llm_claude_haiku
+        
+        # Fallback to standard
+        return self.get_llm("gpt-4o")
 
     def _get_system_prompt(self) -> str:
         """Reads the system prompt from the file or returns a default."""
@@ -298,7 +317,7 @@ class AriaBrain:
         except Exception as e:
             return f"I encountered an error thinking about that with {model_name}: {e}"
 
-    def stream_ask(self, user_input: str, model_name: str = "gpt-4o", conversation_history: list = None, long_term_context: list = None):
+    def stream_ask(self, user_input: str, model_name: str = "gpt-4o", conversation_history: list = None, long_term_context: list = None, search_context: str = None):
         """
         Streams the response from the selected model.
         Yields chunks of text as they are generated.
@@ -309,7 +328,9 @@ class AriaBrain:
             conversation_history: Optional list of previous messages in format:
                 [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]
             long_term_context: Optional list of relevant past messages from other conversations
+            search_context: Optional string containing real-time search results
         """
+
         llm = self.get_llm(model_name)
         
         if not llm:
@@ -343,8 +364,18 @@ class AriaBrain:
                     timestamp = item.get('timestamp', 'Unknown time')
                     text = item.get('text', '')
                     context_str += f"- [{timestamp}] {text}\n"
-                
                 messages.append(SystemMessage(content=context_str))
+            
+            # Add search context if provided (Real-time data)
+            if search_context:
+                search_prompt = f"""
+                Here is real-time information from a web search. 
+                Use this information to answer the user's question accurately and conversationally.
+                If the search results don't answer the question, say so.
+                
+                {search_context}
+                """
+                messages.append(SystemMessage(content=search_prompt))
             
             # Add conversation history if provided
             if conversation_history:

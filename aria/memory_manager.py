@@ -32,7 +32,7 @@ class MemoryManager:
         
         # Configuration
         self.embedding_model = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
-        self.similarity_threshold = float(os.getenv("SIMILARITY_THRESHOLD", "0.4"))
+        self.similarity_threshold = float(os.getenv("SIMILARITY_THRESHOLD", "0.35"))
         self.max_results = int(os.getenv("MAX_LONG_TERM_RESULTS", "5"))
         
         # Initialize ChromaDB

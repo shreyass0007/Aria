@@ -24,6 +24,7 @@ class TTSManager:
         self.tts_queue = queue.Queue()
         
         # Start TTS worker thread
+        self.interrupted_flag = False
         self.tts_thread = threading.Thread(target=self._tts_worker, daemon=True)
         self.tts_thread.start()
 
@@ -38,6 +39,8 @@ class TTSManager:
         # 1. Clear Queue
         with self.tts_queue.mutex:
             self.tts_queue.queue.clear()
+        
+        self.interrupted_flag = True
         
         # 2. Stop Pygame Mixer
         if pygame.mixer.get_init():
@@ -59,10 +62,53 @@ class TTSManager:
         logger.info("TTS Worker started")
         
         while True:
-            text = self.tts_queue.get()
-            # logger.debug(f"TTS Worker: Dequeued text: {text}") # Verbose
+            # Check if queue was cleared (interruption)
+            if self.tts_queue.empty():
+                 # Small sleep to prevent tight loop if queue is empty but thread alive
+                 time.sleep(0.1)
+
+            try:
+                text = self.tts_queue.get(timeout=1.0) # wait for 1 sec
+            except queue.Empty:
+                continue
+            
+            # If we just got text but the queue was cleared externally (interruption signal),
+            # we should ignore this text.
+            # *However*, queue.clear() doesn't signal "interruption" explicitly to this thread.
+            # We need a robust flag or just rely on clear+stop.
+            
+            # Since stop() calls clear(), if we are here, we have a text.
+            # But maybe stop() was called while we were waiting in get().
+            # Let's check if mixer is still busy playing previous file, which shouldn't happen if stop() worked.
+            
+            # --- CRITICAL: Check for valid text ---
             if text is None:
                 break
+            
+            # Re-check queue emptiness as a signal? No, that's flaky.
+            # Better strategy: stop() clears queue AND stops mixer.
+            # If we are starting a NEW playback, we must ensure we haven't been asked to stop.
+            
+            # Let's rely on the fact that stop() kills the mixer music.
+            # We just proceed. If stop() is called MID-generation, the generation might finish
+            # but then we shouldn't play it? 
+            # We need an "interruption_event"
+            
+            # Simplified: Just proceed. stop() handles audio.
+            # But if we have 5 sentences in queue:
+            # stop() clears 4. The 1st is here.
+            # We generate it.
+            # We try to play it.
+            # If stop() was called during generation, we should NOT play it.
+            
+            # We need a timestamp or ID check? 
+            # Or just check mixer status?
+            
+            # Let's add a `is_interrupted` flag
+            if getattr(self, "interrupted_flag", False):
+                 self.interrupted_flag = False
+                 self.tts_queue.task_done()
+                 continue
             
             try:
                 # logger.debug(f"TTS Worker: Processing text: '{text[:50]}...'")
@@ -133,6 +179,13 @@ class TTSManager:
                             logger.error(f"TTS Worker ERROR: Failed to initialize mixer: {e}")
                             self.tts_queue.task_done()
                             continue
+
+                    # CHECK INTERRUPTION BEFORE PLAYING
+                    if getattr(self, "interrupted_flag", False):
+                        logger.info("TTS Worker: Interrupted before playback.")
+                        self.interrupted_flag = False
+                        self.tts_queue.task_done()
+                        continue
 
                     pygame.mixer.music.load(filename)
                     pygame.mixer.music.play()

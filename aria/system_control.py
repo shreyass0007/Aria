@@ -34,12 +34,30 @@ class SystemControl:
         """Initialize the audio volume control interface."""
         try:
             # Proper initialization using pycaw and comtypes
+            import comtypes
             from comtypes import CLSCTX_ALL
-            from pycaw.pycaw import IAudioEndpointVolume
+            from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+            
+            # Ensure COM is initialized for this thread
+            try:
+                comtypes.CoInitialize()
+            except:
+                pass # Already initialized
             
             devices = AudioUtilities.GetSpeakers()
-            interface = devices.Activate(
-                IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            
+            # Handle pycaw 2024+ wrapper which hides Activate inside _dev
+            if hasattr(devices, 'Activate'):
+                interface = devices.Activate(
+                    IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            elif hasattr(devices, '_dev') and hasattr(devices._dev, 'Activate'):
+                interface = devices._dev.Activate(
+                    IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            else:
+                logger.warning("Could not find Activate method on AudioDevice")
+                self.volume_interface = None
+                return
+
             self.volume_interface = ctypes.cast(interface, ctypes.POINTER(IAudioEndpointVolume))
             logger.info("Audio interface initialized successfully")
         except Exception as e:

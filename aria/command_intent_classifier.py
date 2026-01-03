@@ -148,6 +148,30 @@ class CommandIntentClassifier:
         "memory usage": "ram_check",
         "check memory": "ram_check",
     
+        # Media Fast Paths
+        "stop": "music_stop",
+        "stop music": "music_stop",
+        "stop playing": "music_stop",
+        "pause": "music_pause",
+        "resume": "music_resume",
+        "next": "music_next", # Assuming intent exists or will default to none
+        "next song": "music_next",
+
+        # Common App Shortcuts
+        "open calculator": "app_open",
+        "calculator": "app_open",
+        "open notepad": "app_open",
+        "notepad": "app_open",
+        "open browser": "web_open",
+        "browser": "web_open",
+        "open chrome": "app_open",
+        "chrome": "app_open",
+        
+        # Silence
+        "quiet": "volume_mute",
+        "shutup": "volume_mute",
+        "shut up": "volume_mute",
+    
         # Focus Mode Fast Paths
         "focus mode on": "focus_mode_on",
         "turn on focus mode": "focus_mode_on",
@@ -234,7 +258,8 @@ class CommandIntentClassifier:
 
         prompt = self._build_classification_prompt(user_text, conversation_history)
         try:
-            llm = self.brain.get_llm()
+            # Use Fast LLM for critical latency path
+            llm = self.brain.get_fast_llm()
             if not llm:
                 logger.error("Error: No LLM available")
                 return [{"intent": "general_chat", "confidence": 0.0, "parameters": {}}]

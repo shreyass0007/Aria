@@ -1,4 +1,4 @@
-from memory_manager import MemoryManager
+from aria.memory_manager import MemoryManager
 import sys
 
 def clear_rag_memory():

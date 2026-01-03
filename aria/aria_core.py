@@ -129,8 +129,9 @@ class AriaCore:
         """Callback when wake word is detected."""
         logger.info("🔴 Wake Word Detected! Interrupting and Listening...")
         
-        # 1. Interrupt TTS
-        self.tts_manager.stop()
+        # 1. Interrupt TTS and Command Processing
+        # This stops the stream loop in CommandProcessor if it's running
+        self.command_processor.stop_current_processing()
         
         # 2. Play listening sound (optional, or just speak)
         # self.tts_manager.speak("Yes?", print_text=False) 
@@ -226,6 +227,9 @@ class AriaCore:
         return self.greeting_service.get_morning_briefing()
 
     def process_command(self, text: str, model_name: str = "openai", intent_data: dict = None, extra_data: dict = None):
+        # Always interrupt previous command when a new one comes in
+        self.command_processor.stop_current_processing()
+        
         self.command_processor.process_command(text, model_name, intent_data, extra_data)
 
     def safe_open_url(self, url: str, description: str = ""):

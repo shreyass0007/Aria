@@ -1,0 +1,225 @@
+======================================================================
+Testing Notion Summarization on: The Pursuit of Happiness
+======================================================================
+
+Extracted Page ID: 2940dccd118d80748626ed79a9ec0e3b
+
+Fetching page content...
+
+Page retrieved successfully!
+Title: The Pursuit of Happiness
+Word Count: 543
+
+======================================================================
+FULL CONTENT:
+======================================================================
+There's an ancient proverb that says:
+
+“Walk like a turtle, sleep like a dog, and you'll be happy.”
+
+People think life is all about pleasure —
+
+all about being happy.
+
+But who told you that life was about happiness?
+
+Who lied to you?
+
+Life isn't about happiness.
+
+Life is about life.
+
+About experiencing life.
+
+You're supposed to learn, to grow,
+
+to train through suffering the same way you do through pleasure.
+
+This idea of chasing happiness —
+
+it's a concept we've been sold.
+
+But what if life wasn't about happiness?
+
+What if it's about experiencing every emotion that life has to offer —
+
+the sadness, the heartbreaks, the joy?
+
+You can't have happiness without sorrow.
+
+You can't have pleasure without pain.
+
+To neglect one is to neglect life itself.
+
+People chase happiness
+
+because they think that's what they need.
+
+When in reality, happiness is just a byproduct —
+
+a reflection of you becoming the best version of yourself.
+
+You're here to hurt.
+
+You're here to feel.
+
+To experience heartbreak, pain, joy, and pleasure.
+
+Every emotion. Every avenue of existence.
+
+So why limit yourself?
+
+Because you're scared?
+
+Because it doesn't feel good?
+
+Perfectly fine.
+
+But the beauty of life isn't in pursuing happiness —
+
+it's in pursuing experience.
+
+Life isn't one-dimensional.
+
+It's multidisciplinary.
+
+It's multilateral.
+
+It's not just one emotion.
+
+Happiness comes and goes.
+
+It's fleeting.
+
+So to pursue happiness is an unachievable goal.
+
+The reason you're unhappy, my friend,
+
+is because you're focused on the wrong thing.
+
+People ask:
+
+What's the tip to success?
+
+You're focused on the wrong thing.
+
+You're focused on the million dollars —
+
+on what you cannot control.
+
+No wonder you're unhappy.
+
+You see, suffering is part of life.
+
+Undeniably.
+
+So enjoy it.
+
+That's why Paul said,
+
+“Bear all things with joy.”
+
+What does that mean?
+
+It means to see life as training —
+
+a process that develops you.
+
+So embrace it.
+
+Embrace the trials,
+
+the tribulations,
+
+the difficulties —
+
+just like you embrace your greatest joys.
+
+You're not here to be happy.
+
+You're here to live.
+
+To experience the full range of existence.
+
+The Bible says,
+
+“Do not be fooled. God cannot be mocked.
+As a man sows, so shall he also reap.”
+
+What does that mean?
+
+For every input, there is an output.
+
+How foolish would it be
+
+for a farmer to stare at the soil,
+
+angry and impatient,
+
+expecting fruit —
+
+when he's planted nothing?
+
+And yet, that's what most of us do.
+
+We expect results
+
+without effort.
+
+We expect harvest
+
+without sowing.
+
+My friend,
+
+if you want to get to the next level,
+
+don't focus on the next level.
+
+Focus on your input.
+
+What can you control?
+
+You can control when you show up.
+
+You can control how hard you work.
+
+You can control the quality of your effort.
+
+You can control what you feed your mind and soul.
+
+But no one wants to focus on that —
+
+because it's slow, it's hard, it's patient.
+
+Patience is bitter,
+
+but its fruit is sweet.
+
+Freedom, my friend,
+
+is not an emotion — it's a state of mind.
+
+You can be sad and still be free.
+
+You can be happy and still be free.
+
+Freedom comes when you're decided —
+
+decided to enjoy every aspect of existence,
+======================================================================
+
+Generating AI summary...
+
+======================================================================
+AI SUMMARY:
+======================================================================
+The text challenges the common belief that life is solely about pursuing happiness, arguing instead that life is about experiencing a full range of emotions, including both joy and suffering. It suggests that chasing happiness is an unachievable goal and emphasizes the importance of embracing all experiences, as they contribute to personal growth and development. The author encourages focusing on inputs, such as effort and mindset, rather than external outcomes, as these are within one's control. The text underscores that freedom is a state of mind, not tied to any specific emotion, and that true fulfillment comes from fully engaging with life's diverse experiences. Ultimately, it advocates for valuing the process of living and learning over the pursuit of happiness alone.
+======================================================================
+
+STATS:
+  Original: 543 words
+  Summary: 121 words
+  Compression: 77.7%
+
+Test completed successfully!

@@ -21,8 +21,8 @@ notion-client
 numpy
 openai
 opencv-python-headless
-paddleocr
-paddlepaddle
+# paddleocr
+# paddlepaddle
 pandas
 Pillow
 psutil
