@@ -258,3 +258,106 @@
     transform: scale(0.9) rotate(0deg);
     transition: transform 0.1s;
 }
+
+/* ==================== MONO THEME - INPUT STYLES ==================== */
+
+/* MONO Dark Mode - Input Row */
+[data-theme="dark"][data-color-theme="mono"] .input-row {
+    background: rgba(20, 20, 20, 0.9);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"][data-color-theme="mono"] .input-row:focus-within {
+    border-color: #ffffff;
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.1);
+}
+
+/* MONO Dark Mode - Voice Button */
+[data-theme="dark"][data-color-theme="mono"] .voice-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+[data-theme="dark"][data-color-theme="mono"] .voice-btn svg {
+    stroke: #ffffff;
+}
+
+[data-theme="dark"][data-color-theme="mono"] .voice-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+[data-theme="dark"][data-color-theme="mono"] .voice-btn.active {
+    background: #ffffff;
+    color: #000000;
+}
+
+[data-theme="dark"][data-color-theme="mono"] .voice-btn.active svg {
+    stroke: #000000;
+}
+
+[data-theme="dark"][data-color-theme="mono"] .voice-btn.active::before,
+[data-theme="dark"][data-color-theme="mono"] .voice-btn.active::after {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+/* MONO Dark Mode - Send Button */
+[data-theme="dark"][data-color-theme="mono"] .send-btn {
+    background: #ffffff !important;
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"][data-color-theme="mono"] .send-btn svg {
+    stroke: #000000 !important;
+}
+
+/* MONO Dark Mode - Thinking Dots */
+[data-theme="dark"][data-color-theme="mono"] .thinking-dot {
+    background: #ffffff;
+}
+
+/* MONO Light Mode - Input Styles */
+[data-color-theme="mono"] .input-row {
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid rgba(0, 0, 0, 0.15);
+}
+
+[data-color-theme="mono"] .input-row:focus-within {
+    border-color: #000000;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+[data-color-theme="mono"] .voice-btn {
+    background: rgba(0, 0, 0, 0.05);
+    color: #000000;
+}
+
+[data-color-theme="mono"] .voice-btn svg {
+    stroke: #000000;
+}
+
+[data-color-theme="mono"] .voice-btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+[data-color-theme="mono"] .voice-btn.active {
+    background: #000000;
+    color: #ffffff;
+}
+
+[data-color-theme="mono"] .voice-btn.active svg {
+    stroke: #ffffff;
+}
+
+[data-color-theme="mono"] .send-btn {
+    background: #000000 !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+[data-color-theme="mono"] .send-btn svg {
+    stroke: #ffffff !important;
+}
+
+[data-color-theme="mono"] .thinking-dot {
+    background: #000000;
+}

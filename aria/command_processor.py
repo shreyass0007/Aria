@@ -112,6 +112,9 @@ class CommandProcessor:
         self.dispatcher.register_handler("app_open", self.handle_app_open)
         self.dispatcher.register_handler("web_search", self.handle_web_search)
         self.dispatcher.register_handler("web_open", self.handle_web_open)
+        
+        # Development Tools
+        self.dispatcher.register_handler("jupyter_open", self.handle_jupyter_open)
 
     def is_similar(self, a, b, threshold=0.8):
         return difflib.SequenceMatcher(None, a, b).ratio() >= threshold
@@ -248,6 +251,36 @@ class CommandProcessor:
             self.safe_open_url(url)
             return f"Opening {name}."
         return "No URL provided."
+
+    def handle_jupyter_open(self, text: str, intent: str, parameters: dict) -> str:
+        """Opens Jupyter Notebook at the configured directory."""
+        import subprocess
+        import os
+        
+        jupyter_dir = r"D:\CODEING"
+        
+        if not os.path.exists(jupyter_dir):
+            self.tts_manager.speak("The coding directory was not found.")
+            return "Directory not found."
+        
+        self.tts_manager.speak("Opening Jupyter Notebook.")
+        
+        try:
+            # Start Jupyter Notebook in the specified directory
+            subprocess.Popen(
+                ["jupyter", "notebook"],
+                cwd=jupyter_dir,
+                shell=True,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+            )
+            return "Opening Jupyter Notebook."
+        except FileNotFoundError:
+            self.tts_manager.speak("Jupyter Notebook is not installed or not in the system path.")
+            return "Jupyter Notebook not found. Please ensure it's installed."
+        except Exception as e:
+            logger.error(f"Error opening Jupyter Notebook: {e}")
+            self.tts_manager.speak("I couldn't open Jupyter Notebook.")
+            return f"Error opening Jupyter Notebook: {e}"
 
     def process_command(self, text: str, model_name: str = "openai", intent_data: dict = None, extra_data: dict = None, conversation_history: list = None, long_term_memory: list = None):
         text = text.lower().strip()

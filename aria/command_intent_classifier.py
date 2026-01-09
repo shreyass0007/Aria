@@ -97,7 +97,9 @@ class CommandIntentClassifier:
         "water_reminder_stop": "Stop the water drinking reminder",
         "water_reminder_interval": "Set water reminder frequency",
         # General
-        "general_chat": "General conversation/questions (fallback)"
+        "general_chat": "General conversation/questions (fallback)",
+        # Development Tools
+        "jupyter_open": "Open Jupyter Notebook"
     }
 
     # Fast Path Intents (Keyword -> Intent)
@@ -166,6 +168,14 @@ class CommandIntentClassifier:
         "browser": "web_open",
         "open chrome": "app_open",
         "chrome": "app_open",
+        
+        # Jupyter Notebook Fast Paths
+        "open jupyter": "jupyter_open",
+        "open jupyter notebook": "jupyter_open",
+        "jupyter notebook": "jupyter_open",
+        "jupyter": "jupyter_open",
+        "start jupyter": "jupyter_open",
+        "launch jupyter": "jupyter_open",
         
         # Silence
         "quiet": "volume_mute",
