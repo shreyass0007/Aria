@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img src="electron/renderer/aria_logo.png" alt="Aria Logo" width="120" height="120">
+<img src="electron/renderer/aria_logo.png" alt="Aria Logo" width="300" height="300">
 
 ### Your Premium Desktop AI Assistant
 
