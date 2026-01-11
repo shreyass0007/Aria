@@ -42,6 +42,7 @@ logs/
 # Credentials
 credentials.json
 token.json
+*.pickle
 
 # Build outputs
 build/

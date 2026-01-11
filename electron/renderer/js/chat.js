@@ -268,6 +268,7 @@ export function addMessage(text, sender, uiAction = null) {
                 }
             }
         }
+
     } else {
         bubble.textContent = text;
     }

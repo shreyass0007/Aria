@@ -49,6 +49,7 @@ class CommandProcessor:
         self.last_intent_info = None # Store last executed intent for context corrections
         self.pending_music_suggestion = False # Track if we offered to play music
         self.stop_processing_flag = False # Flag to interrupt streaming/processing
+        self.last_used_model_name = None # Track actual model used for generation
         
         # Short-term memory for context awareness (last 10 turns)
         self.conversation_history = []
@@ -568,16 +569,26 @@ class CommandProcessor:
             
         # Pass last_search_context to allow follow-up questions about previous search
         try:
-            logger.info("Starting Streaming Response with GPT-4o-mini...")
-            # Use 'gpt-4o-mini' for general chat to improve speed (or make it configurable)
-            # Streaming Logic
+            # Determine actual model being used for UI feedback
+            llm_instance = self.brain.get_llm(model_name)
+            self.last_used_model_name = self.brain.get_model_name_from_llm(llm_instance)
+            
+            # --- TERMINAL OUTPUT FOR USER CHECK ---
+            print(f"\n{'-'*40}")
+            print(f"🤖 USING MODEL: {self.last_used_model_name}")
+            print(f"   Requested: {model_name}")
+            print(f"{'-'*40}\n")
+            # --------------------------------------
+            
+            logger.info(f"Starting Streaming Response with {model_name} (Actual: {self.last_used_model_name})...")
+
             full_response = ""
             sentence_buffer = ""
-            
+
             # Use stream_ask
             stream = self.brain.stream_ask(
                 text, 
-                model_name="gpt-4o-mini", # FAST MODEL
+                model_name=model_name, 
                 conversation_history=history_to_use,
                 long_term_context=long_term_memory,
                 search_context=self.last_search_context
@@ -620,7 +631,9 @@ class CommandProcessor:
             
             return full_response
         except Exception as e:
+            import traceback
             logger.error(f"Error in general_chat (streaming): {e}")
+            traceback.print_exc()
             return "I'm having trouble thinking right now. Please try again."
 
     def _resolve_relative_dates(self, text: str) -> str:

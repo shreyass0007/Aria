@@ -1,9 +1,9 @@
 import os
 import json
 import datetime
+import socket
 from dotenv import load_dotenv
 
-from dotenv import load_dotenv
 from langchain_core.prompts import PromptTemplate
 
 
@@ -14,6 +14,8 @@ class AriaBrain:
         self.api_key = os.getenv("OPEN_AI_API_KEY")
         self.google_api_key = os.getenv("GOOGLE_API_KEY")
         self.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+        self.ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        self.local_model_name = os.getenv("LOCAL_MODEL_NAME", "llama3.2")
         
         # print(f"DEBUG: OpenAI Key found: {bool(self.api_key)}")
         # print(f"DEBUG: Google Key found: {bool(self.google_api_key)}")
@@ -33,6 +35,9 @@ class AriaBrain:
         
         # Gemini
         self._llm_gemini = None
+
+        # Local Ollama
+        self._llm_ollama = None
         
         # Active Mode (normal, coder, study, jarvis)
         self.active_mode = "normal"
@@ -45,7 +50,28 @@ class AriaBrain:
         if not self.google_api_key:
             print("Info: GOOGLE_API_KEY not found. Gemini will not be available.")
 
+    def _is_online(self):
+        """Checks for internet connectivity."""
+        try:
+            # Connect to a public DNS server (Google's 8.8.8.8)
+            socket.create_connection(("8.8.8.8", 53), timeout=3)
+            return True
+        except OSError:
+            return False
+
     # --- Lazy Loading Properties ---
+
+    @property
+    def llm_ollama(self):
+        if self._llm_ollama is None:
+             try:
+                from langchain_community.chat_models import ChatOllama
+                # Lower temperature for local model to improve stability and coherence
+                self._llm_ollama = ChatOllama(model=self.local_model_name, base_url=self.ollama_base_url, temperature=0.3)
+             except Exception as e:
+                 print(f"Error init Ollama: {e}")
+        return self._llm_ollama
+
 
     @property
     def llm_gpt_4o(self):
@@ -138,13 +164,23 @@ class AriaBrain:
 
     def get_llm(self, model_name: str = "gpt-4o"):
         """Returns the requested LLM instance with fallback support."""
+        
+        # 1. Check Internet Connection
+        if not self._is_online():
+            print("Warning: No internet connection detected. Falling back to Local Ollama.")
+            return self.llm_ollama
+
         # Direct lookup to avoid triggering all properties
         llm = None
         
-        if model_name == "gpt-4o" or model_name == "openai":
-            llm = self.llm_gpt_4o
-        elif model_name == "gpt-4o-mini":
+        # Override default request if it's the generic "gpt-4o" to use "gpt-4o-mini" by default (User Preference)
+        if model_name == "gpt-4o":
+            model_name = "gpt-4o-mini"
+
+        if model_name == "gpt-4o-mini":
             llm = self.llm_gpt_4o_mini
+        elif model_name == "gpt-4o" or model_name == "openai": # Explicit fallback if mini fails or specifically asked (logic below handles exact match)
+            llm = self.llm_gpt_4o
         elif model_name == "gpt-3.5-turbo":
             llm = self.llm_gpt_35_turbo
         elif model_name == "claude-sonnet":
@@ -155,6 +191,8 @@ class AriaBrain:
             llm = self.llm_claude_opus_4_5
         elif model_name == "gemini" or model_name == "gemini-pro":
              llm = self.llm_gemini
+        elif model_name == "local" or model_name == "ollama":
+             llm = self.llm_ollama
         
         # Extended map for others
         if not llm:
@@ -168,11 +206,12 @@ class AriaBrain:
         print(f"Model {model_name} not available, attempting fallback...")
         
         fallback_order = [
+            self.llm_gpt_4o_mini,  # Default Preferred
             self.llm_gpt_4o,
             self.llm_claude_sonnet,
-            self.llm_gpt_4o_mini,
             self.llm_gemini,
-            self.llm_gpt_35_turbo
+            self.llm_gpt_35_turbo,
+            self.llm_ollama # Final fallback
         ]
         
         for candidate in fallback_order:
@@ -181,8 +220,23 @@ class AriaBrain:
         
         return None
 
+    def get_model_name_from_llm(self, llm) -> str:
+        """Helper to extract model name from various LLM objects."""
+        if not llm:
+            return "Unknown"
+        
+        # Try common attributes
+        if hasattr(llm, "model_name"): return llm.model_name # OpenAI, Google
+        if hasattr(llm, "model"): return llm.model # Ollama, Anthropic
+        
+        return str(llm.__class__.__name__)
+
     def get_fast_llm(self):
         """Returns the fastest available LLM for low-latency tasks (e.g., Intent Classification)."""
+        
+        if not self._is_online():
+             return self.llm_ollama
+
         # Checks trigger properties individually
         if self.llm_gpt_4o_mini:
             return self.llm_gpt_4o_mini
@@ -194,8 +248,23 @@ class AriaBrain:
         # Fallback to standard
         return self.get_llm("gpt-4o")
 
-    def _get_system_prompt(self) -> str:
-        """Reads the system prompt from the file or returns a default."""
+    def _get_system_prompt(self, model_name: str = "gpt-4o") -> str:
+        """Reads the system prompt. Returns a simplified version for local models to prevent hallucination."""
+        
+        # SPECIALIZED PROMPT FOR LOCAL / SMALL MODELS
+        # Small models (like Llama 3.2 3B) often overdo "personality" instructions.
+        # We give them a stricter, cleaner prompt.
+        if model_name and ("local" in model_name.lower() or "ollama" in model_name.lower() or "llama" in model_name.lower()):
+            return """You are Aria, a helpful and precise AI assistant.
+            
+CORE INSTRUCTIONS:
+- You are a friend to the user ("Shreyas"). Be polite, warm, and professional.
+- Keep answers CONCISE and to the point.
+- Do NOT be "cheeky", "playful", or "witty". Just be helpful.
+- Speak naturally but clearly.
+- If you don't know something, admit it directly.
+- CURRENT CONTEXT: The user is a developer."""
+
         try:
             # Try to find the file in the current directory or project root
             paths = ["llm_system_prompt.txt", "d:\\CODEING\\PROJECTS\\ARIA\\llm_system_prompt.txt"]
@@ -250,7 +319,7 @@ class AriaBrain:
         llm = self.get_llm(model_name)
         
         if not llm:
-            return "I'm sorry, but no AI models are available. Please check your API keys."
+            return "I'm sorry, but no AI models are available. Please check your API keys or internet connection."
 
         try:
             from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
@@ -259,7 +328,7 @@ class AriaBrain:
             messages = []
             
             # Add system message for context
-            system_prompt = self._get_system_prompt()
+            system_prompt = self._get_system_prompt(model_name=model_name)
             
             # Inject current date and time
             now = datetime.datetime.now()
@@ -337,7 +406,7 @@ class AriaBrain:
             messages = []
             
             # Add system message for context
-            system_prompt = self._get_system_prompt()
+            system_prompt = self._get_system_prompt(model_name=model_name)
             
             # Inject current date and time
             now = datetime.datetime.now()
@@ -381,14 +450,40 @@ class AriaBrain:
             # Add current user message
             messages.append(HumanMessage(content=user_input))
             
-            # Stream the response with message history
-            for chunk in llm.stream(messages):
-                yield chunk.content
+            # Stream the response with runtime fallback
+            fallback_attempted = False
+            active_llm = llm
+            active_model_name = model_name
+            
+            while True:
+                try:
+                    for chunk in active_llm.stream(messages):
+                        yield chunk.content
+                    break # Success, exit loop
+                except Exception as e:
+                    if fallback_attempted:
+                        yield f"I encountered an error thinking about that with {active_model_name}: {e}"
+                        return
+                    
+                    print(f"\n⚠️ Runtime Error with {active_model_name}: {e}")
+                    print(f"🔄 Switching to Fallback: gpt-4o-mini\n")
+                    
+                    fallback_attempted = True
+                    active_model_name = "gpt-4o-mini"
+                    active_llm = self.get_llm("gpt-4o-mini")
+                    
+                    if not active_llm:
+                        yield f"Fallback model not available."
+                        return
         except Exception as e:
-            yield f"I encountered an error thinking about that with {model_name}: {e}"
+            yield f"I encountered an error preparing the request: {e}"
 
     def is_available(self) -> bool:
         """Check if at least one AI model is available."""
+        # If offline, check if Ollama is responsive
+        if not self._is_online():
+            return self.llm_ollama is not None
+
         return any([
             self.llm_gpt_5_1,
             self.llm_gpt_4o,
@@ -398,23 +493,17 @@ class AriaBrain:
             self.llm_claude_haiku,
             self.llm_claude_opus_4_5,
             self.llm_claude_opus_4_1,
-            self.llm_gemini
+            self.llm_gemini,
+            self.llm_ollama
         ])
     
     def get_available_models(self) -> list:
         """Returns a list of available model names."""
         available = []
         
-        # User requested specific list:
-        # gpt-5.1
-        # gpt-4o
-        # gpt-4o-mini
-        # gpt-3.5-turbo
-        # claude-sonnet
-        # claude-haiku
-        # claude-opus-4-5
-        # claude-opus-4-1
-        # gemini-pro
+        # Ollama / Local
+        if self.llm_ollama:
+             available.append({"id": "local", "name": f"Local ({self.local_model_name})", "provider": "Ollama"})
 
         if self.llm_gpt_5_1:
             available.append({"id": "gpt-5.1", "name": "GPT-5.1", "provider": "OpenAI"})

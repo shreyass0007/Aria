@@ -395,3 +395,19 @@
 [data-theme="dark"][data-color-theme="mono"] .message.user .bubble div {
     color: #000000 !important;
 }
+.message-model-info {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    margin-top: 6px;
+    text-align: right;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    color: inherit;
+}
+
+.message-model-info svg {
+    width: 12px;
+    height: 12px;
+}

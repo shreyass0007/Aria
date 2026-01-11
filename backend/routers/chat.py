@@ -28,6 +28,7 @@ class MessageResponse(BaseModel):
     audio_url: Optional[str] = None
     action_result: Optional[Any] = None
     ui_action: Optional[Dict[str, Any]] = None
+    used_model: Optional[str] = None
 
 
 
@@ -121,11 +122,16 @@ async def process_message(
         if ui_action:
             aria.command_processor.last_ui_action = None # Clear it
             
+        # Get used model
+        used_model = getattr(aria.command_processor, "last_used_model_name", None)
+        aria.command_processor.last_used_model_name = None # Reset
+            
         return MessageResponse(
             response=response_text,
             conversation_id=conversation_id or "default",
             action_result=intent_data,
-            ui_action=ui_action
+            ui_action=ui_action,
+            used_model=used_model
         )
 
     except Exception as e:
