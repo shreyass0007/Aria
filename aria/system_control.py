@@ -350,9 +350,89 @@ class SystemControl:
             return f"Error minimizing windows: {str(e)}"
 
 
+    # ==================== NETWORK & CONNECTIVITY ====================
+
+    def get_wifi_status(self):
+        """Check if WiFi is enabled/connected."""
+        try:
+            # Check if the Wi-Fi adapter is Up
+            cmd = "powershell -Command \"Get-NetAdapter -Name 'Wi-Fi' | Select-Object -ExpandProperty Status\""
+            result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+            if result.returncode == 0:
+                status = result.stdout.strip().lower()
+                return status == "up"
+            return False
+        except Exception as e:
+            logger.error(f"Error checking WiFi status: {e}")
+            return False
+
+    def set_wifi(self, enable: bool):
+        """Enable or Disable WiFi (Requires Admin)."""
+        try:
+            action = "Enable-NetAdapter" if enable else "Disable-NetAdapter"
+            cmd = f"powershell -Command \"Start-Process powershell -Verb RunAs -ArgumentList '{action} -Name \\\"Wi-Fi\\\" -Confirm:$false'\""
+            
+            # We use Start-Process -Verb RunAs to request Admin privileges if needed
+            subprocess.run(cmd, shell=True)
+            
+            state = "enabled" if enable else "disabled"
+            return f"WiFi {state} (Admin prompt may appear)"
+        except Exception as e:
+            return f"Error setting WiFi: {str(e)}"
+
+    def get_bluetooth_status(self):
+        """Check if Bluetooth service is running."""
+        try:
+            # Checking the Bluetooth Support Service status is a decent proxy
+            cmd = "powershell -Command \"Get-Service bthserv | Select-Object -ExpandProperty Status\""
+            result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+            if result.returncode == 0:
+                status = result.stdout.strip().lower()
+                return status == "running"
+            return False
+        except Exception as e:
+            logger.error(f"Error checking Bluetooth status: {e}")
+            return False
+
+    def set_bluetooth(self, enable: bool):
+        """Enable or Disable Bluetooth Service (Requires Admin)."""
+        try:
+            action = "Start-Service" if enable else "Stop-Service"
+            cmd = f"powershell -Command \"Start-Process powershell -Verb RunAs -ArgumentList '{action} bthserv'\""
+            
+            subprocess.run(cmd, shell=True)
+            
+            state = "enabled" if enable else "disabled"
+            return f"Bluetooth {state} (Admin prompt may appear)"
+        except Exception as e:
+            return f"Error setting Bluetooth: {str(e)}"
+
+    # ==================== MISC ====================
+
+    def open_settings(self, page: str = ""):
+        """Open Windows Settings specific page."""
+        try:
+            # Map common names to URIs
+            uri_map = {
+                "wifi": "ms-settings:network-wifi",
+                "bluetooth": "ms-settings:bluetooth",
+                "volume": "ms-settings:sound",
+                "display": "ms-settings:display",
+                "power": "ms-settings:powersleep",
+                "notifications": "ms-settings:notifications"
+            }
+            uri = uri_map.get(page.lower(), "ms-settings:")
+            os.system(f"start {uri}")
+            return f"Opening settings: {page}"
+        except Exception as e:
+            return f"Error opening settings: {str(e)}"
+
+
 if __name__ == "__main__":
     controller = SystemControl()
     print("Testing System Control Module...")
     print(f"Current Volume: {controller.get_volume()}%")
     print(f"Is Muted: {controller.is_muted()}") 
     print(f"Recycle Bin: {controller.get_recycle_bin_size()}")
+    print(f"WiFi Status: {controller.get_wifi_status()}")
+    print(f"Bluetooth Status (Service): {controller.get_bluetooth_status()}")

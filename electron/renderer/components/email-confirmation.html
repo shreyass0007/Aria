@@ -8,41 +8,61 @@
 
         <div class="modal-body">
             <div class="email-preview">
+                <!-- Decorative header with icon -->
                 <div class="email-preview-header">
+                    <span class="email-icon">✉️</span>
+                    <h3>Email Preview</h3>
+                </div>
+
+                <!-- Email fields with new structure -->
+                <div class="email-fields">
                     <div class="email-field">
-                        <strong>From:</strong>
-                        <span id="emailPreviewFrom">your.email@gmail.com</span>
+                        <span class="email-label">From:</span>
+                        <span class="email-value" id="emailPreviewFrom">you@gmail.com</span>
                     </div>
                     <div class="email-field">
-                        <strong>To:</strong>
-                        <span id="emailPreviewTo"></span>
+                        <span class="email-label">To:</span>
+                        <span class="email-value" id="emailPreviewTo"></span>
                     </div>
                     <div class="email-field">
-                        <strong>Subject:</strong>
-                        <span id="emailPreviewSubject"></span>
+                        <span class="email-label">Subject:</span>
+                        <span class="email-value" id="emailPreviewSubject"></span>
                     </div>
                 </div>
 
-                <div class="email-preview-divider"></div>
+                <!-- Email body section -->
+                <div class="email-body-section">
+                    <div class="email-body-label">
+                        <span>📝</span>
+                        <span>Message</span>
+                    </div>
+                    <div class="email-body-content">
+                        <pre id="emailPreviewBody"></pre>
+                    </div>
+                </div>
 
-                <div class="email-preview-body">
-                    <pre id="emailPreviewBody"></pre>
+                <!-- Action buttons inside preview card -->
+                <div class="email-actions">
+                    <button type="button" class="email-btn email-btn-cancel" id="emailConfirmCancelBtn">
+                        <span>Cancel</span>
+                    </button>
+                    <button type="button" class="email-btn email-btn-send" id="emailSendBtn">
+                        <span class="email-btn-icon">📤</span>
+                        <span>Send Email</span>
+                    </button>
                 </div>
             </div>
 
+            <!-- Status display -->
             <div class="email-status" id="emailStatus" style="display: none;">
                 <div class="status-message"></div>
             </div>
 
-            <div class="form-actions">
-                <button type="button" class="btn btn-secondary" id="emailEditBtn">
-                    ✏️ Edit
-                </button>
-                <button type="button" class="btn btn-secondary" id="emailConfirmCancelBtn">
-                    Cancel
-                </button>
-                <button type="button" class="btn btn-primary" id="emailSendBtn">
-                    📤 Send Email
+            <!-- External edit button -->
+            <div class="email-edit-action" style="margin-top: 12px; text-align: center;">
+                <button type="button" class="email-btn email-btn-cancel" id="emailEditBtn"
+                    style="flex: none; padding: 10px 20px;">
+                    <span>✏️ Edit Draft</span>
                 </button>
             </div>
         </div>

@@ -1,6 +1,10 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const electron = require('electron');
+// Handle case where require('electron') returns a string path (known issue)
+const { app, BrowserWindow, ipcMain, nativeImage } = typeof electron === 'string' ? require(electron) : electron;
+
 const path = require('path');
 const { spawn } = require('child_process');
+const axios = require('axios');
 
 let mainWindow;
 let pythonProcess;
@@ -36,11 +40,21 @@ function createWindow() {
     });
     mainWindow.setMenuBarVisibility(false);
 
+    // Handle new windows (links) to ensure they have the Aria icon
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+        return {
+            action: 'allow',
+            overrideBrowserWindowOptions: {
+                autoHideMenuBar: true,
+                title: "Aria Browser",
+                // Don't enforce icon here, let dynamic fetcher handle it
+            }
+        };
+    });
 
     // Load the app
     mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 
-    // Open DevTools in development mode
     // Open DevTools in development mode
     if (process.argv.includes('--dev')) {
         mainWindow.webContents.openDevTools();
@@ -50,6 +64,52 @@ function createWindow() {
         mainWindow = null;
     });
 }
+
+// Function to fetch and set dynamic favicon
+async function setDynamicIcon(win, url) {
+    try {
+        if (!url || !url.startsWith('http')) return;
+
+        const hostname = new URL(url).hostname;
+        // Use Google's favicon service for reliable 64px icons
+        const iconUrl = `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
+
+        console.log(`Fetching icon for ${hostname} from ${iconUrl}`);
+
+        const response = await axios.get(iconUrl, { responseType: 'arraybuffer' });
+        const buffer = Buffer.from(response.data);
+        const image = nativeImage.createFromBuffer(buffer);
+
+        if (!win.isDestroyed()) {
+            win.setIcon(image);
+        }
+    } catch (error) {
+        console.error('Failed to set dynamic icon:', error.message);
+        // Fallback to Aria logo if fetch fails
+        if (!win.isDestroyed()) {
+            win.setIcon(path.join(__dirname, 'aria_logo.png'));
+        }
+    }
+}
+
+// Listen for new windows to apply dynamic icons
+app.on('browser-window-created', (event, win) => {
+    if (win === mainWindow) return;
+
+    // Wait for navigation or use initial title/url if available
+    win.webContents.once('did-start-loading', () => {
+        const url = win.webContents.getURL();
+        if (url) {
+            setDynamicIcon(win, url);
+        }
+    });
+
+    // Update if they navigate elsewhere
+    win.webContents.on('did-navigate', (event, url) => {
+        setDynamicIcon(win, url);
+    });
+});
+
 
 // IPC Handler for rename dialog
 ipcMain.handle('show-rename-dialog', async (event, currentTitle) => {

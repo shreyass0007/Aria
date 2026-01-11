@@ -1,0 +1,23 @@
+[
+    {
+        "title": "Starboy",
+        "artist": "The Weeknd",
+        "url": "https://www.youtube.com/watch?v=34Na4j8AVgA",
+        "duration": 230,
+        "query": "The Weeknd - Starboy"
+    },
+    {
+        "title": "Blinding Lights",
+        "artist": "The Weeknd",
+        "url": "https://www.youtube.com/watch?v=4NRXx6U8ABQ",
+        "duration": 200,
+        "query": "The Weeknd - Blinding Lights"
+    },
+    {
+        "title": "Midnight City",
+        "artist": "M83",
+        "url": "https://www.youtube.com/watch?v=dX3k_QDnzHE",
+        "duration": 243,
+        "query": "M83 - Midnight City"
+    }
+]

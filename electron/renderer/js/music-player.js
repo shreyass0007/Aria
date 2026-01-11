@@ -255,10 +255,34 @@ class MusicPlayer {
 
     async previous() {
         console.log('Previous track requested');
+        try {
+            const response = await fetch('http://localhost:8000/music/previous', {
+                method: 'POST'
+            });
+            if (response.ok) {
+                const data = await response.json();
+                console.log('[Music Player] Previous response:', data);
+                // Status polling will update UI
+            }
+        } catch (error) {
+            console.error('Error requesting previous track:', error);
+        }
     }
 
     async next() {
         console.log('Next track requested');
+        try {
+            const response = await fetch('http://localhost:8000/music/next', {
+                method: 'POST'
+            });
+            if (response.ok) {
+                const data = await response.json();
+                console.log('[Music Player] Next response:', data);
+                // Status polling will update UI
+            }
+        } catch (error) {
+            console.error('Error requesting next track:', error);
+        }
     }
 
     seek(event) {
@@ -339,23 +363,54 @@ class MusicPlayer {
         }
 
         this.statusInterval = setInterval(async () => {
-            if (!this.isPlaying) return;
+            // Always poll status even if not "playing" according to local state, 
+            // because backend might have started auto-playing next track.
 
             try {
                 const response = await fetch('http://localhost:8000/music/status');
                 if (response.ok) {
                     const status = await response.json();
+
                     if (status.current_time) {
                         this.updateProgress(status.current_time);
                     }
                     if (status.is_playing !== undefined) {
-                        this.updatePlayingState(status.is_playing);
+                        // Only update if state actually changed to avoid console spam
+                        if (this.isPlaying !== status.is_playing) {
+                            this.updatePlayingState(status.is_playing);
+                        }
+                    }
+
+                    // Check if track changed
+                    if (status.track && (!this.currentTrack || status.track !== this.currentTrack.title)) {
+                        console.log('[Music Player] Track change detected via poll:', status.track);
+
+                        // Construct track info from status (API doesn't return artist separately in status yet?)
+                        // We might need to parse it or request /music/current
+
+                        // For now we assume status.track might be the title
+                        // Inspecting the backend `get_status` returns: 
+                        // {'is_playing': ..., 'track': title, 'duration': ...}
+                        // It does NOT return artist separately. 
+                        // But wait! `get_status` reads `current_track_info`.
+
+                        // Let's rely on the `track` string.
+                        // Ideally we should update backend to return structure. 
+                        // But for now, let's just update the title.
+
+                        const newTrack = {
+                            title: status.track,
+                            artist: status.artist || 'Unknown Artist', // Needs backend update to send artist
+                            duration: status.duration || 0
+                        };
+
+                        this.onTrackChanged(newTrack);
                     }
                 }
             } catch (error) {
                 console.error('Error fetching music status:', error);
             }
-        }, 2000);
+        }, 1000); // Poll every 1s for better responsiveness
     }
 
     stopProgressTracking() {

@@ -1,4 +1,5 @@
 import urllib.parse
+import re
 import datetime
 import difflib
 import webbrowser
@@ -45,6 +46,7 @@ class CommandProcessor:
         self.wake_word = "aria"
         self.last_ui_action = None
         self.last_search_context = None # Store search results for follow-up questions
+        self.last_intent_info = None # Store last executed intent for context corrections
         self.pending_music_suggestion = False # Track if we offered to play music
         self.stop_processing_flag = False # Flag to interrupt streaming/processing
         
@@ -81,7 +83,8 @@ class CommandProcessor:
                        "shutdown", "restart", "cancel_shutdown", "recycle_bin_empty", "recycle_bin_check", 
                        "screenshot_take", "clipboard_copy", "clipboard_read", "clipboard_clear", 
                        "battery_check", "cpu_check", "ram_check", "system_stats",
-                       "time_check", "date_check"]:
+                       "time_check", "date_check",
+                       "wifi_on", "wifi_off", "wifi_check", "bluetooth_on", "bluetooth_off", "bluetooth_check"]:
             self.dispatcher.register_handler(intent, self.system_handler.handle)
             
         # Email
@@ -213,31 +216,45 @@ class CommandProcessor:
             logger.debug(f"Resolved query: {query}")
 
             # 1. Perform Real-Time Search
-            search_results = self.search_manager.search(query)
-            try:
-                logger.debug(f"Raw Search Results:\n{search_results.encode('utf-8', errors='ignore').decode('utf-8')}")
-            except Exception:
-                logger.debug("Raw Search Results: [Content with unicode]")
+            search_results_list = self.search_manager.search(query)
             
-            if search_results:
+            if search_results_list:
+                # Convert list to string for LLM context
+                formatted_results = "## Search Results:\n\n"
+                for i, res in enumerate(search_results_list):
+                   formatted_results += f"{i+1}. **{res['title']}**\n   {res['content']}\n   Source: {res['url']}\n\n"
+                
                 # Store context for follow-up questions
-                self.last_search_context = search_results
+                self.last_search_context = formatted_results
+                
+                # Send UI Action to Display Cards
+                self.last_ui_action = {
+                    "type": "search_results",
+                    "data": {
+                        "results": search_results_list,
+                        "query": query
+                    }
+                }
                 
                 # 2. Synthesize Answer using LLM
                 self.tts_manager.speak("I found some results. Summarizing for you...")
                 
                 # Use the new search_context parameter in brain.ask
                 answer = self.brain.ask(
-                    f"Based on the search results, answer this query: {query}", 
-                    search_context=search_results
+                    f"Based on the search results, answer this query: {query}. VERY IMPORTANT: Cite sources using [1], [2] format at the end of sentences.", 
+                    search_context=formatted_results
                 )
                 
-                self.tts_manager.speak(answer)
+                # Strip citations [1], [2] for speech
+                clean_speech = re.sub(r'\[\d+\]', '', answer)
+                self.tts_manager.speak(clean_speech)
+                return answer
             else:
                 self.tts_manager.speak("I couldn't find any results for that.")
                 # Fallback to browser
                 q = urllib.parse.quote_plus(query)
                 self.safe_open_url(f"https://www.google.com/search?q={q}", "")
+                return f"I couldn't find results for '{query}' here, so I opened Google for you."
         else:
             self.tts_manager.speak("What should I search for?")
             return "Please specify what to search for."
@@ -443,13 +460,27 @@ class CommandProcessor:
         # ---------------------------------------------------------
         # CENTRALIZED INTENT CLASSIFICATION
         # ---------------------------------------------------------
+
+        # Update History (User)
+        # We need to do this BEFORE classification so the classifier can see the *previous* context,
+        # but the *current* message isn't technically "history" yet for classification purposes usually,
+        # but for consistency we can append it after or treat it separately.
+        # The classifier prompt handles "RECENT CONVERSATION HISTORY" separate from "USER COMMAND".
+        # So we pass the history *before* appending the current text.
         
-        # Classify the user's intent using the LLM (or use provided data)
+        history_to_use = conversation_history if conversation_history is not None else self.conversation_history
+
         # Classify the user's intent using the LLM (or use provided data)
         if intent_data:
             intent_results = intent_data
         else:
-            intent_results = self.command_classifier.classify_intent(text)
+            intent_results = self.command_classifier.classify_intent(text, conversation_history=history_to_use)
+            
+        # Add User Message to History NOW (after classification usage)
+        if conversation_history is None:
+            self.conversation_history.append({"role": "user", "content": text})
+            if len(self.conversation_history) > 10:
+                self.conversation_history = self.conversation_history[-10:]
             
         # Ensure it's a list
         if isinstance(intent_results, dict):
@@ -475,6 +506,14 @@ class CommandProcessor:
                 handled_any = True
                 execution_responses.append(result)
                 
+                # Update Last Intent Info
+                self.last_intent_info = {
+                    "intent": intent,
+                    "parameters": parameters,
+                    "text": text,
+                    "timestamp": datetime.datetime.now()
+                }
+                
                 # Handle UI Actions based on intent (Post-processing)
                 if intent == "music_play":
                     track_info = self.music_manager.current_track_info
@@ -498,6 +537,11 @@ class CommandProcessor:
         
         if handled_any:
             final_response = " ".join(execution_responses)
+            
+            # Update History (System)
+            if conversation_history is None:
+                self.conversation_history.append({"role": "assistant", "content": final_response})
+            
             # If we have multiple responses, maybe we don't want to speak them all if they are repetitive?
             # But for now, let's just join them.
             return final_response

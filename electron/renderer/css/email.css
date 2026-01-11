@@ -1,62 +1,168 @@
-/* Email Preview Styles */
+/* ==================== EMAIL PREVIEW - PREMIUM DESIGN ==================== */
+
 .email-preview {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(15px) saturate(180%);
+    background: var(--bg-card);
     border: 1px solid var(--glass-border);
     border-radius: 16px;
-    padding: 12px;
-    margin-top: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    margin-top: 12px;
+    box-shadow: var(--glass-shadow), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    width: 100%;
+    min-width: 200px;
+    /* Reduced from 280px */
     max-width: 100%;
+    /* Changed from fixed 340px to fit container */
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    animation: emailSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark mode - solid background to avoid blur issues */
+/* Dark mode - solid background to avoid blur issues */
+[data-theme="dark"] .email-preview {
+    background: #13141f !important;
+    /* Fully opaque dark color */
+    border-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+@keyframes emailSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(15px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Decorative accent line at top */
+.email-preview::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+    opacity: 0.8;
+}
+
+/* Email Header */
+.email-preview-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.email-preview-header .email-icon {
+    font-size: 24px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.email-preview-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    letter-spacing: 0.3px;
+}
+
+/* Email Fields Container */
+.email-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
 }
 
 .email-field {
-    margin-bottom: 12px;
-    font-size: 14px;
-    line-height: 1.6;
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 1.4;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.2s ease;
+}
+
+.email-field:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 .email-label {
     color: var(--accent);
     font-weight: 600;
-    margin-right: 10px;
     min-width: 60px;
-    font-size: 13px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding-top: 1px;
+    opacity: 0.9;
 }
 
 .email-value {
     color: var(--text-primary);
-    font-weight: 400;
+    font-weight: 500;
+    flex: 1;
+    word-break: break-word;
+}
+
+/* Email Body Section */
+.email-body-section {
+    margin-top: 4px;
+}
+
+.email-body-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 8px;
+    opacity: 0.9;
 }
 
 .email-body-editor {
-    margin-top: 12px;
-    margin-bottom: 16px;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
     color: var(--text-primary);
-    font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    line-height: 1.6;
-    resize: vertical;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 12px;
+    line-height: 1.5;
+    resize: none;
     width: 100%;
-    min-height: 100px;
+    min-height: 80px;
+    max-height: 150px;
     outline: none;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
 .email-body-editor:focus {
-    background: rgba(255, 255, 255, 0.07);
+    background: rgba(0, 0, 0, 0.2);
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15), inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    box-shadow:
+        0 0 0 3px rgba(99, 102, 241, 0.15),
+        inset 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .email-body-editor::placeholder {
@@ -64,30 +170,376 @@
     opacity: 0.5;
 }
 
-/* Custom Scrollbar for Textarea */
+/* Custom Scrollbar for Editor */
 .email-body-editor::-webkit-scrollbar {
     width: 8px;
 }
 
 .email-body-editor::-webkit-scrollbar-track {
     background: transparent;
+    border-radius: 4px;
 }
 
 .email-body-editor::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.12);
     border-radius: 4px;
+    transition: background 0.2s;
 }
 
 .email-body-editor::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
 }
 
-[data-theme="dark"] .email-body-editor {
-    background: rgba(0, 0, 0, 0.2);
-    border-color: rgba(255, 255, 255, 0.05);
+/* Email Action Buttons */
+.email-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-[data-theme="dark"] .email-body-editor:focus {
-    background: rgba(0, 0, 0, 0.3);
+.email-btn {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.email-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.email-btn:hover::before {
+    left: 100%;
+}
+
+/* Send Button - Primary Action */
+.email-btn-send {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+/* Fix for Mono Dark theme (White accent = Black text) */
+[data-theme="dark"][data-color-theme="mono"] .email-btn-send {
+    color: black;
+    font-weight: 700;
+}
+
+.email-btn-send:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+}
+
+.email-btn-send:active {
+    transform: translateY(0);
+}
+
+/* Cancel Button - Secondary Action */
+.email-btn-cancel {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.email-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.email-btn-cancel:active {
+    transform: translateY(0);
+}
+
+/* Button Icons */
+.email-btn-icon {
+    font-size: 16px;
+    transition: transform 0.3s ease;
+}
+
+.email-btn-send:hover .email-btn-icon {
+    transform: translateX(3px);
+}
+
+/* ==================== LIGHT THEME ADJUSTMENTS ==================== */
+[data-theme="light"] .email-preview,
+:root:not([data-theme="dark"]) .email-preview {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .email-field,
+:root:not([data-theme="dark"]) .email-field {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .email-field:hover,
+:root:not([data-theme="dark"]) .email-field:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .email-body-editor,
+:root:not([data-theme="dark"]) .email-body-editor {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .email-body-editor:focus,
+:root:not([data-theme="dark"]) .email-body-editor:focus {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="light"] .email-btn-cancel,
+:root:not([data-theme="dark"]) .email-btn-cancel {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .email-btn-cancel:hover,
+:root:not([data-theme="dark"]) .email-btn-cancel:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .email-preview-header,
+:root:not([data-theme="dark"]) .email-preview-header {
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .email-actions,
+:root:not([data-theme="dark"]) .email-actions {
+    border-top-color: rgba(0, 0, 0, 0.08);
+}
+
+/* ==================== MONO THEME SPECIFIC ==================== */
+[data-color-theme="mono"] .email-preview::before {
+    background: linear-gradient(90deg, #000, #333);
+}
+
+[data-theme="dark"][data-color-theme="mono"] .email-preview::before {
+    background: linear-gradient(90deg, #fff, #ccc);
+}
+
+[data-theme="dark"][data-color-theme="mono"] .email-btn-send {
+    background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+    color: #000;
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="dark"][data-color-theme="mono"] .email-btn-send:hover {
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
+}
+
+/* ==================== SENDING ANIMATION ==================== */
+.email-preview.sending {
+    pointer-events: none;
+}
+
+.email-preview.sending::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    animation: sendingPulse 1.5s infinite;
+}
+
+@keyframes sendingPulse {
+
+    0%,
+    100% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* ==================== SUCCESS STATE ==================== */
+.email-preview.sent {
+    border-color: #10b981;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+}
+
+.email-preview.sent::before {
+    background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+/* ==================== EMAIL BODY CONTENT DISPLAY ==================== */
+.email-body-content {
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.email-body-content pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-primary);
+}
+
+/* Scrollbar for body content */
+.email-body-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.email-body-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.email-body-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 3px;
+}
+
+/* Light theme adjustments */
+[data-theme="light"] .email-body-content,
+:root:not([data-theme="dark"]) .email-body-content {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* ==================== EMAIL STATUS MESSAGES ==================== */
+.email-status {
+    margin-top: 16px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    text-align: center;
+    font-weight: 500;
+    font-size: 14px;
+    animation: statusSlideIn 0.3s ease;
+}
+
+@keyframes statusSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.email-status.loading {
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--accent);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.email-status.success {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.email-status.error {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.email-status .status-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* ==================== EMAIL COMPOSE MODAL ENHANCEMENTS ==================== */
+.email-compose-content .form-group {
+    margin-bottom: 18px;
+}
+
+.email-compose-content .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--accent);
+    margin-bottom: 8px;
+    opacity: 0.9;
+}
+
+.email-compose-content .form-group input,
+.email-compose-content .form-group textarea {
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.email-compose-content .form-group input:focus,
+.email-compose-content .form-group textarea:focus {
+    background: rgba(0, 0, 0, 0.2);
     border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.email-compose-content .form-group input::placeholder,
+.email-compose-content .form-group textarea::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.5;
+}
+
+.email-compose-content .form-group textarea {
+    resize: vertical;
+    min-height: 150px;
+    line-height: 1.6;
+}
+
+/* Light theme for compose */
+[data-theme="light"] .email-compose-content .form-group input,
+[data-theme="light"] .email-compose-content .form-group textarea,
+:root:not([data-theme="dark"]) .email-compose-content .form-group input,
+:root:not([data-theme="dark"]) .email-compose-content .form-group textarea {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .email-compose-content .form-group input:focus,
+[data-theme="light"] .email-compose-content .form-group textarea:focus,
+:root:not([data-theme="dark"]) .email-compose-content .form-group input:focus,
+:root:not([data-theme="dark"]) .email-compose-content .form-group textarea:focus {
+    background: rgba(0, 0, 0, 0.02);
 }

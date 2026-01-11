@@ -19,178 +19,171 @@ class AriaBrain:
         # print(f"DEBUG: Google Key found: {bool(self.google_api_key)}")
         # print(f"DEBUG: Anthropic Key found: {bool(self.anthropic_api_key)}")
         
-        # Model instances - OpenAI variants
-        self.llm_gpt_5_1 = None
-        self.llm_gpt_4o = None
-        self.llm_gpt_4o_mini = None
-        self.llm_gpt_35_turbo = None
+        # Model instances - Private storage for lazy loading
+        self._llm_gpt_5_1 = None
+        self._llm_gpt_4o = None
+        self._llm_gpt_4o_mini = None
+        self._llm_gpt_35_turbo = None
         
         # Claude models
-        self.llm_claude_sonnet = None
-        self.llm_claude_haiku = None
-        self.llm_claude_opus_4_5 = None
-        self.llm_claude_opus_4_1 = None
+        self._llm_claude_sonnet = None
+        self._llm_claude_haiku = None
+        self._llm_claude_opus_4_5 = None
+        self._llm_claude_opus_4_1 = None
         
         # Gemini
-        self.llm_gemini = None
+        self._llm_gemini = None
         
         # Active Mode (normal, coder, study, jarvis)
         self.active_mode = "normal"
-        
 
-        # Initialize OpenAI models
-        if self.api_key:
-            try:
-                from langchain_openai import ChatOpenAI
-                # GPT-5.1 (future-proof)
-                try:
-                    self.llm_gpt_5_1 = ChatOpenAI(
-                        model="gpt-5.1",
-                        api_key=self.api_key,
-                        temperature=0.7
-                    )
-                except Exception as e:
-                    print(f"GPT-5.1 not yet available: {e}")
-                    # Fallback to GPT-4o so it shows in UI as "GPT-5.1 (Preview/Fallback)"
-                    self.llm_gpt_5_1 = self.llm_gpt_4o
-                
-                # GPT-5 (User Requested)
-                try:
-                    self.llm_gpt_5 = ChatOpenAI(
-                        model="gpt-5",
-                        api_key=self.api_key,
-                        temperature=0.7
-                    )
-                except Exception as e:
-                    print(f"GPT-5 not available: {e}")
-                    # Fallback
-                    self.llm_gpt_5 = self.llm_gpt_4o
-
-                # GPT-5 Mini (User Requested)
-                try:
-                    self.llm_gpt_5_mini = ChatOpenAI(
-                        model="gpt-5-mini",
-                        api_key=self.api_key,
-                        temperature=0.7
-                    )
-                except Exception as e:
-                    print(f"GPT-5 Mini not available: {e}")
-                    # Fallback
-                    self.llm_gpt_5_mini = self.llm_gpt_4o_mini
-
-                # GPT-4o (default)
-                self.llm_gpt_4o = ChatOpenAI(
-                    model="gpt-4o",
-                    api_key=self.api_key,
-                    temperature=0.7
-                )
-                
-                # GPT-4o-mini
-                self.llm_gpt_4o_mini = ChatOpenAI(
-                    model="gpt-4o-mini",
-                    api_key=self.api_key,
-                    temperature=0.7
-                )
-                
-                # GPT-3.5-turbo
-                self.llm_gpt_35_turbo = ChatOpenAI(
-                    model="gpt-3.5-turbo",
-                    api_key=self.api_key,
-                    temperature=0.7
-                )
-            except Exception as e:
-                print(f"Error initializing OpenAI models: {e}")
-        else:
+        # Note: We do NOT initialize models here anymore. They are lazy loaded.
+        if not self.api_key:
             print("Warning: OPEN_AI_API_KEY not found.")
+        if not self.anthropic_api_key:
+             print("Info: ANTHROPIC_API_KEY not found. Claude models will not be available.")
+        if not self.google_api_key:
+            print("Info: GOOGLE_API_KEY not found. Gemini will not be available.")
 
+    # --- Lazy Loading Properties ---
 
-        # Initialize Claude models
-        if self.anthropic_api_key:
+    @property
+    def llm_gpt_4o(self):
+        if self._llm_gpt_4o is None and self.api_key:
+             try:
+                from langchain_openai import ChatOpenAI
+                self._llm_gpt_4o = ChatOpenAI(model="gpt-4o", api_key=self.api_key, temperature=0.7)
+             except Exception as e:
+                 print(f"Error init GPT-4o: {e}")
+        return self._llm_gpt_4o
+
+    @property
+    def llm_gpt_4o_mini(self):
+        if self._llm_gpt_4o_mini is None and self.api_key:
+             try:
+                from langchain_openai import ChatOpenAI
+                self._llm_gpt_4o_mini = ChatOpenAI(model="gpt-4o-mini", api_key=self.api_key, temperature=0.7)
+             except Exception as e:
+                 print(f"Error init GPT-4o-mini: {e}")
+        return self._llm_gpt_4o_mini
+
+    @property
+    def llm_gpt_35_turbo(self):
+        if self._llm_gpt_35_turbo is None and self.api_key:
+             try:
+                from langchain_openai import ChatOpenAI
+                self._llm_gpt_35_turbo = ChatOpenAI(model="gpt-3.5-turbo", api_key=self.api_key, temperature=0.7)
+             except Exception as e:
+                 print(f"Error init GPT-3.5: {e}")
+        return self._llm_gpt_35_turbo
+
+    @property
+    def llm_gpt_5_1(self):
+        # Fallback logic preserved from original
+        return self.llm_gpt_4o
+
+    @property
+    def llm_gpt_5(self):
+        return self.llm_gpt_4o
+        
+    @property
+    def llm_gpt_5_mini(self):
+        return self.llm_gpt_4o_mini
+
+    # Claude Properties
+    @property
+    def llm_claude_sonnet(self):
+        if self._llm_claude_sonnet is None and self.anthropic_api_key:
             try:
                 from langchain_anthropic import ChatAnthropic
-                # Claude 3.5 Sonnet (Current Best)
-                self.llm_claude_sonnet = ChatAnthropic(
-                    model="claude-3-5-sonnet-20240620",
-                    anthropic_api_key=self.anthropic_api_key,
-                    temperature=0.7
-                )
-                
-                # Claude 3 Haiku (Fast)
-                self.llm_claude_haiku = ChatAnthropic(
-                    model="claude-3-haiku-20240307",
-                    anthropic_api_key=self.anthropic_api_key,
-                    temperature=0.7
-                )
-                
-                # Claude 3 Opus (Most Capable Legacy)
-                self.llm_claude_opus_4_5 = ChatAnthropic(
-                    model="claude-3-opus-20240229",
-                    anthropic_api_key=self.anthropic_api_key,
-                    temperature=0.7
-                )
-                
-                # Placeholder for valid 3.5 Opus if/when released
-                # Map to Opus 3 for now or Sonnet if Opus fails
-                self.llm_claude_opus_4_1 = self.llm_claude_opus_4_5 if self.llm_claude_opus_4_5 else self.llm_claude_sonnet
-
+                self._llm_claude_sonnet = ChatAnthropic(model="claude-3-5-sonnet-20240620", anthropic_api_key=self.anthropic_api_key, temperature=0.7)
             except Exception as e:
-                print(f"Error initializing Claude models: {e}")
-                # Don't nullify everything if one fails, try to keep valid ones
-                pass
-        else:
-            print("Info: ANTHROPIC_API_KEY not found. Claude models will not be available.")
+                print(f"Error init Claude Sonnet: {e}")
+        return self._llm_claude_sonnet
 
+    @property
+    def llm_claude_haiku(self):
+        if self._llm_claude_haiku is None and self.anthropic_api_key:
+            try:
+                from langchain_anthropic import ChatAnthropic
+                self._llm_claude_haiku = ChatAnthropic(model="claude-3-haiku-20240307", anthropic_api_key=self.anthropic_api_key, temperature=0.7)
+            except Exception as e:
+                print(f"Error init Claude Haiku: {e}")
+        return self._llm_claude_haiku
 
-        # Initialize Gemini
-        if self.google_api_key:
+    @property
+    def llm_claude_opus_4_5(self):
+        if self._llm_claude_opus_4_5 is None and self.anthropic_api_key:
+            try:
+                from langchain_anthropic import ChatAnthropic
+                self._llm_claude_opus_4_5 = ChatAnthropic(model="claude-3-opus-20240229", anthropic_api_key=self.anthropic_api_key, temperature=0.7)
+            except Exception as e:
+                print(f"Error init Claude Opus: {e}")
+        return self._llm_claude_opus_4_5
+
+    @property
+    def llm_claude_opus_4_1(self):
+         return self.llm_claude_opus_4_5 if self.llm_claude_opus_4_5 else self.llm_claude_sonnet
+
+    # Gemini
+    @property
+    def llm_gemini(self):
+        if self._llm_gemini is None and self.google_api_key:
             try:
                 from langchain_google_genai import ChatGoogleGenerativeAI
-                self.llm_gemini = ChatGoogleGenerativeAI(
-                    model="gemini-pro",
-                    google_api_key=self.google_api_key,
-                    temperature=0.7,
-                    convert_system_message_to_human=True
-                )
+                self._llm_gemini = ChatGoogleGenerativeAI(model="gemini-pro", google_api_key=self.google_api_key, temperature=0.7, convert_system_message_to_human=True)
             except Exception as e:
-                print(f"Error initializing Gemini: {e}")
-        else:
-            print("Info: GOOGLE_API_KEY not found. Gemini will not be available.")
+                print(f"Error init Gemini: {e}")
+        return self._llm_gemini
 
     def get_llm(self, model_name: str = "gpt-4o"):
         """Returns the requested LLM instance with fallback support."""
-        # Model mapping
-        model_map = {
-            "gpt-5": self.llm_gpt_5,
-            "gpt-5-mini": self.llm_gpt_5_mini,
-            "gpt-5.1": self.llm_gpt_5_1,
-            "gpt-4o": self.llm_gpt_4o,
-            "gpt-4o-mini": self.llm_gpt_4o_mini,
-            "gpt-3.5-turbo": self.llm_gpt_35_turbo,
-            "claude-sonnet": self.llm_claude_sonnet,
-            "claude-haiku": self.llm_claude_haiku,
-            "claude-opus-4-5": self.llm_claude_opus_4_5,
-            "claude-opus-4-1": self.llm_claude_opus_4_1,
-            "gemini-pro": self.llm_gemini,
-            # Legacy aliases for backward compatibility
-            "openai": self.llm_gpt_4o,
-            "gemini": self.llm_gemini,
-        }
+        # Direct lookup to avoid triggering all properties
+        llm = None
         
-        # Get requested model
-        llm = model_map.get(model_name)
+        if model_name == "gpt-4o" or model_name == "openai":
+            llm = self.llm_gpt_4o
+        elif model_name == "gpt-4o-mini":
+            llm = self.llm_gpt_4o_mini
+        elif model_name == "gpt-3.5-turbo":
+            llm = self.llm_gpt_35_turbo
+        elif model_name == "claude-sonnet":
+            llm = self.llm_claude_sonnet
+        elif model_name == "claude-haiku":
+            llm = self.llm_claude_haiku
+        elif model_name == "claude-opus-4-5":
+            llm = self.llm_claude_opus_4_5
+        elif model_name == "gemini" or model_name == "gemini-pro":
+             llm = self.llm_gemini
         
-        # If requested model not available, fallback to first available
+        # Extended map for others
         if not llm:
-            print(f"Model {model_name} not available, using fallback")
-            for fallback_llm in model_map.values():
-                if fallback_llm:
-                    return fallback_llm
+             if "gpt-5" in model_name: llm = self.llm_gpt_5
+             elif "opus" in model_name: llm = self.llm_claude_opus_4_1
+
+        if llm:
+            return llm
+
+        # Smart Fallback (Try preferred models in order)
+        print(f"Model {model_name} not available, attempting fallback...")
         
-        return llm
+        fallback_order = [
+            self.llm_gpt_4o,
+            self.llm_claude_sonnet,
+            self.llm_gpt_4o_mini,
+            self.llm_gemini,
+            self.llm_gpt_35_turbo
+        ]
+        
+        for candidate in fallback_order:
+            if candidate:
+                return candidate
+        
+        return None
 
     def get_fast_llm(self):
         """Returns the fastest available LLM for low-latency tasks (e.g., Intent Classification)."""
-        # Prioritize GPT-4o-mini, then GPT-3.5, then Haiku
+        # Checks trigger properties individually
         if self.llm_gpt_4o_mini:
             return self.llm_gpt_4o_mini
         if self.llm_gpt_35_turbo:

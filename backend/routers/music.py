@@ -12,10 +12,35 @@ from aria.music_library import MusicManager
 
 router = APIRouter()
 
+class MusicVolumeRequest(BaseModel):
+    volume: int
+
 class MusicControlRequest(BaseModel):
     action: str # play, pause, resume, stop, next, volume
     query: Optional[str] = None
     volume: Optional[int] = None
+
+@router.post("/music/pause")
+def pause_music(music_manager: MusicManager = Depends(get_music_manager)):
+    return music_manager.pause()
+
+@router.post("/music/resume")
+def resume_music(music_manager: MusicManager = Depends(get_music_manager)):
+    return music_manager.resume()
+
+@router.post("/music/next")
+def next_track(music_manager: MusicManager = Depends(get_music_manager)):
+    result = music_manager.next_track()
+    return {"status": "success", "message": result}
+
+@router.post("/music/previous")
+def previous_track(music_manager: MusicManager = Depends(get_music_manager)):
+    result = music_manager.previous_track()
+    return {"status": "success", "message": result}
+
+@router.post("/music/volume")
+def set_music_volume(request: MusicVolumeRequest, music_manager: MusicManager = Depends(get_music_manager)):
+    return {"status": "success", "message": music_manager.set_volume(request.volume)}
 
 @router.post("/music")
 def control_music(request: MusicControlRequest, music_manager: MusicManager = Depends(get_music_manager)):
@@ -41,6 +66,12 @@ def control_music(request: MusicControlRequest, music_manager: MusicManager = De
             if request.volume is None:
                 raise HTTPException(status_code=400, detail="Volume level required")
             return {"status": "success", "message": music_manager.set_volume(request.volume)}
+        
+        elif action == "next":
+             return {"status": "success", "message": music_manager.next_track()}
+             
+        elif action == "previous":
+             return {"status": "success", "message": music_manager.previous_track()}
             
         else:
             raise HTTPException(status_code=400, detail=f"Unknown action: {action}")

@@ -352,16 +352,26 @@ class CalendarManager:
             return []
 
         try:
-            now = datetime.datetime.utcnow().isoformat() + 'Z'
-            events_result = self.service.events().list(
-                calendarId='primary', 
-                timeMin=now,
-                maxResults=max_results, 
-                singleEvents=True,
-                orderBy='startTime'
-            ).execute()
-            
-            return events_result.get('items', [])
+            # Retry logic for fetching events
+            max_retries = 3
+            import time
+            for attempt in range(max_retries):
+                try:
+                    now = datetime.datetime.utcnow().isoformat() + 'Z'
+                    events_result = self.service.events().list(
+                        calendarId='primary', 
+                        timeMin=now,
+                        maxResults=max_results, 
+                        singleEvents=True,
+                        orderBy='startTime'
+                    ).execute()
+                    
+                    return events_result.get('items', [])
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        time.sleep(1)
+                    else:
+                        raise e
         except Exception as e:
             print(f"Calendar Raw Fetch Error: {e}")
             return []

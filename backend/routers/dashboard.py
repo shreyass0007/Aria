@@ -28,21 +28,29 @@ def get_notifications(aria: AriaCore = Depends(get_aria_core)):
             # BUT the UI expects a list.
             
             # Let's try to fetch raw messages similar to get_unread_emails but return list
-            try:
-                results = aria.email.service.users().messages().list(userId='me', labelIds=['UNREAD'], maxResults=5).execute()
-                messages = results.get('messages', [])
-                for msg in messages:
-                    # We need to fetch details to get subject/sender, which is slow.
-                    # For a quick dashboard, maybe just count?
-                    # The UI likely expects {id, title, message, type}.
-                    notifications.append({
-                        "id": msg['id'],
-                        "title": "New Email",
-                        "message": "You have an unread email.",
-                        "type": "email"
-                    })
-            except Exception as e:
-                print(f"Error fetching email notifications: {e}")
+            # Retry logic for fetching emails
+            max_retries = 3
+            import time
+            for attempt in range(max_retries):
+                try:
+                    results = aria.email.service.users().messages().list(userId='me', labelIds=['UNREAD'], maxResults=5).execute()
+                    messages = results.get('messages', [])
+                    for msg in messages:
+                        # We need to fetch details to get subject/sender, which is slow.
+                        # For a quick dashboard, maybe just count?
+                        # The UI likely expects {id, title, message, type}.
+                        notifications.append({
+                            "id": msg['id'],
+                            "title": "New Email",
+                            "message": "You have an unread email.",
+                            "type": "email"
+                        })
+                    break # Success, exit retry loop
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        time.sleep(1) # Wait 1 second before retrying
+                    else:
+                        print(f"Error fetching email notifications after {max_retries} attempts: {e}")
 
         # 2. Check Calendar (Upcoming events)
         # aria.calendar.get_upcoming_events() returns a string.

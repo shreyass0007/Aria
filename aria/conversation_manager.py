@@ -16,21 +16,30 @@ class ConversationManager:
         self.db = None
         self.current_conversation_id = None
         
+        # Connection is now lazy - verified on first use
+    
+    def _ensure_connection(self):
+        """Establish MongoDB connection if not already connected."""
+        if self.client and self.db:
+            return True
+            
         try:
-            self.client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=5000)
+            self.client = MongoClient(self.mongo_uri, serverSelectionTimeoutMS=2000) # Reduced timeout
             # Test connection
             self.client.admin.command('ismaster')
             self.db = self.client[self.db_name]
-            print(f"[OK] MongoDB connected: {self.db_name}")
+            # print(f"[OK] MongoDB connected: {self.db_name}")
+            return True
         except ConnectionFailure as e:
-            print(f"[WARNING] MongoDB connection failed: {e}")
-            print("Conversation history will not be saved.")
+            # print(f"[WARNING] MongoDB connection failed: {e}")
+            return False
         except Exception as e:
-            print(f"[ERROR] MongoDB initialization error: {e}")
-    
+            # print(f"[ERROR] MongoDB initialization error: {e}")
+            return False
+
     def is_connected(self):
-        """Check if MongoDB is connected."""
-        return self.client is not None and self.db is not None
+        """Check if MongoDB is connected (attempts connection if needed)."""
+        return self._ensure_connection()
     
     def create_conversation(self):
         """Create a new conversation session and return its ID."""

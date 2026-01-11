@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: transparent;
+            padding: 10px;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dialog {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        h3 {
+            margin-bottom: 12px;
+            color: #1e293b;
+            font-size: 16px;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 12px;
+            font-family: inherit;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .cancel {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .rename {
+            background: #6366f1;
+            color: white;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dialog">
+        <h3>Rename Conversation</h3>
+        <input type="text" id="titleInput" autofocus>
+        <div class="buttons">
+            <button class="cancel" id="cancelBtn">Cancel</button>
+            <button class="rename" id="renameBtn">Rename</button>
+        </div>
+    </div>
+    <script>
+        const input = document.getElementById('titleInput');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const renameBtn = document.getElementById('renameBtn');
+
+        // Get title from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentTitle = urlParams.get('title') || '';
+        input.value = currentTitle;
+        input.select();
+
+        function close(value) {
+            if (window.electronAPI) {
+                window.electronAPI.closeRenameDialog(value);
+            } else {
+                console.error('electronAPI not found');
+            }
+        }
+
+        cancelBtn.addEventListener('click', () => close(null));
+
+        renameBtn.addEventListener('click', () => {
+            const value = input.value.trim();
+            if (value) close(value);
+        });
+
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const value = input.value.trim();
+                if (value) close(value);
+            }
+            if (e.key === 'Escape') close(null);
+        });
+    </script>
+</body>
+
+</html>

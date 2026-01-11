@@ -139,6 +139,14 @@ class CommandIntentClassifier:
         "check battery": "battery_check",
         "battery status": "battery_check",
         
+        # WiFi & Bluetooth
+        "wifi_on": "Enable WiFi (Admin)",
+        "wifi_off": "Disable WiFi (Admin)",
+        "wifi_check": "Check WiFi connection status",
+        "bluetooth_on": "Enable Bluetooth Service (Admin)",
+        "bluetooth_off": "Disable Bluetooth Service (Admin)",
+        "bluetooth_check": "Check Bluetooth status",
+
         # System Monitoring Fast Paths
         "check system status": "system_stats",
         "system status": "system_stats",
@@ -149,6 +157,29 @@ class CommandIntentClassifier:
         "ram usage": "ram_check",
         "memory usage": "ram_check",
         "check memory": "ram_check",
+        
+        # Network & Connectivity Fast Paths
+        "wifi on": "wifi_on",
+        "enable wifi": "wifi_on",
+        "turn on wifi": "wifi_on",
+        "wifi off": "wifi_off",
+        "disable wifi": "wifi_off",
+        "turn off wifi": "wifi_off",
+        "check wifi": "wifi_check",
+        "wifi status": "wifi_check",
+        
+        "bluetooth on": "bluetooth_on",
+        "enable bluetooth": "bluetooth_on",
+        "turn on bluetooth": "bluetooth_on",
+        "turn on blutooth": "bluetooth_on",
+        "turn on bulutooth": "bluetooth_on",
+        "bluetooth off": "bluetooth_off",
+        "disable bluetooth": "bluetooth_off",
+        "turn off bluetooth": "bluetooth_off",
+        "turn off blutooth": "bluetooth_off",
+        "turn off bulutooth": "bluetooth_off",
+        "check bluetooth": "bluetooth_check",
+        "bluetooth status": "bluetooth_check",
     
         # Media Fast Paths
         "stop": "music_stop",
@@ -206,7 +237,22 @@ class CommandIntentClassifier:
         "max volume": "volume_set",
         "volume 100": "volume_set",
         "mute system": "volume_mute",
-        "unmute system": "volume_unmute"
+        "unmute system": "volume_unmute",
+        
+        # Email Fast Paths (CRITICAL - must go through confirmation flow)
+        "send email": "email_send",
+        "send mail": "email_send",
+        "send an email": "email_send",
+        "compose email": "email_send",
+        "write email": "email_send",
+        "write mail": "email_send",
+        "draft email": "email_send",
+        "email to": "email_send",
+        "mail to": "email_send",
+        "check email": "email_check",
+        "check my email": "email_check",
+        "check inbox": "email_check",
+        "unread emails": "email_check"
     }
 
     def __init__(self, brain: AriaBrain):
@@ -262,6 +308,21 @@ class CommandIntentClassifier:
                 "confidence": 1.0,
                 "parameters": {"level": level}
             }]
+
+        # Email Send Fast Path - CRITICAL: Catch all email send patterns
+        email_patterns = [
+            r'(?:send|write|compose|draft)\s+(?:an?\s+)?(?:email|mail)\s+to',
+            r'(?:email|mail)\s+to\s+\S+',
+            r'(?:send|write)\s+(?:a\s+)?(?:quick\s+)?(?:email|mail|message)\s+to'
+        ]
+        for pattern in email_patterns:
+            if re.search(pattern, clean_text, re.IGNORECASE):
+                logger.info(f"REGEX PATH TRIGGERED: email_send (pattern: {pattern})")
+                return [{
+                    "intent": "email_send",
+                    "confidence": 1.0,
+                    "parameters": {}
+                }]
 
         if not self.brain.is_available():
             return [{"intent": "none", "confidence": 0.0, "parameters": {}}]
@@ -382,6 +443,7 @@ NEGATIVE CONSTRAINTS (CRITICAL):
 1. Do NOT invent new intents. Use ONLY the ones listed above.
 2. If the user asks for an action not listed in AVAILABLE INTENTS, output "general_chat".
 3. Do NOT assume you can perform actions like "change settings", "update system", "install software", "change wallpaper", "change theme", "order food", or "book flights".
+   **EXCEPTION**: You CAN control WiFi and Bluetooth (on/off/check).
 4. If the user asks for "change wallpaper", "dark mode", or "system settings", use "general_chat".
 5. If the user asks for "download X" (where X is a file/video from web), use "general_chat" (unless it matches a specific file automation intent).
 6. If the user asks "can you see this?" or "what is on my screen?", use "screen_analysis".
@@ -403,6 +465,17 @@ CLASSIFICATION RULES:
    - Extract 'query_type': "events" (default) or "free_time" (if asking for empty slots/availability).
    - Extract 'time_scope': "morning" (5AM-12PM), "afternoon" (12PM-5PM), "evening" (5PM-9PM), or "all_day" (default).
 
+7. **CONTEXTUAL CORRECTIONS (Review History):**
+   - If the user says "no, schedule it today" or "actually, make it 5 PM", look at the **RECENT CONVERSATION HISTORY** to find the previous user command and intent.
+   - If the previous command was "schedule meeting on Friday" and the user says "no, today", YOU MUST output a new `calendar_create` intent with the OLD parameters updated by the NEW information.
+   - Example 1: 
+     - History: User: "Set volume to 50" -> System: "Volume set."
+     - User: "No, make it 80" -> Intent: `volume_set`, parameters: `{{"level": 80}}`
+   - Example 2:
+     - History: User: "Remind me to call Mom tomorrow" -> System: "Reminder set."
+     - User: "Actually, change that to Friday" -> Intent: `calendar_create`, parameters: `{{"summary": "Call Mom", "start_time": "2023-10-27..."}}` (Merge "Call Mom" with new date).
+   - Resolve pronouns like "it", "that", "him", "her" using history.
+
 EXAMPLES:
 - "create test.txt on desktop" -> intent: "file_create", parameters: {{"filename": "test.txt", "location": "desktop"}}
 - "what's the weather in London" -> intent: "weather_check", parameters: {{"city": "London"}}
@@ -422,6 +495,11 @@ EXAMPLES:
 - "how do I center a div" -> intent: "general_chat", parameters: {{}}
 - "summarize this notion page" -> intent: "notion_query", parameters: {{"query": "summarize this page"}}
 - "what is on my screen" -> intent: "screen_analysis", parameters: {{}}
+- "send email to john@example.com to say hello" -> intent: "email_send", parameters: {{"to": "john@example.com", "subject": "Hello", "context": "greeting"}}
+- "write mail to boss about project update" -> intent: "email_send", parameters: {{"to": "boss", "subject": "Project Update", "context": "project update"}}
+- "check my emails" -> intent: "email_check", parameters: {{}}
+
+**CRITICAL EMAIL RULE:** ANY command that mentions sending, composing, drafting, or writing an email MUST be classified as "email_send". Do NOT handle emails in general_chat.
 
 Return ONLY a JSON LIST of objects with this exact structure:
 [

@@ -15,6 +15,16 @@ import time
 from dotenv import load_dotenv
 from .logger import setup_logger
 
+try:
+    import pvporcupine
+except ImportError:
+    pvporcupine = None
+
+try:
+    import pyaudio
+except ImportError:
+    pyaudio = None
+
 logger = setup_logger(__name__)
 
 load_dotenv()
@@ -27,51 +37,37 @@ class WakeWordListener:
         self.on_wake_word_detected = on_wake_word_detected
         self.access_key = access_key or os.getenv("PICOVOICE_ACCESS_KEY")
         
-        if not self.access_key:
-            logger.error("Error: PICOVOICE_ACCESS_KEY not found in environment variables.")
-            self.porcupine = None
-            return
-
-        if pvporcupine is None:
-            logger.error("pvporcupine module not found. Wake word listener disabled.")
-            self.porcupine = None
-            return
-
-        try:
-            # Use default keywords (Jarvis, Computer, etc.)
-            # We can also use 'picovoice', 'bumblebee', etc.
-            # For now, let's use 'jarvis' as it's a popular default.
-            self.porcupine = pvporcupine.create(
-                access_key=self.access_key,
-                keywords=['jarvis', 'computer', 'alexa'] 
-            )
-            logger.info(f"Wake Word Listener initialized. Keywords: Jarvis, Computer")
-        except Exception as e:
-            logger.error(f"Failed to initialize Porcupine: {e}")
-            self.porcupine = None
-
-        if pyaudio is None:
-            logger.error("pyaudio module not found. Wake word listener disabled.")
-            self.pa = None
-        else:
-            self.pa = pyaudio.PyAudio()
-
+        self.porcupine = None
+        self.pa = None
         self.audio_stream = None
         self.is_listening = False
         self.thread = None
+        
+        # Check requirements immediately but don't init hardware
+        if not self.access_key:
+            logger.error("Error: PICOVOICE_ACCESS_KEY not found in environment variables.")
+        
+        if pvporcupine is None:
+            logger.error("pvporcupine module not found. Wake word listener disabled.")
+            
+        if pyaudio is None:
+            logger.error("pyaudio module not found. Wake word listener disabled.")
 
     def start(self):
         """Start listening for wake word in background."""
-        if not self.porcupine:
-            return
-        
+        # Hardware might not be ready, but we start the thread which will init it
         if self.is_listening:
+            return
+
+        # Explicit check before starting thread to avoid useless threads
+        if not self.access_key or pvporcupine is None or pyaudio is None:
+            logger.warning("Cannot start Wake Word Listener: Missing dependencies or keys.")
             return
 
         self.is_listening = True
         self.thread = threading.Thread(target=self._listen_loop, daemon=True)
         self.thread.start()
-        logger.info("Wake Word Listener started...")
+        logger.info("Wake Word Listener background thread started (Hardware initializing...)")
 
     def stop(self):
         """Stop listening."""
@@ -80,8 +76,28 @@ class WakeWordListener:
             self.thread.join(timeout=1.0)
         logger.info("Wake Word Listener stopped.")
 
+    def _init_hardware(self):
+        """Initializes microphone and Porcupine engine. returns True if success."""
+        try:
+            if self.porcupine is None:
+                self.porcupine = pvporcupine.create(
+                    access_key=self.access_key,
+                    keywords=['jarvis', 'computer', 'alexa'] 
+                )
+                logger.info(f"Wake Word Engine Initialized. Keywords: Jarvis, Computer")
+            
+            if self.pa is None:
+                self.pa = pyaudio.PyAudio()
+                
+            return True
+        except Exception as e:
+            logger.error(f"Failed to initialize Wake Word hardware: {e}")
+            return False
+
     def _listen_loop(self):
-        if not self.pa:
+        # 1. Initialize Hardware (This is the slow part we moved off main thread)
+        if not self._init_hardware():
+            self.is_listening = False
             return
 
         try:
@@ -92,6 +108,8 @@ class WakeWordListener:
                 input=True,
                 frames_per_buffer=self.porcupine.frame_length
             )
+            
+            logger.info("Microphone Active. Listening for Wake Word...")
 
             while self.is_listening:
                 pcm = self.audio_stream.read(self.porcupine.frame_length, exception_on_overflow=False)
@@ -112,7 +130,7 @@ class WakeWordListener:
             if self.audio_stream:
                 self.audio_stream.close()
                 self.audio_stream = None
-
+            
     def cleanup(self):
         self.stop()
         if self.porcupine:

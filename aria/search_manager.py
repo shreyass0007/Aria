@@ -27,17 +27,20 @@ class SearchManager:
             print(f"DEBUG: Tavily results count: {len(results)}")
             
             if not results:
-                return ""
+                return []
 
-            formatted_results = "## Search Results:\n\n"
-            for i, result in enumerate(results):
-                title = result.get('title', 'No Title')
-                content = result.get('content', 'No Content')
-                url = result.get('url', '#')
-                formatted_results += f"{i+1}. **{title}**\n   {content}\n   Source: {url}\n\n"
+            # Return raw list of dicts for the processor to handle
+            # We filter/clean if necessary
+            cleaned_results = []
+            for result in results:
+                cleaned_results.append({
+                    "title": result.get('title', 'No Title'),
+                    "content": result.get('content', 'No Content'),
+                    "url": result.get('url', '#')
+                })
             
-            return formatted_results
+            return cleaned_results
         except Exception as e:
             print(f"ERROR: Tavily search exception: {e}")
             logging.error(f"Error performing search: {e}")
-            return ""
+            return []

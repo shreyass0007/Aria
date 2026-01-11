@@ -1,0 +1,190 @@
+/* Search Result Cards - Aria Premium Style */
+.search-results-deck {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+    width: 100%;
+    max-width: 100%;
+}
+
+.search-results-header {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: rgba(255, 255, 255, 0.6);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 2px;
+    margin-bottom: 6px;
+}
+
+.search-header-icon {
+    width: 16px;
+    height: 16px;
+    color: rgba(255, 255, 255, 0.6);
+    /* Muted white to match text */
+    flex-shrink: 0;
+}
+
+.search-cards-scroll {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    width: 100%;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+    /* Standard Scrollbar Coloring for modern Chrome/Firefox */
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    padding-left: 2px;
+    /* Avoid cutting off shadow */
+}
+
+/* Scrollbar styling - WebKit (Chrome/Edge/Safari) */
+.search-cards-scroll::-webkit-scrollbar {
+    height: 6px;
+    /* Slightly taller for usability but still sleek */
+    width: 6px;
+    background: transparent;
+    /* Explicit transparent background */
+}
+
+.search-cards-scroll::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 10px;
+}
+
+/* Handle */
+.search-cards-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    /* Subtle thumb */
+    border-radius: 10px;
+    border: 1px solid transparent;
+    /* Padding trick */
+    background-clip: content-box;
+}
+
+/* Handle on hover */
+.search-cards-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.search-card {
+    min-width: 170px;
+    max-width: 190px;
+    height: 105px;
+    /* Glassmorphism Premium */
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Hover Effect - Glow */
+.search-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+}
+
+.search-card-source {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+.search-card-source img {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.1);
+    /* Fallback bg */
+}
+
+.search-card-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+    line-height: 1.35;
+    /* Limit to exactly 3 lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-top: 6px;
+}
+
+/* Index Number (Citation style) */
+.search-card-index {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.5);
+    padding: 2px 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Citation Link in Text */
+.citation-link {
+    color: #4facfe;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    padding: 0 2px;
+    font-size: 0.8em;
+    vertical-align: super;
+    transition: color 0.2s;
+}
+
+.citation-link:hover {
+    color: #00f2fe;
+    text-decoration: underline;
+}
+
+/* Highlight Animation for Card */
+@keyframes card-pulse {
+    0% {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(79, 172, 254, 0.6);
+        border-color: rgba(79, 172, 254, 0.8);
+        transform: translateY(-3px);
+    }
+
+    100% {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+}
+
+.highlight-pulse {
+    animation: card-pulse 2s ease-in-out;
+}

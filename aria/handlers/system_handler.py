@@ -249,4 +249,35 @@ class SystemHandler(BaseHandler):
             self.tts_manager.speak(response)
             return response
 
+        # --- WIFI & BLUETOOTH CONTROL ---
+        elif intent == "wifi_on":
+            msg = self.system_control.set_wifi(True)
+            self.tts_manager.speak(msg)
+            return msg
+        elif intent == "wifi_off":
+            msg = self.system_control.set_wifi(False)
+            self.tts_manager.speak(msg)
+            return msg
+        elif intent == "wifi_check":
+            is_connected = self.system_control.get_wifi_status()
+            status = "enabled" if is_connected else "disabled/disconnected"
+            msg = f"WiFi is currently {status}."
+            self.tts_manager.speak(msg)
+            return msg
+
+        elif intent == "bluetooth_on":
+            msg = self.system_control.set_bluetooth(True)
+            self.tts_manager.speak(msg)
+            return msg
+        elif intent == "bluetooth_off":
+            msg = self.system_control.set_bluetooth(False)
+            self.tts_manager.speak(msg)
+            return msg
+        elif intent == "bluetooth_check":
+            is_running = self.system_control.get_bluetooth_status()
+            status = "running" if is_running else "stopped"
+            msg = f"Bluetooth service is {status}."
+            self.tts_manager.speak(msg)
+            return msg
+            
         return None

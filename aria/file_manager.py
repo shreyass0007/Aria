@@ -245,7 +245,7 @@ class FileManager:
     
     # SEARCH OPERATIONS
     def search_files(self, pattern: str, location: Optional[str] = None, search_subdirs: bool = True) -> str:
-        """Search for files - CONVERSATIONAL OUTPUT (no technical symbols)."""
+        """Search for files - CONVERSATIONAL OUTPUT (no technical symbols). SAFELY."""
         try:
             if location and location.lower() in self.location_shortcuts:
                 search_path = Path(self.location_shortcuts[location.lower()])
@@ -255,8 +255,32 @@ class FileManager:
             if not search_path.exists():
                 return f"I couldn't find the {location} folder"
             
-            # Search
-            matches = list(search_path.rglob(pattern)) if search_subdirs else list(search_path.glob(pattern))
+            # Safe Search Implementation
+            matches = []
+            max_results = 50
+            excluded_dirs = {'node_modules', '.git', '.venv', '__pycache__', 'dist', 'build'}
+            
+            # Normalize pattern for flexible matching
+            pattern = pattern.lower()
+
+            if not search_subdirs:
+                 # Simple flat search
+                 for file_path in search_path.glob("*"):
+                     if pattern in file_path.name.lower() or Path(pattern).name == file_path.name:
+                         matches.append(file_path)
+            else:
+                # Deep search with limits
+                for root, dirs, files in os.walk(search_path):
+                    # Prune excluded directories
+                    dirs[:] = [d for d in dirs if d not in excluded_dirs]
+                    
+                    for name in files:
+                        if pattern in name.lower():
+                            matches.append(Path(root) / name)
+                            if len(matches) >= max_results:
+                                break
+                    if len(matches) >= max_results:
+                        break
             
             if not matches:
                 return f"I couldn't find any files matching '{pattern}' in {search_path.name}"
@@ -265,9 +289,9 @@ class FileManager:
             if len(matches) == 1:
                 match = matches[0]
                 size = self._format_file_size(match.stat().st_size) if match.is_file() else "folder"
-                return f"I found 1 file: {match.name} ({size})"
+                return f"I found 1 file: {match.name} ({size})\nPath: {match.parent}"
             else:
-                result = [f"I found {len(matches)} files in {search_path.name}:"]
+                result = [f"I found {len(matches)} files in {search_path.name} (showing top {min(len(matches), 10)}):"]
                 for i, match in enumerate(matches[:10], 1):
                     size = self._format_file_size(match.stat().st_size) if match.is_file() else "folder"
                     result.append(f"{i}. {match.name} ({size})")
