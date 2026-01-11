@@ -14,7 +14,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1.2px;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-secondary);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -25,8 +25,7 @@
 .search-header-icon {
     width: 16px;
     height: 16px;
-    color: rgba(255, 255, 255, 0.6);
-    /* Muted white to match text */
+    color: var(--text-secondary);
     flex-shrink: 0;
 }
 
@@ -39,7 +38,7 @@
     scroll-snap-type: x mandatory;
     scrollbar-width: thin;
     /* Standard Scrollbar Coloring for modern Chrome/Firefox */
-    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    scrollbar-color: var(--glass-border) transparent;
     padding-left: 2px;
     /* Avoid cutting off shadow */
 }
@@ -60,7 +59,7 @@
 
 /* Handle */
 .search-cards-scroll::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--glass-border);
     /* Subtle thumb */
     border-radius: 10px;
     border: 1px solid transparent;
@@ -70,7 +69,7 @@
 
 /* Handle on hover */
 .search-cards-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--text-secondary);
 }
 
 .search-card {
@@ -78,9 +77,9 @@
     max-width: 190px;
     height: 105px;
     /* Glassmorphism Premium */
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
     border-radius: 12px;
     padding: 12px;
     cursor: pointer;
@@ -97,10 +96,10 @@
 
 /* Hover Effect - Glow */
 .search-card:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--bg-input);
     transform: translateY(-3px);
-    border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+    border-color: var(--accent);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .search-card-source {
@@ -108,7 +107,7 @@
     align-items: center;
     gap: 8px;
     font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--text-secondary);
     font-weight: 500;
 }
 
@@ -117,14 +116,14 @@
     height: 20px;
     border-radius: 5px;
     object-fit: cover;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--bg-input);
     /* Fallback bg */
 }
 
 .search-card-title {
     font-size: 0.85rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--text-primary);
     line-height: 1.35;
     /* Limit to exactly 3 lines */
     display: -webkit-box;
@@ -142,11 +141,11 @@
     right: 8px;
     font-size: 0.6rem;
     font-weight: 700;
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.5);
+    background: var(--bg-input);
+    color: var(--text-secondary);
     padding: 2px 6px;
     border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
 }
 
 /* Citation Link in Text */

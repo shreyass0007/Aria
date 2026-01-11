@@ -13,7 +13,7 @@ from .handlers.weather_handler import WeatherHandler
 from .handlers.file_handler import FileHandler
 from .handlers.notion_handler import NotionHandler
 from .handlers.calendar_handler import CalendarHandler
-from .handlers.vision_handler import VisionHandler
+
 from .intent_dispatcher import IntentDispatcher
 from .logger import setup_logger
 
@@ -22,7 +22,7 @@ logger = setup_logger(__name__)
 class CommandProcessor:
     def __init__(self, tts_manager, app_launcher, brain, calendar, notion, automator, 
                  system_control, command_classifier, file_manager, weather_manager, 
-                 clipboard_screenshot, system_monitor, email_manager, greeting_service, music_manager, memory_manager, water_manager=None, vision_pipeline_factory=None):
+                 clipboard_screenshot, system_monitor, email_manager, greeting_service, music_manager, memory_manager, water_manager=None):
 
         self.tts_manager = tts_manager
         self.app_launcher = app_launcher
@@ -62,7 +62,7 @@ class CommandProcessor:
         self.file_handler = FileHandler(self.tts_manager, self.file_manager, self.automator, self.brain)
         self.notion_handler = NotionHandler(self.tts_manager, self.notion, self.brain)
         self.calendar_handler = CalendarHandler(self.tts_manager, self.calendar, self.brain)
-        self.vision_handler = VisionHandler(self.tts_manager, self.brain, vision_pipeline_factory)
+
 
         # Initialize Intent Dispatcher
         self.dispatcher = IntentDispatcher()
@@ -108,10 +108,7 @@ class CommandProcessor:
         # Notion
         for intent in ["notion_query", "notion_create"]:
             self.dispatcher.register_handler(intent, self.notion_handler.handle)
-
-        # Vision
-        self.dispatcher.register_handler("screen_analysis", self.vision_handler.handle)
-
+        
         # Local Handlers (App & Web)
         self.dispatcher.register_handler("app_open", self.handle_app_open)
         self.dispatcher.register_handler("web_search", self.handle_web_search)

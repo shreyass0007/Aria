@@ -91,9 +91,6 @@ function setupEventListeners() {
     const darkModeToggle = document.getElementById('darkModeToggle');
 
     // Header Toolbar Buttons
-    const visionBtn = document.getElementById('visionBtn');
-    const settingsDropdownBtn = document.getElementById('settingsDropdownBtn');
-    const settingsDropdown = document.getElementById('settingsDropdown');
     const openSettingsModalBtn = document.getElementById('openSettingsModalBtn');
 
     if (sendBtn) sendBtn.addEventListener('click', handleSendMessage);
@@ -116,29 +113,10 @@ function setupEventListeners() {
     if (historyBtn) historyBtn.addEventListener('click', toggleHistory);
     if (closeHistoryBtn) closeHistoryBtn.addEventListener('click', toggleHistory);
 
-    if (visionBtn) visionBtn.addEventListener('click', handleVisionAnalyze);
 
-    // Settings Dropdown Toggle
-    if (settingsDropdownBtn && settingsDropdown) {
-        settingsDropdownBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            settingsDropdown.classList.toggle('active');
-        });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!settingsDropdownBtn.contains(e.target) && !settingsDropdown.contains(e.target)) {
-                settingsDropdown.classList.remove('active');
-            }
-        });
-    }
-
-    // Open Settings Modal from Dropdown
+    // Open Settings Modal directly
     if (openSettingsModalBtn) {
-        openSettingsModalBtn.addEventListener('click', () => {
-            openModal();
-            if (settingsDropdown) settingsDropdown.classList.remove('active');
-        });
+        openSettingsModalBtn.addEventListener('click', () => openModal());
     }
 
     if (ttsToggle) {
@@ -500,39 +478,3 @@ async function displayWelcomeMessage() {
     }
 }
 
-async function handleVisionAnalyze() {
-    addMessage("Analyzing screen...", 'aria');
-    showThinkingIndicator();
-
-    try {
-        const response = await fetch('http://localhost:8000/system/vision/analyze?save_debug=true', {
-            method: 'POST'
-        });
-        const data = await response.json();
-        removeThinkingIndicator();
-
-        if (data.error) {
-            addMessage(`Error: ${data.error}`, 'aria');
-        } else {
-            let msg = `**Screen Analysis Complete**\n`;
-            msg += `- Objects Detected: ${data.objects.length}\n`;
-            msg += `- Text Elements: ${data.texts.length}\n`;
-            if (data.latency) msg += `- Latency: ${(data.latency * 1000).toFixed(2)}ms\n\n`;
-
-            if (data.objects.length > 0) {
-                msg += `**Objects:** ${data.objects.map(o => o.label).join(', ')}\n`;
-            }
-            if (data.texts.length > 0) {
-                // Limit text output
-                const textContent = data.texts.map(t => t.text).join(' ');
-                msg += `**Text:** ${textContent.substring(0, 100)}${textContent.length > 100 ? '...' : ''}`;
-            }
-
-            addMessage(msg, 'aria');
-        }
-    } catch (error) {
-        console.error('Vision Error:', error);
-        removeThinkingIndicator();
-        addMessage("Failed to analyze screen. Is the backend running?", 'aria');
-    }
-}

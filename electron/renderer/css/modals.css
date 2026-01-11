@@ -5,15 +5,24 @@
     right: 0;
     bottom: 0;
     background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(10px);
-    display: none;
+    backdrop-filter: blur(0px);
+    /* Start with no blur */
+    display: flex;
+    /* Always flex, hide with opacity */
+    opacity: 0;
+    pointer-events: none;
+    /* Pass clicks through when hidden */
+    transition: opacity 0.3s ease, backdrop-filter 0.3s ease;
     align-items: center;
     justify-content: center;
     z-index: 1000;
 }
 
 .modal-overlay.active {
-    display: flex;
+    opacity: 1;
+    pointer-events: auto;
+    /* Capture clicks when visible */
+    backdrop-filter: blur(10px);
 }
 
 .modal {
@@ -22,8 +31,18 @@
     border: 1px solid var(--glass-border);
     border-radius: 20px;
     width: 300px;
-    box-shadow: 0 20px 60px var(--glass-shadow);
-    animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 50px 100px -20px rgba(50, 50, 93, 0.25), 0 30px 60px -30px rgba(0, 0, 0, 0.3);
+
+    /* Smooth Transition State */
+    transform: scale(0.95) translateY(10px);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+    transform-origin: center center;
+}
+
+.modal-overlay.active .modal {
+    transform: scale(1) translateY(0);
+    opacity: 1;
 }
 
 .modal-header {
@@ -524,18 +543,7 @@ input:checked+.slider:before {
     background: linear-gradient(135deg, #737373, #a3a3a3);
 }
 
-/* Animations */
-@keyframes modalPop {
-    0% {
-        opacity: 0;
-        transform: scale(0.8) translateY(20px);
-    }
 
-    100% {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
-}
 
 @keyframes slideInRight {
     from {

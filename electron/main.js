@@ -197,8 +197,8 @@ function startPythonBackend() {
 
     // Start Python backend server
     const pythonExecutable = process.platform === 'win32'
-        ? path.join(__dirname, '..', '.venv_vision', 'Scripts', 'python.exe')
-        : path.join(__dirname, '..', '.venv_vision', 'bin', 'python');
+        ? path.join(__dirname, '..', '.venv', 'Scripts', 'python.exe')
+        : path.join(__dirname, '..', '.venv', 'bin', 'python');
 
     const backendScript = path.join(__dirname, '..', 'backend', 'main.py');
     console.log('DEBUG: Selection Python Path:', pythonExecutable);

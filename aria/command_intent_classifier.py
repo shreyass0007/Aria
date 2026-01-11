@@ -88,7 +88,7 @@ class CommandIntentClassifier:
         "time_check": "Get current time",
         "date_check": "Get current date",
         "weather_check": "Check weather for a specific location",
-        "screen_analysis": "Analyze/Describe what is on the screen (vision)",
+
         # Email
         "email_send": "Send an email",
         "email_check": "Check unread emails or inbox",
@@ -309,6 +309,15 @@ class CommandIntentClassifier:
                 "parameters": {"level": level}
             }]
 
+        # Web Search Fast Path: Updates, News, Trends
+        if re.search(r'(?:check|get|find|show|what are|any)?\s*(?:upcoming|latest|recent|new)\s+(?:updates|news|trends|developments)\s*(?:in|on|about)?', clean_text):
+             logger.info(f"REGEX PATH TRIGGERED: web_search (updates/news)")
+             return [{
+                "intent": "web_search",
+                "confidence": 1.0,
+                "parameters": {"query": user_text}
+            }]
+
         # Email Send Fast Path - CRITICAL: Catch all email send patterns
         email_patterns = [
             r'(?:send|write|compose|draft)\s+(?:an?\s+)?(?:email|mail)\s+to',
@@ -446,7 +455,7 @@ NEGATIVE CONSTRAINTS (CRITICAL):
    **EXCEPTION**: You CAN control WiFi and Bluetooth (on/off/check).
 4. If the user asks for "change wallpaper", "dark mode", or "system settings", use "general_chat".
 5. If the user asks for "download X" (where X is a file/video from web), use "general_chat" (unless it matches a specific file automation intent).
-6. If the user asks "can you see this?" or "what is on my screen?", use "screen_analysis".
+
 
 CLASSIFICATION RULES:
 1. Choose the MOST SPECIFIC intent that matches the user's command.
@@ -494,12 +503,20 @@ EXAMPLES:
 - "write a python script to sort a list" -> intent: "general_chat", parameters: {{}}
 - "how do I center a div" -> intent: "general_chat", parameters: {{}}
 - "summarize this notion page" -> intent: "notion_query", parameters: {{"query": "summarize this page"}}
-- "what is on my screen" -> intent: "screen_analysis", parameters: {{}}
+
 - "send email to john@example.com to say hello" -> intent: "email_send", parameters: {{"to": "john@example.com", "subject": "Hello", "context": "greeting"}}
 - "write mail to boss about project update" -> intent: "email_send", parameters: {{"to": "boss", "subject": "Project Update", "context": "project update"}}
 - "check my emails" -> intent: "email_check", parameters: {{}}
 
 **CRITICAL EMAIL RULE:** ANY command that mentions sending, composing, drafting, or writing an email MUST be classified as "email_send". Do NOT handle emails in general_chat.
+
+6. **Distinguish between "file_search" and "web_search" (UPDATED):**
+   - "search for [filename]" or "find [file]" -> "file_search" (Local files)
+   - "search for [topic]", "google [topic]", "who is [person]" -> "web_search" (Internet)
+   - **"check updates", "latest news", "trends in X", "upcoming X" -> "web_search"** (Real-time info)
+   - **CRITICAL:** If the user asks for "updates", "news", "trends", "prices", "scores", or "weather" (if not specific format), it requires REAL-TIME knowledge. USE "web_search". Do NOT use "general_chat".
+
+**CRITICAL WEB SEARCH TRIGGER:** If the user asks "check upcoming updates in [topic]" or "what is new in [topic]", this is a "web_search".
 
 Return ONLY a JSON LIST of objects with this exact structure:
 [
