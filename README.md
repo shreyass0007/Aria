@@ -22,7 +22,8 @@
 | Category | Capabilities |
 |----------|-------------|
 | 🎯 **Multi-Interface** | Electron desktop app, CustomTkinter GUI, CLI wake word mode |
-| 🧠 **Multi-Model AI** | GPT-4o, Claude 3.5 Sonnet, Claude Opus, Gemini Pro via LangChain |
+| 🧠 **Multi-Model AI** | GPT-4o, Claude 3.5 Sonnet, Gemini Pro, **Local Llama 3.2 (Ollama)** |
+| 🎵 **Music Player** | Local file playback, Playlist management ("Play my playlist") |
 | 🎙️ **Voice Control** | Wake word detection, Faster-Whisper transcription, Edge-TTS |
 | 📧 **Productivity** | Gmail, Google Calendar, Notion integration |
 | 🗂️ **System Control** | File management, volume, power, clipboard, screenshots |
@@ -39,6 +40,7 @@
 
 - **Python 3.10+** (3.11 recommended)
 - **Node.js 18+** 
+- **Ollama** (for local LLM support) - [Download](https://ollama.com/)
 - **API Key** (OpenAI, Anthropic, or Google)
 
 ### Installation
@@ -101,6 +103,9 @@ Access themes via **Settings → Color Theme**.
 "Hey Aria, what's on my calendar today?"
 "Open VS Code"
 "Set volume to 50"
+"Play my playlist"
+"Turn on WiFi"
+"Open Jupyter Notebook at D:\CODEING"
 "Send an email to john@example.com about the meeting"
 "What's the weather like?"
 "Search notion for project notes"
@@ -169,6 +174,7 @@ Switch via Electron UI dropdown or `POST /models/set`:
 - `gpt-4o`, `gpt-4o-mini`, `gpt-3.5-turbo`
 - `claude-sonnet`, `claude-haiku`, `claude-opus-4-5`
 - `gemini-pro`
+- `llama3.2` (Local via Ollama)
 
 ### Speech Engine
 ```python
