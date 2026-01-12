@@ -65,7 +65,11 @@ class AriaBrain:
     def llm_ollama(self):
         if self._llm_ollama is None:
              try:
-                from langchain_community.chat_models import ChatOllama
+                try:
+                    from langchain_ollama import ChatOllama
+                except ImportError:
+                    from langchain_community.chat_models import ChatOllama
+                    
                 # Lower temperature for local model to improve stability and coherence
                 self._llm_ollama = ChatOllama(model=self.local_model_name, base_url=self.ollama_base_url, temperature=0.3)
              except Exception as e:
@@ -194,11 +198,14 @@ class AriaBrain:
         elif model_name == "local" or model_name == "ollama":
              llm = self.llm_ollama
         
-        # Extended map for others
-        if not llm:
-             if "gpt-5" in model_name: llm = self.llm_gpt_5
-             elif "opus" in model_name: llm = self.llm_claude_opus_4_1
-
+        # Dynamic Local Model Support (e.g. llama3.2-vision, qwen2.5-vl)
+        elif "vision" in model_name or "llama" in model_name or "qwen" in model_name:
+             try:
+                from langchain_ollama import ChatOllama
+                return ChatOllama(model=model_name, base_url=self.ollama_base_url, temperature=0.3)
+             except Exception as e:
+                 print(f"Error creating dynamic Ollama model {model_name}: {e}")
+        
         if llm:
             return llm
 
@@ -378,6 +385,42 @@ CORE INSTRUCTIONS:
             return response.content
         except Exception as e:
             return f"I encountered an error thinking about that with {model_name}: {e}"
+
+    def ask_vision(self, user_input: str, image_base64: str, model_name: str = "local-vision") -> str:
+        """
+        Asks the AI to analyze an image (Base64).
+        Prioritizes Local VLM (Llama 3.2 Vision / Moondream).
+        """
+        # Determine model
+        llm = self.llm_ollama # Default to local
+        if model_name != "local-vision":
+             llm = self.get_llm(model_name)
+        
+        if not llm:
+            return "Vision model not available."
+
+        try:
+            from langchain_core.messages import HumanMessage, SystemMessage
+            
+            messages = []
+            
+            # System prompt for vision
+            messages.append(SystemMessage(content="You are an AI vision assistant. Analyze the provided image and answer the user's question clearly."))
+            
+            # Multimodal Human Message
+            # LangChain standard format for images
+            messages.append(HumanMessage(content=[
+                {"type": "text", "text": user_input},
+                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_base64}"}}
+            ]))
+            
+            # invoke
+            response = llm.invoke(messages)
+            return response.content
+            
+        except Exception as e:
+            logger.error(f"Vision error: {e}")
+            return f"I couldn't look at that: {e}"
 
     def stream_ask(self, user_input: str, model_name: str = "gpt-4o", conversation_history: list = None, long_term_context: list = None, search_context: str = None):
         """
@@ -795,6 +838,53 @@ CORE INSTRUCTIONS:
         except Exception as e:
             print(f"Error generating draft: {e}")
             return context
+    def analyze_image(self, image_data, prompt: str = "Describe what is on this screen.") -> str:
+        """
+        Analyzes an image using a Multimodal LLM (Gemini or GPT-4o).
+        image_data: PIL Image or bytes.
+        """
+        import base64
+        from io import BytesIO
+        from langchain_core.messages import HumanMessage
+        
+        # Convert PIL to base64
+        if hasattr(image_data, 'save'):
+            buffered = BytesIO()
+            image_data.save(buffered, format="PNG")
+            img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        else:
+            # Assume it's already bytes or b64?
+            img_str = image_data
+            
+        # Prioritize Gemini for Vision (Fast/Good)
+        llm = self.llm_gemini
+        model_type = "gemini"
+        
+        if not llm:
+            llm = self.llm_gpt_4o
+            model_type = "gpt-4o"
+            
+        if not llm:
+            return "I'm sorry, I don't have a vision-capable AI model available right now (Gemini or GPT-4o required)."
+            
+        try:
+            message = HumanMessage(
+                content=[
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/png;base64,{img_str}"},
+                    },
+                ]
+            )
+            
+            response = llm.invoke([message])
+            return response.content
+        except Exception as e:
+            return f"I encountered an error looking at that image: {e}"
+        except Exception as e:
+            return f"I encountered an error looking at that image: {e}"
+
     def generate_briefing_summary(self, weather_info: str, calendar_events: list, email_count: int, user_name: str = "Shreyas", mode: str = "morning briefing") -> str:
         """
         Generates a radio-host style briefing.

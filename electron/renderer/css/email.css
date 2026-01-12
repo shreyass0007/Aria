@@ -543,3 +543,26 @@
 :root:not([data-theme="dark"]) .email-compose-content .form-group textarea:focus {
     background: rgba(0, 0, 0, 0.02);
 }
+
+/* ==================== DISABLED STATE FIXES ==================== */
+.email-btn:disabled {
+    opacity: 1 !important;
+    cursor: wait;
+    filter: brightness(0.9);
+}
+
+/* Ensure text remains sharp in dark mode during execution */
+[data-theme="dark"] .email-btn:disabled,
+[data-theme="dark"] .email-btn-send:disabled {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    /* Add shadow for better contrast */
+    box-shadow: none;
+}
+
+/* Mono Theme Dark Mode - ensure it's visible even if black previously */
+[data-theme="dark"][data-color-theme="mono"] .email-btn-send:disabled {
+    background: #333 !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}

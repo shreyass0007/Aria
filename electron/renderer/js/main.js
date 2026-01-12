@@ -1,7 +1,8 @@
 import { state } from './state.js';
 import { fetchAvailableModels, sendToBackend, getTTSStatus, setTTSStatus, waitForBackend } from './api.js';
 import { createTitleBar, autoResizeTextarea, applyTheme, applyColorTheme, updateModeBadge } from './ui.js';
-import { addMessage, showThinkingIndicator, removeThinkingIndicator, animateSendButton } from './chat.js';
+import { connectWebSocket } from './api.js';
+import { addMessage, showThinkingIndicator, removeThinkingIndicator, animateSendButton, handleWebSocketMessage } from './chat.js';
 import { handleToggleVoice } from './voice.js';
 import { loadConversationHistory } from './history.js';
 import { loadAllComponents } from './component-loader.js';
@@ -12,6 +13,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     createTitleBar();
     setupEventListeners();
     loadTheme();
+
+    // Connect WebSocket
+    connectWebSocket((message) => {
+        handleWebSocketMessage(message);
+    });
 
     // Wait for backend to be ready before making API calls
     const backendReady = await waitForBackend();

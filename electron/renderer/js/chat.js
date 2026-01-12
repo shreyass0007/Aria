@@ -267,6 +267,100 @@ export function addMessage(text, sender, uiAction = null) {
                     bubble.appendChild(resultsContainer);
                 }
             }
+        } else if (uiAction && uiAction.type === 'desktop_confirmation') {
+            // Render Desktop Automation Confirmation Card
+            if (uiAction.data && uiAction.data.actions) {
+                const planCard = document.createElement('div');
+                planCard.className = 'automation-plan-card';
+
+                // Header
+                const header = document.createElement('div');
+                header.className = 'automation-header';
+                header.innerHTML = `
+                    <div class="automation-title">
+                        <span>⚡</span> <span>Automation Plan</span>
+                    </div>
+                `;
+
+                // Subtitle
+                const subtitle = document.createElement('div');
+                subtitle.className = 'automation-subtitle';
+                subtitle.textContent = uiAction.data.description || 'Review the following actions:';
+
+                // Steps List
+                const stepsContainer = document.createElement('div');
+                stepsContainer.className = 'automation-steps';
+
+                uiAction.data.actions.forEach((action, index) => {
+                    const stepRow = document.createElement('div');
+                    stepRow.className = 'automation-step-row';
+                    stepRow.dataset.stepIndex = index;
+
+                    const stepNum = document.createElement('div');
+                    stepNum.className = 'step-num';
+                    stepNum.textContent = index + 1;
+
+                    const stepDesc = document.createElement('div');
+                    stepDesc.className = 'step-desc';
+                    // Format action description
+                    let descText = `${action.action}`;
+                    if (action.params) {
+                        // Pretty print params
+                        const paramsStr = Object.entries(action.params)
+                            .map(([k, v]) => `${k}: ${v}`)
+                            .join(', ');
+                        descText += ` <span class="step-params">(${paramsStr})</span>`;
+                    }
+                    stepDesc.innerHTML = descText;
+
+                    stepRow.appendChild(stepNum);
+                    stepRow.appendChild(stepDesc);
+                    stepsContainer.appendChild(stepRow);
+                });
+
+                // Actions
+                const actionsContainer = document.createElement('div');
+                actionsContainer.className = 'email-actions'; // Reuse existing style
+
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = 'email-btn email-btn-cancel';
+                cancelBtn.innerHTML = '<span>Cancel</span>';
+                cancelBtn.onclick = async () => {
+                    addMessage('Cancel execution.', 'user');
+                    planCard.classList.add('cancelled');
+                    const data = await sendToBackend('cancel');
+                    if (data.response) {
+                        addMessage(data.response, 'aria', data.ui_action);
+                    }
+                };
+
+                const confirmBtn = document.createElement('button');
+                confirmBtn.className = 'email-btn email-btn-send';
+                confirmBtn.innerHTML = '<span>Run Automation</span>';
+                confirmBtn.onclick = async () => {
+                    addMessage('Proceed with automation.', 'user');
+                    planCard.classList.add('executing');
+                    confirmBtn.disabled = true;
+                    confirmBtn.innerHTML = '<span>Executing...</span>';
+
+                    const data = await sendToBackend('confirm');
+                    if (data.response) {
+                        addMessage(data.response, 'aria', data.ui_action);
+                    }
+                    // Could update UI to show "Completed" after specific response
+                };
+
+                actionsContainer.appendChild(cancelBtn);
+                actionsContainer.appendChild(confirmBtn);
+
+                planCard.appendChild(header);
+                planCard.appendChild(subtitle);
+                planCard.appendChild(stepsContainer);
+                planCard.appendChild(actionsContainer);
+
+                bubble.appendChild(planCard);
+            }
+
         }
 
     } else {
@@ -365,3 +459,142 @@ window.highlightExSource = function (index) {
         }, 2000);
     }
 };
+
+// --- WebSocket Handler ---
+export function handleWebSocketMessage(message) {
+    if (message.type === 'desktop_progress') {
+        const { step_index, action, status } = message.data;
+        console.log(`WebSocket Progress: Step ${step_index} ${status}`);
+
+        // Find the automation card
+        // We assume the last added one or we could add ID. 
+        // For now searching all potentially active cards.
+        const cards = document.querySelectorAll('.automation-plan-card.executing');
+        if (cards.length > 0) {
+            const card = cards[cards.length - 1]; // Use latest
+            const rows = card.querySelectorAll('.automation-step-row');
+
+            // Reset previous active steps if moving to next
+            rows.forEach((row, idx) => {
+                if (idx < step_index) {
+                    row.classList.remove('running');
+                    row.classList.add('completed');
+                }
+            });
+
+            if (step_index < rows.length) {
+                const targetRow = rows[step_index];
+
+                // Remove all status classes first
+                targetRow.classList.remove('running', 'completed', 'failed', 'error');
+
+                // Add new status
+                targetRow.classList.add(status);
+
+                // Optional: Scroll to active step
+                if (status === 'running') {
+                    targetRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+
+                // Show Error Message
+                if ((status === 'failed' || status === 'error') && message.data.message) {
+                    const stepDesc = targetRow.querySelector('.step-desc');
+                    if (stepDesc) {
+                        // Check if error already shown to avoid duplicates (though usually failed is terminal state for that step)
+                        let errorDiv = stepDesc.querySelector('.step-error-msg');
+                        if (!errorDiv) {
+                            errorDiv = document.createElement('div');
+                            errorDiv.className = 'step-error-msg';
+                            errorDiv.style.color = '#ef4444';
+                            errorDiv.style.fontSize = '0.8rem';
+                            errorDiv.style.marginTop = '4px';
+                            stepDesc.appendChild(errorDiv);
+                        }
+                        errorDiv.textContent = `❌ ${message.data.message}`;
+                    }
+                }
+            }
+
+            // Check if all completed
+            if (status === 'completed' && step_index === rows.length - 1) {
+                card.classList.remove('executing');
+                card.classList.add('completed');
+                const btn = card.querySelector('.email-btn-send');
+                if (btn) {
+                    btn.innerHTML = '<span>Executed</span>';
+                    btn.classList.add('success');
+                }
+            }
+        }
+    } else if (message.type === 'shopping_status') {
+        const { step_id, status, message: msgText } = message.data;
+        console.log(`🛒 Shopping: [${step_id}] ${status} - ${msgText}`);
+
+        // Find or Create Shopping Card
+        let card = document.querySelector('.shopping-progress-card.active');
+
+        if (!card) {
+            // Must create a new message bubble for it
+            const chatContainer = document.getElementById('chatContainer');
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = 'message-wrapper';
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message aria';
+
+            // Avatar
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar active'; // Keep active during shopping
+            avatar.innerHTML = '<img src="aria_logo.png" alt="Aria">';
+            messageDiv.appendChild(avatar);
+
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+
+            // Card Structure
+            card = document.createElement('div');
+            card.className = 'shopping-progress-card active';
+            card.innerHTML = `
+                <div class="shopping-header">
+                    <div class="shopping-icon">🛍️</div>
+                    <div class="shopping-title">Shopping Agent</div>
+                </div>
+                <div class="shopping-steps"></div>
+            `;
+
+            bubble.appendChild(card);
+            messageWrapper.appendChild(bubble);
+            messageDiv.appendChild(messageWrapper);
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        const stepsContainer = card.querySelector('.shopping-steps');
+
+        // Find existing step row
+        let stepRow = stepsContainer.querySelector(`.shopping-step[data-step="${step_id}"]`);
+
+        if (!stepRow) {
+            stepRow = document.createElement('div');
+            stepRow.className = `shopping-step ${status}`;
+            stepRow.dataset.step = step_id;
+            stepRow.innerHTML = `
+                <div class="step-status-icon"></div>
+                <div class="step-text">${msgText}</div>
+            `;
+            stepsContainer.appendChild(stepRow);
+        } else {
+            // Update existing
+            stepRow.className = `shopping-step ${status}`;
+            stepRow.querySelector('.step-text').textContent = msgText;
+        }
+
+        // Auto-scroll inside card if needed?
+
+        // If final step completed, remove active state
+        if (step_id === 'reasoning' && status === 'completed') {
+            card.classList.remove('active');
+            const avatar = card.closest('.message').querySelector('.avatar');
+            if (avatar) avatar.classList.remove('active');
+        }
+    }
+}

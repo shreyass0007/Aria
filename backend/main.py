@@ -15,7 +15,8 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.dependencies import init_dependencies, get_system_monitor, get_aria_core
-from backend.routers import chat, voice, music, system, notion, general, dashboard
+from backend.routers import chat, voice, music, system, notion, general, dashboard, websocket
+
 from aria.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -98,7 +99,10 @@ app.include_router(voice.router)
 app.include_router(music.router)
 app.include_router(system.router)
 app.include_router(notion.router)
+app.include_router(notion.router)
 app.include_router(dashboard.router)
+app.include_router(websocket.router)
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

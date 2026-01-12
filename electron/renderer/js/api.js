@@ -100,3 +100,35 @@ export async function waitForBackend(maxRetries = 20, delay = 1000) {
     return false;
 }
 
+// WebSocket Connection
+export function connectWebSocket(onMessage) {
+    // Convert http(s) to ws(s)
+    const wsUrl = API_URL.replace('http', 'ws') + '/ws';
+    console.log('Connecting to WebSocket:', wsUrl);
+
+    const socket = new WebSocket(wsUrl);
+
+    socket.onopen = () => {
+        console.log('WebSocket Connected');
+    };
+
+    socket.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            onMessage(data);
+        } catch (e) {
+            console.error('Error parsing WebSocket message:', e);
+        }
+    };
+
+    socket.onerror = (error) => {
+        console.error('WebSocket Error:', error);
+    };
+
+    socket.onclose = () => {
+        console.log('WebSocket Closed');
+        // Simple reconnect logic could go here
+    };
+
+    return socket;
+}

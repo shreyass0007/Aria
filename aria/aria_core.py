@@ -31,7 +31,7 @@ from .logger import setup_logger
 logger = setup_logger(__name__)
 
 class AriaCore:
-    def __init__(self, on_speak=None, notification_manager=None):
+    def __init__(self, on_speak=None, notification_manager=None, connection_manager=None):
         """
         on_speak: Callback function(text) to update GUI or logs when Aria speaks.
         """
@@ -99,11 +99,15 @@ class AriaCore:
             greeting_service=self.greeting_service,
             music_manager=self.music_manager,
             memory_manager=self.memory_manager, # Pass Memory Manager
-            water_manager=self.water_manager
+            water_manager=self.water_manager,
+            connection_manager=connection_manager
         )
 
         # Initialize Wake Word Listener
-        self.wake_word_listener = WakeWordListener(on_wake_word_detected=self._on_wake_word)
+        self.wake_word_listener = WakeWordListener(
+            on_wake_word_detected=self._on_wake_word,
+            on_command_detected=self._on_voice_command
+        )
         self.wake_word_listener.start()
 
         self.check_microphones()
@@ -112,46 +116,25 @@ class AriaCore:
 
     def _on_wake_word(self):
         """Callback when wake word is detected."""
-        logger.info("🔴 Wake Word Detected! Interrupting and Listening...")
+        logger.info("🔴 Wake Word Detected! Interrupting...")
         
         # 1. Interrupt TTS and Command Processing
-        # This stops the stream loop in CommandProcessor if it's running
         self.command_processor.stop_current_processing()
         
-        # 2. Play listening sound (optional, or just speak)
-        # self.tts_manager.speak("Yes?", print_text=False) 
-        
-        # 3. Trigger Listening (This needs to be handled carefully to not block main thread if called from callback)
-        # Since this is a callback from a thread, we can't block it too long.
-        # But aria.listen() is blocking.
-        # Ideally, we should signal the main loop or start a new thread for the interaction.
-        # For now, let's try running it in a separate thread to avoid blocking the detector loop.
-        # For now, let's try running it in a separate thread to avoid blocking the detector loop.
-        threading.Thread(target=self._handle_voice_interaction, daemon=True).start()
+        # 2. Play listening sound (optional)
+        # We rely on WakeWordListener to switch to listening mode now.
 
-    def _handle_voice_interaction(self):
-        """Handles the voice interaction after wake word."""
-        # Visual cue could be added here if we had UI access
-        logger.info("🎤 Listening for command...")
+    def _on_voice_command(self, text: str):
+        """Callback when voice command is captured."""
+        if not text:
+            return
+
+        logger.info(f"🎤 Voice Command Received: {text}")
         
-        # We need to ensure we don't conflict with other listen calls
-        # But for now, let's just call listen.
-        user_text = self.listen()
-        
-        if user_text:
-            logger.info(f"User said: {user_text}")
-            # Process the command
-            # We need to route this back to the main processor.
-            # Since we are in the backend, we can call process_command directly.
-            # BUT, we might want to use the smart router logic in backend_fastapi.
-            # That logic is not easily accessible here.
-            # So we will use the internal command_processor which is the core logic.
-            
-            # Classify first
-            intent_data = self.command_classifier.classify_intent(user_text)
-            
-            # Process
-            self.process_command(user_text, intent_data=intent_data)
+        # Process the command directly
+        # Use classify first for logging/debugging context if needed, 
+        # but process_command does it too.
+        self.process_command(text)
 
     # --- Properties for Backward Compatibility ---
 

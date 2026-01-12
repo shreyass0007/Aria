@@ -43,3 +43,47 @@ def setup_logger(name):
     logger.addHandler(console_handler)
 
     return logger
+
+import os
+
+def setup_desktop_logger(name):
+    """
+    Sets up a specialized logger for desktop automation events.
+    Logs to a separate file: desktop_automation.log
+    """
+    logger = logging.getLogger(name)
+    if logger.handlers:
+        return logger
+        
+    logger.setLevel(logging.DEBUG) # Always debug for detailed traces
+    
+    formatter = logging.Formatter(
+        '%(asctime)s - %(levelname)s - [%(name)s] - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    
+    # Specific File Handler
+    log_dir = os.path.dirname(config.LOG_FILE_PATH)
+    desktop_log_path = os.path.join(log_dir, 'desktop_automation.log')
+    
+    # Ensure directory exists
+    os.makedirs(log_dir, exist_ok=True)
+    
+    file_handler = RotatingFileHandler(
+        desktop_log_path,
+        maxBytes=10*1024*1024, # 10MB
+        backupCount=5,
+        encoding='utf-8'
+    )
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.DEBUG)
+    
+    # Console (less verbose)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    console_handler.setLevel(logging.INFO)
+    
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+    
+    return logger

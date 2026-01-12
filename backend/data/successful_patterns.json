@@ -1,0 +1,60 @@
+{
+  "open whatsapp and send message to shreyas saying hello": {
+    "actions": [
+      {
+        "action": "focus_window",
+        "params": {
+          "title": "WhatsApp"
+        }
+      },
+      {
+        "action": "press",
+        "params": {
+          "key": "ctrl+f"
+        }
+      },
+      {
+        "action": "wait",
+        "params": {
+          "seconds": 0.5
+        }
+      },
+      {
+        "action": "type",
+        "params": {
+          "text": "Shreyas"
+        }
+      },
+      {
+        "action": "wait",
+        "params": {
+          "seconds": 1.0
+        }
+      },
+      {
+        "action": "press",
+        "params": {
+          "key": "enter"
+        }
+      },
+      {
+        "action": "wait",
+        "params": {
+          "seconds": 0.5
+        }
+      },
+      {
+        "action": "type",
+        "params": {
+          "text": "hello"
+        }
+      },
+      {
+        "action": "press",
+        "params": {
+          "key": "enter"
+        }
+      }
+    ]
+  }
+}

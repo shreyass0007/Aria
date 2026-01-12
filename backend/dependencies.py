@@ -11,6 +11,8 @@ from aria.memory_manager import MemoryManager
 from aria.system_monitor import SystemMonitor
 from aria.music_library import MusicManager
 from backend.notification_manager import NotificationManager
+from backend.websocket_manager import ConnectionManager
+
 
 # Global instances
 aria_core: Optional[AriaCore] = None
@@ -18,10 +20,14 @@ conversation_mgr: Optional[ConversationManager] = None
 memory_mgr: Optional[MemoryManager] = None
 system_monitor: Optional[SystemMonitor] = None
 music_manager: Optional[MusicManager] = None
+music_manager: Optional[MusicManager] = None
 notification_mgr: Optional[NotificationManager] = None
+connection_mgr: Optional[ConnectionManager] = None
+
 
 def init_dependencies():
-    global aria_core, conversation_mgr, memory_mgr, system_monitor, music_manager, notification_mgr
+    global aria_core, conversation_mgr, memory_mgr, system_monitor, music_manager, notification_mgr, connection_mgr
+
     
     print("Initializing Global Dependencies...")
     
@@ -34,11 +40,15 @@ def init_dependencies():
     # Let's reorder everything properly.
     
     conversation_mgr = ConversationManager()
+    conversation_mgr = ConversationManager()
     notification_mgr = NotificationManager(conversation_manager=conversation_mgr)
+    connection_mgr = ConnectionManager()
+
     
     aria_core = AriaCore(
         on_speak=lambda text: print(f"Aria Speaking: {text}"),
-        notification_manager=notification_mgr
+        notification_manager=notification_mgr,
+        connection_manager=connection_mgr
     )
     
     memory_mgr = MemoryManager()
@@ -64,3 +74,7 @@ def get_system_monitor():
 
 def get_music_manager():
     return music_manager
+
+def get_connection_manager():
+    return connection_mgr
+

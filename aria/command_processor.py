@@ -13,6 +13,11 @@ from .handlers.weather_handler import WeatherHandler
 from .handlers.file_handler import FileHandler
 from .handlers.notion_handler import NotionHandler
 from .handlers.calendar_handler import CalendarHandler
+from .brains.planner_brain import PlannerBrain
+from .safety.action_guard import ActionGuard
+from .executor.desktop_executor import DesktopExecutor
+from .brains.learning_manager import LearningManager
+from .brains.shopping_agent import ShoppingAgent
 
 from .intent_dispatcher import IntentDispatcher
 from .logger import setup_logger
@@ -22,7 +27,7 @@ logger = setup_logger(__name__)
 class CommandProcessor:
     def __init__(self, tts_manager, app_launcher, brain, calendar, notion, automator, 
                  system_control, command_classifier, file_manager, weather_manager, 
-                 clipboard_screenshot, system_monitor, email_manager, greeting_service, music_manager, memory_manager, water_manager=None):
+                 clipboard_screenshot, system_monitor, email_manager, greeting_service, music_manager, memory_manager, water_manager=None, connection_manager=None):
 
         self.tts_manager = tts_manager
         self.app_launcher = app_launcher
@@ -41,7 +46,17 @@ class CommandProcessor:
         self.music_manager = music_manager
         self.memory_manager = memory_manager
         self.water_manager = water_manager
+        self.water_manager = water_manager
+        self.connection_manager = connection_manager
         self.search_manager = SearchManager()
+
+        # Desktop Automation Components
+        self.planner = PlannerBrain()
+        self.guard = ActionGuard()
+        self.executor = DesktopExecutor()
+        self.learning_manager = LearningManager()
+        self.shopping_agent = ShoppingAgent(self.brain, self.executor)
+
         
         self.wake_word = "aria"
         self.last_ui_action = None
@@ -51,8 +66,13 @@ class CommandProcessor:
         self.stop_processing_flag = False # Flag to interrupt streaming/processing
         self.last_used_model_name = None # Track actual model used for generation
         
+        # Pending states
+        self.pending_automation_plan = None # Store plan awaiting confirmation
+        
         # Short-term memory for context awareness (last 10 turns)
         self.conversation_history = []
+        self.last_desktop_plan = None
+
 
         # Initialize Handlers
         self.music_handler = MusicHandler(self.tts_manager, self.music_manager)
@@ -116,6 +136,35 @@ class CommandProcessor:
         
         # Development Tools
         self.dispatcher.register_handler("jupyter_open", self.handle_jupyter_open)
+
+        # Desktop Automation
+        self.dispatcher.register_handler("desktop_task", self.handle_desktop_task)
+        
+        # Shopping
+        self.dispatcher.register_handler("shopping_task", self.handle_shopping_task)
+
+    def _run_async_safely(self, coro):
+        """Runs a coroutine safely, regardless of whether there is a running loop."""
+        import asyncio
+        import concurrent.futures
+        
+        try:
+            # Check for running loop
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+            
+        if loop and loop.is_running():
+            # Run in a separate thread to avoid blocking the main loop context
+            # or clashing with asyncio.run
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                # We need to wrap the coroutine execution
+                def run_coro():
+                     return asyncio.run(coro)
+                future = executor.submit(run_coro)
+                return future.result()
+        else:
+            return asyncio.run(coro)
 
     def is_similar(self, a, b, threshold=0.8):
         return difflib.SequenceMatcher(None, a, b).ratio() >= threshold
@@ -295,7 +344,128 @@ class CommandProcessor:
         except Exception as e:
             logger.error(f"Error opening Jupyter Notebook: {e}")
             self.tts_manager.speak("I couldn't open Jupyter Notebook.")
+            self.tts_manager.speak("I couldn't open Jupyter Notebook.")
             return f"Error opening Jupyter Notebook: {e}"
+
+    def handle_desktop_task(self, text: str, intent: str, parameters: dict) -> str:
+        """Handles desktop automation tasks via PlannerBrain."""
+        self.tts_manager.speak("Analyzing desktop task...")
+        
+        # 1. Generate Plan
+        import asyncio
+        # Since this method is likely called synchronously, we might need to verify async execution
+        # For now, we'll assume we can call async code or run it synchronously
+        # But wait, existing handlers appear synchronous. 
+        # Planner.generate_plan is async. We might need to run it in event loop.
+        
+        try:
+            # Quick sync wrap for now
+            plan = self._run_async_safely(self.planner.generate_plan(text))
+            
+            # 2. Validate Plan
+            validation = self.guard.validate_plan(plan)
+            if not validation["valid"]:
+                logger.warning(f"Safety Gate blocked plan: {validation['reason']}")
+                self.tts_manager.speak(f"I cannot execute that plan. {validation['reason']}")
+                return f"Safety block: {validation['reason']}"
+            
+            # Save context
+            self.last_desktop_plan = plan
+            
+            # 3. User Confirmation (Phase 1 rule: > 5 actions or high risk)
+            # ALWAYS require confirmation for now to test UI
+            action_count = len(plan.get("actions", []))
+            self.tts_manager.speak(f"I've created a plan with {action_count} actions. Please review it.")
+            
+            self.pending_automation_plan = plan
+            # Send UI Action
+            self.last_ui_action = {
+                "type": "desktop_confirmation",
+                "data": plan
+            }
+            
+            return "Please confirm the automation plan."
+            
+            # 4. Execute Plan (MOVED TO CONFIRMATION FLOW)
+            # success = self._run_async_safely(self.executor.execute_plan(plan))
+            
+            # if success:
+            #     return "Desktop task executed successfully."
+            # else:
+            #     self.tts_manager.speak("Something went wrong during execution.")
+            #     return "Execution failed."
+                
+        except Exception as e:
+            logger.error(f"Error in desktop task: {e}")
+            self.tts_manager.speak("I encountered an error processing that task.")
+            return f"Error: {e}"
+
+
+    async def handle_shopping_task(self, text: str, intent: str, parameters: dict) -> str:
+        """Handles shopping requests via ShoppingAgent."""
+        product_query = text.replace("buy", "").replace("search for", "").replace("price of", "").replace("shop for", "").strip()
+        
+        self.tts_manager.speak(f"Shopping for {product_query}. I'll open some tabs for you to see.")
+        
+        # Define progress callback
+        async def on_progress(data):
+            # Send UI update
+            if self.connection_manager:
+                await self.connection_manager.broadcast({
+                    "type": "shopping_status", 
+                    "data": data 
+                })
+            # Also speak major updates? Maybe too chatty.
+            msg = data.get("message", "")
+            if "Found" in msg or "Comparing" in msg:
+                 self.tts_manager.speak(msg, print_text=False)
+
+        # Run Shopping Agent
+        try:
+            report = await self.shopping_agent.shop_for(product_query, on_progress)
+            
+            # Send Final Report to UI (Reuse search_results card or new type)
+            self.last_ui_action = {
+                "type": "markdown_report", 
+                "data": {"title": f"Shopping Report: {product_query}", "content": report}
+            }
+            
+            self.tts_manager.speak("I've finished the comparison. Check the report.")
+            return report
+            
+        except Exception as e:
+            logger.error(f"Shopping Task Failed: {e}")
+            self.tts_manager.speak("Something went wrong while shopping.")
+            return f"Error: {e}"
+
+    async def handle_screen_query(self, text: str, intent: str, parameters: dict) -> str:
+        """Handles visual queries about the screen content."""
+        self.tts_manager.speak("Let me take a look at your screen...")
+        
+        try:
+            # 1. Capture Screen
+            if not self.executor.vision:
+                return "I'm sorry, my vision system is not initialized."
+                
+            screenshot = self.executor.vision.capture_screen()
+            
+            # 2. Analyze
+            if not screenshot:
+                return "I couldn't capture the screen for some reason."
+                
+            # If user has a specific question ("What code is this?"), pass it.
+            # Otherwise default to describe.
+            prompt = text if len(text) > 10 else "Describe what is currently visible on my screen in detail."
+            
+            response = self.brain.analyze_image(screenshot, prompt)
+            
+            # 3. Output
+            self.tts_manager.speak("Here is what I see.")
+            return response
+            
+        except Exception as e:
+            logger.error(f"Screen Query Failed: {e}")
+            return f"I failed to analyze the screen: {e}"
 
     def process_command(self, text: str, model_name: str = "openai", intent_data: dict = None, extra_data: dict = None, conversation_history: list = None, long_term_memory: list = None):
         text = text.lower().strip()
@@ -321,8 +491,62 @@ class CommandProcessor:
             result = self.notion_handler.handle_interaction(text)
             if result:
                 return result
+        if self.notion_handler.has_pending_interaction():
+            result = self.notion_handler.handle_interaction(text)
+            if result:
+                return result
             if self.notion_handler.has_pending_interaction():
                  return "Waiting for page selection."
+
+        # 0.5. Desktop Automation Confirmation
+        if self.pending_automation_plan:
+            if any(x in text for x in ["yes", "proceed", "confirm", "do it", "run", "execute", "go ahead"]):
+                self.tts_manager.speak("Executing plan.")
+                plan = self.pending_automation_plan
+                self.pending_automation_plan = None # Clear pending state
+                
+                # Execute Plan
+                # Execute Plan with Progress Callback
+                async def on_progress(idx, action, status, message=None):
+                    if self.connection_manager:
+                        await self.connection_manager.broadcast({
+                            "type": "desktop_progress",
+                            "data": {
+                                "step_index": idx,
+                                "action": action,
+                                "status": status,
+                                "message": message
+                            }
+                        })
+                
+                success = self._run_async_safely(self.executor.execute_plan(plan, on_update=on_progress))
+                
+                if success:
+                    # Learn from success
+                    # We use the text that GENERATED the plan. 
+                    # But here 'text' is the confirmation "yes". 
+                    # We need the original request.
+                    # self.last_desktop_plan_request... needed.
+                    if self.planner.last_request:
+                        self.learning_manager.save_successful_plan(self.planner.last_request, plan)
+                        
+                    return "Desktop task executed successfully."
+                else:
+                    self.tts_manager.speak("Something went wrong during execution.")
+                    return "Execution failed."
+            elif any(x in text for x in ["no", "nope", "cancel", "don't", "stop"]):
+                self.pending_automation_plan = None
+                self.tts_manager.speak("Okay, automation cancelled.")
+                return "Automation cancelled."
+            else:
+                 # If ambiguous, maybe let it fall through? Or force answer?
+                 # For now, let's assume if they don't confirm, they might be asking something else.
+                 # BUT, for safety, we should probably clear the plan if they change topic.
+                 # Let's keep it simple: if they don't say yes/no, we keep pending? 
+                 # No, better to clear it unless they are specifically interacting with it.
+                 # Actually, similar to email, we might want to "wait" or allow "cancel". 
+                 pass 
+
         if self.pending_music_suggestion:
             if any(x in text for x in ["yes", "yep", "sure", "okay", "please", "do it"]):
                 self.tts_manager.speak("Great! Playing a random hit for you.")
@@ -499,6 +723,10 @@ class CommandProcessor:
 
             # Dispatch using IntentDispatcher
             result = self.dispatcher.dispatch(intent, text, parameters)
+            
+            import inspect
+            if inspect.iscoroutine(result):
+                result = self._run_async_safely(result)
             
             if result:
                 handled_any = True

@@ -395,6 +395,7 @@
 [data-theme="dark"][data-color-theme="mono"] .message.user .bubble div {
     color: #000000 !important;
 }
+
 .message-model-info {
     font-size: 0.7rem;
     opacity: 0.7;
@@ -410,4 +411,331 @@
 .message-model-info svg {
     width: 12px;
     height: 12px;
+}
+
+/* ==================== AUTOMATION CARD STYLES ==================== */
+
+.automation-plan-card {
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    margin-top: 10px;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+}
+
+[data-theme="dark"] .automation-plan-card {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.automation-header {
+    padding: 12px 16px;
+    background: rgba(99, 102, 241, 0.1);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+[data-theme="dark"] .automation-header {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+.automation-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--accent);
+}
+
+[data-theme="dark"] .automation-title {
+    color: #a5b4fc;
+}
+
+.automation-subtitle {
+    padding: 12px 16px 4px 16px;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.automation-steps {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
+
+.automation-step-row {
+    display: flex;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="dark"] .automation-step-row {
+    border-color: rgba(255, 255, 255, 0.03);
+}
+
+.automation-step-row:last-child {
+    border-bottom: none;
+}
+
+.step-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+[data-theme="dark"] .step-num {
+    background: rgba(255, 255, 255, 0.1);
+    color: #e0e7ff;
+}
+
+.step-desc {
+    flex: 1;
+    line-height: 1.4;
+}
+
+.step-params {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    font-family: monospace;
+}
+
+/* Automation Card States */
+.automation-plan-card.cancelled {
+    opacity: 0.6;
+    pointer-events: none;
+    filter: grayscale(1);
+}
+
+.automation-plan-card.executing {
+    border-color: var(--accent);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+}
+
+/* Step Status Styles */
+.automation-step-row.running {
+    background: rgba(99, 102, 241, 0.1);
+    border-left: 3px solid var(--accent);
+}
+
+.automation-step-row.running .step-num {
+    background: var(--accent);
+    color: white;
+    /* Spinner animation could be added here */
+    animation: pulse 1s infinite alternate;
+}
+
+.automation-step-row.completed .step-num {
+    background: #10b981;
+    color: white;
+}
+
+.automation-step-row.completed {
+    opacity: 0.7;
+}
+
+.automation-step-row.failed .step-num {
+    background: #ef4444;
+    color: white;
+}
+
+.email-btn.success {
+    background: #10b981;
+    cursor: default;
+}
+
+@keyframes pulse {
+    from {
+        opacity: 0.7;
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+}
+
+[data-theme="dark"] .automation-step-row.running {
+    background: rgba(99, 102, 241, 0.2);
+}
+
+/* Step Status Styles */
+.automation-step-row.running {
+    background: rgba(99, 102, 241, 0.1);
+    border-left: 3px solid var(--accent);
+}
+
+.automation-step-row.running .step-num {
+    background: var(--accent);
+    color: white;
+    /* Spinner animation could be added here */
+    animation: pulse 1s infinite alternate;
+}
+
+.automation-step-row.completed .step-num {
+    background: #10b981;
+    color: white;
+}
+
+.automation-step-row.completed {
+    opacity: 0.7;
+}
+
+.automation-step-row.failed .step-num {
+    background: #ef4444;
+    color: white;
+}
+
+.email-btn.success {
+    background: #10b981;
+    cursor: default;
+}
+
+@keyframes pulse {
+    from {
+        opacity: 0.7;
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+}
+
+[data-theme="dark"] .automation-step-row.running {
+    background: rgba(99, 102, 241, 0.2);
+}
+
+/* ==================== SHOPPING / RESEARCH CARD STYLES ==================== */
+
+.shopping-progress-card {
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    margin-top: 10px;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.3s ease;
+}
+
+[data-theme="dark"] .shopping-progress-card {
+    background: rgba(30, 41, 59, 0.6);
+    border-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.shopping-progress-card.active {
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+    border-color: var(--accent);
+}
+
+.shopping-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: rgba(99, 102, 241, 0.05);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .shopping-header {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+.shopping-icon {
+    font-size: 1.2rem;
+}
+
+.shopping-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.shopping-steps {
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.shopping-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    opacity: 0.7;
+    transition: all 0.3s;
+}
+
+.shopping-step.running {
+    opacity: 1;
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.shopping-step.completed {
+    opacity: 1;
+    color: #10b981;
+    /* Green */
+}
+
+.shopping-step.failed {
+    color: #ef4444;
+    /* Red */
+}
+
+/* Icons */
+.step-status-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Running: Spinner */
+.shopping-step.running .step-status-icon::after {
+    content: '';
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--accent);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Completed: Checkmark */
+.shopping-step.completed .step-status-icon::after {
+    content: '✓';
+    font-weight: bold;
+    font-size: 12px;
+}
+
+/* Failed: X */
+.shopping-step.failed .step-status-icon::after {
+    content: '✕';
+    font-weight: bold;
+    font-size: 12px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }

@@ -99,7 +99,11 @@ class CommandIntentClassifier:
         # General
         "general_chat": "General conversation/questions (fallback)",
         # Development Tools
-        "jupyter_open": "Open Jupyter Notebook"
+        "jupyter_open": "Open Jupyter Notebook",
+        # Desktop Automation (Complex/Multi-step)
+        "desktop_task": "Perform complex desktop automation (open app, type, click, read screen, multi-step)",
+        "shopping_task": "Shop for products, compare prices, find deals",
+        "screen_query": "Describe the screen, read text on screen, or answer questions about what is visible"
     }
 
     # Fast Path Intents (Keyword -> Intent)
@@ -322,7 +326,7 @@ class CommandIntentClassifier:
         email_patterns = [
             r'(?:send|write|compose|draft)\s+(?:an?\s+)?(?:email|mail)\s+to',
             r'(?:email|mail)\s+to\s+\S+',
-            r'(?:send|write)\s+(?:a\s+)?(?:quick\s+)?(?:email|mail|message)\s+to'
+            r'(?:send|write)\s+(?:a\s+)?(?:quick\s+)?(?:email|mail)\s+to'
         ]
         for pattern in email_patterns:
             if re.search(pattern, clean_text, re.IGNORECASE):
@@ -332,6 +336,11 @@ class CommandIntentClassifier:
                     "confidence": 1.0,
                     "parameters": {}
                 }]
+
+        # Shopping Fast Path
+        if any(x in clean_text for x in ["buy ", "purchase ", "price of ", "shop for ", "how much is ", "cost of ", "deal on "]):
+            logger.info(f"REGEX PATH TRIGGERED: shopping_task -> {user_text}")
+            return [{"intent": "shopping_task", "confidence": 0.95, "parameters": {}}]
 
         if not self.brain.is_available():
             return [{"intent": "none", "confidence": 0.0, "parameters": {}}]
@@ -371,6 +380,16 @@ class CommandIntentClassifier:
             except Exception:
                 logger.debug("Raw response was: [Content with unicode]")
             return [{"intent": "general_chat", "confidence": 0.0, "parameters": {}}]
+
+        # 3. REGEX FAST PATH for Desktop Typing/Clicking
+        # Catch "type ..." or "click ..." early to avoid LLM misclassification
+        if re.match(r'^(type|click)\b', clean_text, re.IGNORECASE):
+            logger.info(f"REGEX PATH TRIGGERED: desktop_task -> {clean_text}")
+            return [{
+                "intent": "desktop_task",
+                "confidence": 1.0,
+                "parameters": {"action": clean_text}
+            }]
 
         final_intents = []
         
@@ -507,14 +526,29 @@ EXAMPLES:
 - "send email to john@example.com to say hello" -> intent: "email_send", parameters: {{"to": "john@example.com", "subject": "Hello", "context": "greeting"}}
 - "write mail to boss about project update" -> intent: "email_send", parameters: {{"to": "boss", "subject": "Project Update", "context": "project update"}}
 - "check my emails" -> intent: "email_check", parameters: {{}}
+- "buy iphone 15" -> intent: "shopping_task", parameters: {{}}
+- "price of rtx 4090" -> intent: "shopping_task", parameters: {{}}
+- "open whatsapp and send message to shreyas saying hello" -> intent: "desktop_task", parameters: {{"instruction": "Open WhatsApp and send message to Shreyas saying hello"}}
+- "send message to bob on discord" -> intent: "desktop_task", parameters: {{"instruction": "Send message to Bob on Discord"}}
 
 **CRITICAL EMAIL RULE:** ANY command that mentions sending, composing, drafting, or writing an email MUST be classified as "email_send". Do NOT handle emails in general_chat.
 
 6. **Distinguish between "file_search" and "web_search" (UPDATED):**
    - "search for [filename]" or "find [file]" -> "file_search" (Local files)
    - "search for [topic]", "google [topic]", "who is [person]" -> "web_search" (Internet)
-   - **"check updates", "latest news", "trends in X", "upcoming X" -> "web_search"** (Real-time info)
-   - **CRITICAL:** If the user asks for "updates", "news", "trends", "prices", "scores", or "weather" (if not specific format), it requires REAL-TIME knowledge. USE "web_search". Do NOT use "general_chat".
+    - **"check updates", "latest news", "trends in X", "upcoming X" -> "web_search"** (Real-time info)
+    - **CRITICAL:** If the user asks for "updates", "news", "trends", "prices", "scores", or "weather" (if not specific format), it requires REAL-TIME knowledge. USE "web_search". Do NOT use "general_chat".
+
+7. **"desktop_task" vs "app_open":**
+   - Use "app_open" for simple requests like "Open Notepad".
+   - Use "desktop_task" for multi-step requests like "Open Notepad and type Hello", "Click the start button", "Take a screenshot and save it".
+   - Use "desktop_task" if the user specifies coordinates or typing text.
+   - **CRITICAL:** Requests to "send message on WhatsApp/Discord/Slack" are `desktop_task`, NOT `email_send`.
+
+8. **"email_send" vs Messaging Apps:**
+   - "send email to X" -> `email_send`
+   - "message X on WhatsApp" -> `desktop_task`
+   - "text X on Discord" -> `desktop_task`
 
 **CRITICAL WEB SEARCH TRIGGER:** If the user asks "check upcoming updates in [topic]" or "what is new in [topic]", this is a "web_search".
 
